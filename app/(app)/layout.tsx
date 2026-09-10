@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -36,6 +37,15 @@ export default async function AppLayout({
           .single()
       : Promise.resolve({ data: null }),
   ]);
+
+  // Defense in depth: a cookie can point at a facility this user no
+  // longer has access to (revoked access, or a stale cookie proxy.ts's
+  // cheaper presence-only check let through) — RLS already blocks the
+  // data, but the user should be sent to pick a valid facility instead
+  // of staring at an empty shell.
+  if (activeEinrichtungId && !einrichtung) {
+    redirect("/einrichtung-auswahl");
+  }
 
   return (
     <SidebarProvider>
