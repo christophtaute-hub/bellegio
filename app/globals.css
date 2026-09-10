@@ -1,0 +1,134 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* Bellegio brand tokens: Petrol #006778, Gold #c79c60, Background #f8faf9.
+     --radius stays modest for buttons/inputs; Card components get an
+     explicit rounded-[2rem] override per the design spec instead of
+     inflating the whole radius scale. */
+  --background: #f8faf9;
+  --foreground: #16211f;
+  --card: #ffffff;
+  --card-foreground: #16211f;
+  --popover: #ffffff;
+  --popover-foreground: #16211f;
+  --primary: #006778;
+  --primary-foreground: #ffffff;
+  --secondary: #eaf1f0;
+  --secondary-foreground: #006778;
+  --muted: #eef2f1;
+  --muted-foreground: #5b6b69;
+  --accent: #c79c60;
+  --accent-foreground: #2a2013;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #e1e8e6;
+  --input: #e1e8e6;
+  --ring: #4a97a3;
+  --chart-1: #006778;
+  --chart-2: #c79c60;
+  --chart-3: #4a97a3;
+  --chart-4: #8fb8a8;
+  --chart-5: #2a2013;
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #16211f;
+  --sidebar-primary: #006778;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eaf1f0;
+  --sidebar-accent-foreground: #006778;
+  --sidebar-border: #e1e8e6;
+  --sidebar-ring: #4a97a3;
+}
+
+.dark {
+  --background: #10201d;
+  --foreground: #eef2f1;
+  --card: #16221f;
+  --card-foreground: #eef2f1;
+  --popover: #16221f;
+  --popover-foreground: #eef2f1;
+  --primary: #3aa3b3;
+  --primary-foreground: #0a1615;
+  --secondary: #1c2b28;
+  --secondary-foreground: #eef2f1;
+  --muted: #1c2b28;
+  --muted-foreground: #93a6a2;
+  --accent: #c79c60;
+  --accent-foreground: #2a2013;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #3aa3b3;
+  --chart-1: #3aa3b3;
+  --chart-2: #c79c60;
+  --chart-3: #4a97a3;
+  --chart-4: #8fb8a8;
+  --chart-5: #eef2f1;
+  --sidebar: #16221f;
+  --sidebar-foreground: #eef2f1;
+  --sidebar-primary: #3aa3b3;
+  --sidebar-primary-foreground: #0a1615;
+  --sidebar-accent: #1c2b28;
+  --sidebar-accent-foreground: #eef2f1;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #3aa3b3;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
