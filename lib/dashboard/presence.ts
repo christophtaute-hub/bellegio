@@ -123,3 +123,27 @@ export function buildKpis(rows: PresenceRow[]): KpiSummary {
     ohneBuchungszeit,
   };
 }
+
+export type BelegungKennzahlen = {
+  belegteOhneI: number;
+  belegteMitI: number;
+  plaetzeNachBetriebserlaubnis: number;
+  differenz: number;
+};
+
+export function buildBelegungKennzahlen(
+  rows: PresenceRow[],
+  gruppenSollplatzeSumme: number
+): BelegungKennzahlen {
+  const belegteMitI = rows.length;
+  const belegteOhneI = rows.filter(
+    (row) => row.weighting_factor_code !== "integrationskinder"
+  ).length;
+
+  return {
+    belegteOhneI,
+    belegteMitI,
+    plaetzeNachBetriebserlaubnis: gruppenSollplatzeSumme,
+    differenz: belegteMitI - gruppenSollplatzeSumme,
+  };
+}

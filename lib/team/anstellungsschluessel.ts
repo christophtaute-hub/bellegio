@@ -6,106 +6,101 @@ export type TeamPresenceRow = {
   vorname: string | null;
   nachname: string | null;
   rolle: string | null;
+  role_category: string | null;
   wochenstunden: number | null;
-  fachkraft: boolean;
 };
 
-export async function getTeamPresenceAtDate(
+export async function getTeamPresenceForMonth(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
-  stichtag: string
+  month: string
 ): Promise<TeamPresenceRow[]> {
-  const { data, error } = await supabase.rpc("team_presence_at_date", {
+  const { data, error } = await supabase.rpc("team_presence_for_month", {
     p_einrichtung_id: einrichtungId,
-    p_stichtag: stichtag,
+    p_month: month,
   });
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-const ANSTELLUNGSSCHLUESSEL_SOLL = 11.0;
-const ANSTELLUNGSSCHLUESSEL_GELB_GRENZE = 11.5;
-const FACHKRAFTQUOTE_SOLL = 0.5;
-const FACHKRAFTQUOTE_GELB_TOLERANZ = 0.1;
+const MINDESTSCHLUESSEL = 11.0;
+const EMPFOHLENER_SCHLUESSEL = 10.0;
 
 export type Ampel = "gruen" | "gelb" | "rot";
 
-export type Anstellungsschluessel = {
-  gewichteteSumme: number;
-  vollzeitWochenstunden: number;
-  sollVzae: number;
-  sollAz: number;
-  istAz: number;
-  istVzae: number;
-  anstellungsschluesselIst: number | null;
-  differenzstunden: number;
-  differenzVzae: number;
-  fachkraftstundenIst: number;
-  sollFachkraftstunden: number;
-  fachkraftquoteIst: number | null;
+/**
+ * Formelkette 1:1 aus der real genutzten Personalbelegungsliste übernommen
+ * (nicht algebraisch vereinfacht — die Zwischenwerte buchungenGew/sollFk
+ * werden einzeln angezeigt und müssen mit dem Excel-Original übereinstimmen).
+ * gruppenAnzahl generalisiert die dort fest verdrahtete "5" (Anzahl Gruppen
+ * dieser einen Einrichtung) auf die tatsächliche Gruppenzahl der Einrichtung.
+ */
+export type Personalplanung = {
+  buchungenGew: number;
+  sollFk: number;
+  istFk: number;
+  istEk: number;
+  istAzGesamt: number;
+  gruppenAnzahl: number;
+  istAzProTagGesamt: number;
+  anstellungsschluessel: number | null;
+  mindestschluesselOk: boolean;
+  empfohlenerSchluesselOk: boolean;
+  qualifikationsschluesselOk: boolean;
   ampel: Ampel;
 };
 
-export function buildAnstellungsschluessel(
+export function buildPersonalplanung(
   teamRows: TeamPresenceRow[],
   gewichteteSumme: number,
-  vollzeitWochenstunden: number
-): Anstellungsschluessel {
-  const sollVzae = gewichteteSumme / ANSTELLUNGSSCHLUESSEL_SOLL;
-  const sollAz = sollVzae * vollzeitWochenstunden;
+  gruppenAnzahl: number
+): Personalplanung {
+  const buchungenGew = 4 * gewichteteSumme;
+  const sollFk = buchungenGew / 11 / 2 * 5;
 
-  const istAz = teamRows.reduce(
-    (sum, row) => sum + (row.wochenstunden ?? 0),
-    0
-  );
-  const istVzae = istAz / vollzeitWochenstunden;
-
-  const anstellungsschluesselIst = istVzae > 0 ? gewichteteSumme / istVzae : null;
-
-  const differenzstunden = istAz - sollAz;
-  const differenzVzae = differenzstunden / vollzeitWochenstunden;
-
-  const fachkraftstundenIst = teamRows
-    .filter((row) => row.fachkraft)
+  const istFk = teamRows
+    .filter((row) => row.role_category === "fk")
     .reduce((sum, row) => sum + (row.wochenstunden ?? 0), 0);
-  const sollFachkraftstunden = FACHKRAFTQUOTE_SOLL * sollAz;
-  const fachkraftquoteIst = istAz > 0 ? fachkraftstundenIst / istAz : null;
+  const istEk = teamRows
+    .filter((row) => row.role_category === "ek")
+    .reduce((sum, row) => sum + (row.wochenstunden ?? 0), 0);
+  const istAzGesamt = istFk + istEk;
+  const istAzProTagGesamt = gruppenAnzahl > 0 ? istAzGesamt / gruppenAnzahl : 0;
 
-  const anstellungsschluesselOk =
-    anstellungsschluesselIst !== null &&
-    anstellungsschluesselIst <= ANSTELLUNGSSCHLUESSEL_SOLL;
-  const anstellungsschluesselGrenzwertig =
-    anstellungsschluesselIst !== null &&
-    anstellungsschluesselIst <= ANSTELLUNGSSCHLUESSEL_GELB_GRENZE;
+  const anstellungsschluessel =
+    istAzProTagGesamt > 0
+      ? Math.round((buchungenGew / istAzProTagGesamt) * 100) / 100
+      : null;
 
-  const fachkraftOk = fachkraftstundenIst >= sollFachkraftstunden;
-  const fachkraftGrenzwertig =
-    fachkraftstundenIst >= sollFachkraftstunden * (1 - FACHKRAFTQUOTE_GELB_TOLERANZ);
+  const mindestschluesselOk =
+    anstellungsschluessel !== null && anstellungsschluessel <= MINDESTSCHLUESSEL;
+  const empfohlenerSchluesselOk =
+    anstellungsschluessel !== null && anstellungsschluessel <= EMPFOHLENER_SCHLUESSEL;
+  const qualifikationsschluesselOk = istFk >= sollFk;
 
   let ampel: Ampel;
   if (gewichteteSumme === 0) {
     ampel = "gruen";
-  } else if (anstellungsschluesselOk && fachkraftOk) {
+  } else if (mindestschluesselOk && qualifikationsschluesselOk) {
     ampel = "gruen";
-  } else if (anstellungsschluesselGrenzwertig && fachkraftGrenzwertig) {
+  } else if (mindestschluesselOk) {
     ampel = "gelb";
   } else {
     ampel = "rot";
   }
 
   return {
-    gewichteteSumme,
-    vollzeitWochenstunden,
-    sollVzae,
-    sollAz,
-    istAz,
-    istVzae,
-    anstellungsschluesselIst,
-    differenzstunden,
-    differenzVzae,
-    fachkraftstundenIst,
-    sollFachkraftstunden,
-    fachkraftquoteIst,
+    buchungenGew,
+    sollFk,
+    istFk,
+    istEk,
+    istAzGesamt,
+    gruppenAnzahl,
+    istAzProTagGesamt,
+    anstellungsschluessel,
+    mindestschluesselOk,
+    empfohlenerSchluesselOk,
+    qualifikationsschluesselOk,
     ampel,
   };
 }

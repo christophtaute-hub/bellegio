@@ -1,18 +1,17 @@
 import Link from "next/link";
-import { Users, Scale, GraduationCap } from "lucide-react";
+import { Scale, GraduationCap, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
-import { TEAM_STATUS_LABEL } from "@/lib/constants";
+import { TEAM_STATUS_LABEL, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
 import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import {
-  getTeamPresenceAtDate,
-  buildAnstellungsschluessel,
+  getTeamPresenceForMonth,
+  buildPersonalplanung,
 } from "@/lib/team/anstellungsschluessel";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { StatTile } from "@/components/ui/stat-tile";
 import { AmpelBadge } from "@/components/team/ampel-badge";
-import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import {
   Table,
   TableBody,
@@ -41,59 +40,49 @@ export default async function TeamPage({
   searchParams: Promise<{
     q?: string;
     status?: string;
-    fachkraft?: string;
+    kategorie?: string;
     stichtag?: string;
   }>;
 }) {
   const {
     q = "",
     status = "alle",
-    fachkraft = "alle",
+    kategorie = "alle",
     stichtag: stichtagParam,
   } = await searchParams;
   const stichtag = stichtagParam ?? toIsoDateString(new Date());
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const { data: userData } = await supabase.auth.getUser();
-  const [{ data: profile }, { data: einrichtung }] = await Promise.all([
-    userData.user
-      ? supabase
-          .from("user_profiles")
-          .select("role")
-          .eq("id", userData.user.id)
-          .single()
-      : Promise.resolve({ data: null }),
+  const [{ data: gruppen }] = await Promise.all([
     einrichtungId
       ? supabase
-          .from("einrichtungen")
-          .select("id, vollzeit_wochenstunden")
-          .eq("id", einrichtungId)
-          .single()
+          .from("gruppen")
+          .select("id")
+          .eq("einrichtung_id", einrichtungId)
+          .is("archived_at", null)
       : Promise.resolve({ data: null }),
   ]);
-
-  const canEditVollzeit = profile?.role === "traeger_admin";
-  const vollzeitWochenstunden = einrichtung?.vollzeit_wochenstunden ?? 39;
+  const gruppenAnzahl = gruppen?.length ?? 0;
 
   const [kinderRows, teamPresenceRows] = einrichtungId
     ? await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
-        getTeamPresenceAtDate(supabase, einrichtungId, stichtag),
+        getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
       ])
     : [[], []];
 
   const { gewichteteSumme } = buildKpis(kinderRows);
-  const anstellungsschluessel = buildAnstellungsschluessel(
+  const personal = buildPersonalplanung(
     teamPresenceRows,
     gewichteteSumme,
-    vollzeitWochenstunden
+    gruppenAnzahl
   );
 
   let query = supabase
     .from("team")
     .select(
-      "id, vorname, nachname, rolle, wochenstunden, fachkraft, status, eintritt, austritt, gruppen(name)"
+      "id, vorname, nachname, rolle, wochenstunden, role_category, status, eintritt, austritt, gruppen(name)"
     )
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null)
@@ -102,8 +91,8 @@ export default async function TeamPage({
   if (status !== "alle") {
     query = query.eq("status", status);
   }
-  if (fachkraft !== "alle") {
-    query = query.eq("fachkraft", fachkraft === "ja");
+  if (kategorie !== "alle") {
+    query = query.eq("role_category", kategorie);
   }
   if (q.trim()) {
     query = query.or(`vorname.ilike.%${q.trim()}%,nachname.ilike.%${q.trim()}%`);
@@ -114,7 +103,7 @@ export default async function TeamPage({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl text-primary">Team</h1>
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Team</h1>
         <Button nativeButton={false} render={<Link href="/team/neu" />}>
           Personal anlegen
         </Button>
@@ -125,60 +114,54 @@ export default async function TeamPage({
           <h2 className="font-heading text-lg text-primary">
             Anstellungsschlüssel (Bayern)
           </h2>
-          <AmpelBadge ampel={anstellungsschluessel.ampel} />
+          <AmpelBadge ampel={personal.ampel} />
         </div>
 
         <StichtagPicker basePath="/team" stichtag={stichtag} />
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <StatTile
-            label="Anstellungsschlüssel (Ist)"
+            label="Anstellungsschlüssel"
             value={
-              anstellungsschluessel.anstellungsschluesselIst !== null
-                ? formatNumber(anstellungsschluessel.anstellungsschluesselIst, 1)
+              personal.anstellungsschluessel !== null
+                ? `1 : ${formatNumber(personal.anstellungsschluessel, 2)}`
                 : "–"
             }
             icon={Scale}
-            tone={
-              anstellungsschluessel.anstellungsschluesselIst !== null &&
-              anstellungsschluessel.anstellungsschluesselIst > 11
-                ? "warn"
-                : "default"
-            }
+            tone={!personal.mindestschluesselOk ? "warn" : "default"}
           />
           <StatTile
-            label="Ist-VZÄ / Soll-VZÄ"
-            value={`${formatNumber(anstellungsschluessel.istVzae, 1)} / ${formatNumber(anstellungsschluessel.sollVzae, 1)}`}
+            label="Ist-FK / Soll-FK"
+            value={`${formatNumber(personal.istFk, 1)} / ${formatNumber(personal.sollFk, 1)}`}
             icon={Users}
           />
           <StatTile
-            label="Fachkraftquote (Ist)"
-            value={
-              anstellungsschluessel.fachkraftquoteIst !== null
-                ? `${formatNumber(anstellungsschluessel.fachkraftquoteIst * 100, 0)} %`
-                : "–"
-            }
+            label="Ist-EK"
+            value={`${formatNumber(personal.istEk, 1)} Std.`}
             icon={GraduationCap}
-            tone={
-              anstellungsschluessel.fachkraftquoteIst !== null &&
-              anstellungsschluessel.fachkraftquoteIst < 0.5
-                ? "warn"
-                : "default"
-            }
           />
           <StatTile
-            label="Differenzstunden (Ist − Soll)"
-            value={`${anstellungsschluessel.differenzstunden >= 0 ? "+" : ""}${formatNumber(anstellungsschluessel.differenzstunden, 1)} Std.`}
+            label="Ist-AZ pro Gruppe"
+            value={`${formatNumber(personal.istAzProTagGesamt, 1)} Std.`}
             icon={Scale}
-            tone={anstellungsschluessel.differenzstunden < 0 ? "warn" : "default"}
           />
         </div>
 
-        <VollzeitWochenstundenEditor
-          einrichtungId={einrichtungId ?? ""}
-          vollzeitWochenstunden={vollzeitWochenstunden}
-          canEdit={canEditVollzeit}
-        />
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={personal.mindestschluesselOk ? "secondary" : "destructive"}>
+            Mindestschlüssel 1:11,0: {personal.mindestschluesselOk ? "Ja" : "Nein"}
+          </Badge>
+          <Badge
+            variant={personal.empfohlenerSchluesselOk ? "secondary" : "destructive"}
+          >
+            Empfohlener Schlüssel 1:10: {personal.empfohlenerSchluesselOk ? "Ja" : "Nein"}
+          </Badge>
+          <Badge
+            variant={personal.qualifikationsschluesselOk ? "secondary" : "destructive"}
+          >
+            Qualifikationsschlüssel: {personal.qualifikationsschluesselOk ? "Ja" : "Nein"}
+          </Badge>
+        </div>
       </div>
 
       <form className="flex flex-wrap items-end gap-3" method="get">
@@ -212,18 +195,21 @@ export default async function TeamPage({
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="fachkraft" className="text-xs text-muted-foreground">
-            Fachkraft
+          <label htmlFor="kategorie" className="text-xs text-muted-foreground">
+            Kategorie
           </label>
           <select
-            id="fachkraft"
-            name="fachkraft"
-            defaultValue={fachkraft}
+            id="kategorie"
+            name="kategorie"
+            defaultValue={kategorie}
             className={SELECT_CLASS}
           >
             <option value="alle">Alle</option>
-            <option value="ja">Nur Fachkräfte</option>
-            <option value="nein">Nur Ergänzungskräfte</option>
+            {Object.entries(TEAM_ROLE_CATEGORY_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
         <Button type="submit" variant="secondary" size="sm">
@@ -240,7 +226,7 @@ export default async function TeamPage({
                 <TableHead>Rolle</TableHead>
                 <TableHead>Gruppe</TableHead>
                 <TableHead>Wochenstunden</TableHead>
-                <TableHead>Fachkraft</TableHead>
+                <TableHead>Kategorie</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -262,7 +248,10 @@ export default async function TeamPage({
                       ? `${mitglied.wochenstunden} Std.`
                       : "–"}
                   </TableCell>
-                  <TableCell>{mitglied.fachkraft ? "Ja" : "Nein"}</TableCell>
+                  <TableCell>
+                    {TEAM_ROLE_CATEGORY_LABEL[mitglied.role_category] ??
+                      mitglied.role_category}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
                       {TEAM_STATUS_LABEL[mitglied.status] ?? mitglied.status}
