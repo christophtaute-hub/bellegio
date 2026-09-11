@@ -15,7 +15,7 @@ export default async function TeamDetailPage({
   const { data: mitglied } = await supabase
     .from("team")
     .select(
-      "id, einrichtung_id, vorname, nachname, rolle, gruppe_id, wochenstunden, fachkraft, status, eintritt, austritt"
+      "id, einrichtung_id, vorname, nachname, rolle, gruppe_id, wochenstunden, role_category, status, eintritt, austritt"
     )
     .eq("id", teamId)
     .single();
@@ -46,7 +46,14 @@ export default async function TeamDetailPage({
           gruppe_id: mitglied.gruppe_id ?? "",
           wochenstunden:
             mitglied.wochenstunden !== null ? String(mitglied.wochenstunden) : "",
-          fachkraft: mitglied.fachkraft,
+          role_category: mitglied.role_category as
+            | "fk"
+            | "ek"
+            | "ak"
+            | "nicht_paed"
+            | "sprachfoerderung"
+            | "hausmeister"
+            | "hauswirtschaft",
           status: mitglied.status as "aktiv" | "inaktiv" | "geplant",
           eintritt: mitglied.eintritt ?? "",
           austritt: mitglied.austritt ?? "",

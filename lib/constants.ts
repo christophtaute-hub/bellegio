@@ -35,3 +35,13 @@ export const TEAM_STATUS_LABEL: Record<string, string> = {
   inaktiv: "Inaktiv",
   geplant: "Geplant",
 };
+
+export const TEAM_ROLE_CATEGORY_LABEL: Record<string, string> = {
+  fk: "Fachkraft",
+  ek: "Ergänzungskraft",
+  ak: "Assistenzkraft",
+  nicht_paed: "Nicht-pädagogisch",
+  sprachfoerderung: "Sprachförderung",
+  hausmeister: "Hausmeister",
+  hauswirtschaft: "Hauswirtschaftskraft",
+};

@@ -179,9 +179,11 @@ export type Database = {
         Row: {
           archived_at: string | null
           austritt: string | null
+          betriebszugehoerigkeit: string | null
           buchungszeit_band_id: string | null
           created_at: string
           einrichtung_id: string
+          einschulungsstatus: string | null
           eintritt: string | null
           geburtsdatum: string
           geschlecht: string
@@ -197,9 +199,11 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           austritt?: string | null
+          betriebszugehoerigkeit?: string | null
           buchungszeit_band_id?: string | null
           created_at?: string
           einrichtung_id: string
+          einschulungsstatus?: string | null
           eintritt?: string | null
           geburtsdatum: string
           geschlecht?: string
@@ -215,9 +219,11 @@ export type Database = {
         Update: {
           archived_at?: string | null
           austritt?: string | null
+          betriebszugehoerigkeit?: string | null
           buchungszeit_band_id?: string | null
           created_at?: string
           einrichtung_id?: string
+          einschulungsstatus?: string | null
           eintritt?: string | null
           geburtsdatum?: string
           geschlecht?: string
@@ -286,6 +292,7 @@ export type Database = {
           gruppe_id: string | null
           id: string
           nachname: string | null
+          role_category: string
           rolle: string | null
           status: string
           updated_at: string
@@ -302,6 +309,7 @@ export type Database = {
           gruppe_id?: string | null
           id?: string
           nachname?: string | null
+          role_category: string
           rolle?: string | null
           status: string
           updated_at?: string
@@ -318,6 +326,7 @@ export type Database = {
           gruppe_id?: string | null
           id?: string
           nachname?: string | null
+          role_category?: string
           rolle?: string | null
           status?: string
           updated_at?: string
@@ -337,6 +346,41 @@ export type Database = {
             columns: ["gruppe_id"]
             isOneToOne: false
             referencedRelation: "gruppen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_monthly_hours: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          team_id: string
+          updated_at: string
+          wochenstunden: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          team_id: string
+          updated_at?: string
+          wochenstunden: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          team_id?: string
+          updated_at?: string
+          wochenstunden?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_monthly_hours_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
             referencedColumns: ["id"]
           },
         ]
@@ -514,6 +558,17 @@ export type Database = {
         Returns: {
           fachkraft: boolean
           nachname: string
+          rolle: string
+          team_id: string
+          vorname: string
+          wochenstunden: number
+        }[]
+      }
+      team_presence_for_month: {
+        Args: { p_einrichtung_id: string; p_month: string }
+        Returns: {
+          nachname: string
+          role_category: string
           rolle: string
           team_id: string
           vorname: string

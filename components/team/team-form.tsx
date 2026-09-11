@@ -7,13 +7,12 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   createTeamMitglied,
   updateTeamMitglied,
   type TeamInput,
 } from "@/lib/actions/team";
-import { TEAM_ROLLE_OPTIONS } from "@/lib/constants";
+import { TEAM_ROLLE_OPTIONS, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -25,7 +24,15 @@ const teamFormSchema = z
     rolle: z.string().min(1, "Pflichtfeld"),
     gruppe_id: z.string(),
     wochenstunden: z.string(),
-    fachkraft: z.boolean(),
+    role_category: z.enum([
+      "fk",
+      "ek",
+      "ak",
+      "nicht_paed",
+      "sprachfoerderung",
+      "hausmeister",
+      "hauswirtschaft",
+    ]),
     status: z.enum(["aktiv", "inaktiv", "geplant"]),
     eintritt: z.string(),
     austritt: z.string(),
@@ -60,8 +67,6 @@ export function TeamForm({
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<TeamFormValues>({
     resolver: zodResolver(teamFormSchema),
@@ -71,15 +76,13 @@ export function TeamForm({
       rolle: TEAM_ROLLE_OPTIONS[0],
       gruppe_id: "",
       wochenstunden: "",
-      fachkraft: false,
+      role_category: "ek",
       status: "geplant",
       eintritt: "",
       austritt: "",
       ...defaultValues,
     },
   });
-
-  const fachkraft = watch("fachkraft");
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
@@ -89,7 +92,7 @@ export function TeamForm({
       rolle: values.rolle,
       gruppe_id: values.gruppe_id || null,
       wochenstunden: values.wochenstunden ? Number(values.wochenstunden) : null,
-      fachkraft: values.fachkraft,
+      role_category: values.role_category,
       status: values.status,
       eintritt: values.eintritt || null,
       austritt: values.austritt || null,
@@ -163,6 +166,19 @@ export function TeamForm({
             <option value="inaktiv">Inaktiv</option>
           </select>
         </Field>
+        <Field id="role_category" label="Kategorie (für den Anstellungsschlüssel)">
+          <select
+            id="role_category"
+            className={SELECT_CLASS}
+            {...register("role_category")}
+          >
+            {Object.entries(TEAM_ROLE_CATEGORY_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field id="eintritt" label="Eintritt">
           <Input id="eintritt" type="date" {...register("eintritt")} />
         </Field>
@@ -170,17 +186,6 @@ export function TeamForm({
           <Input id="austritt" type="date" {...register("austritt")} />
         </Field>
       </div>
-
-      <label htmlFor="fachkraft" className="flex items-center gap-2 text-sm">
-        <Checkbox
-          id="fachkraft"
-          checked={fachkraft}
-          onCheckedChange={(checked) =>
-            setValue("fachkraft", checked === true, { shouldValidate: true })
-          }
-        />
-        Pädagogische Fachkraft (zählt für die Fachkraftquote)
-      </label>
 
       {submitError ? (
         <p className="text-sm text-destructive">{submitError}</p>

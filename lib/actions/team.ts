@@ -5,13 +5,22 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 
+export type TeamRoleCategory =
+  | "fk"
+  | "ek"
+  | "ak"
+  | "nicht_paed"
+  | "sprachfoerderung"
+  | "hausmeister"
+  | "hauswirtschaft";
+
 export type TeamInput = {
   vorname: string;
   nachname: string;
   rolle: string;
   gruppe_id: string | null;
   wochenstunden: number | null;
-  fachkraft: boolean;
+  role_category: TeamRoleCategory;
   status: "aktiv" | "inaktiv" | "geplant";
   eintritt: string | null;
   austritt: string | null;
@@ -31,7 +40,8 @@ export async function createTeamMitglied(input: TeamInput) {
       rolle: input.rolle,
       gruppe_id: input.gruppe_id,
       wochenstunden: input.wochenstunden,
-      fachkraft: input.fachkraft,
+      role_category: input.role_category,
+      fachkraft: input.role_category === "fk",
       status: input.status,
       eintritt: input.eintritt,
       austritt: input.austritt,
@@ -44,6 +54,7 @@ export async function createTeamMitglied(input: TeamInput) {
   }
 
   revalidatePath("/team");
+  revalidatePath("/prognose");
   redirect(`/team/${mitglied.id}`);
 }
 
@@ -58,7 +69,8 @@ export async function updateTeamMitglied(teamId: string, input: TeamInput) {
       rolle: input.rolle,
       gruppe_id: input.gruppe_id,
       wochenstunden: input.wochenstunden,
-      fachkraft: input.fachkraft,
+      role_category: input.role_category,
+      fachkraft: input.role_category === "fk",
       status: input.status,
       eintritt: input.eintritt,
       austritt: input.austritt,
@@ -69,5 +81,6 @@ export async function updateTeamMitglied(teamId: string, input: TeamInput) {
 
   revalidatePath("/team");
   revalidatePath(`/team/${teamId}`);
+  revalidatePath("/prognose");
   redirect(`/team/${teamId}`);
 }
