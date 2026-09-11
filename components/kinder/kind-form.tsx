@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
+import { GESCHLECHT_LABEL } from "@/lib/constants";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -19,6 +20,7 @@ const kindFormSchema = z
     vorname: z.string().min(1, "Pflichtfeld"),
     nachname: z.string().min(1, "Pflichtfeld"),
     geburtsdatum: z.string().min(1, "Pflichtfeld"),
+    geschlecht: z.enum(["maennlich", "weiblich", "divers", "keine_angabe"]),
     status: z.enum(["aktiv", "nachruecker", "geplant"]),
     gruppe_id: z.string(),
     platznummer: z.string(),
@@ -66,6 +68,7 @@ export function KindForm({
       vorname: "",
       nachname: "",
       geburtsdatum: "",
+      geschlecht: "keine_angabe",
       status: "geplant",
       gruppe_id: "",
       platznummer: "",
@@ -86,6 +89,7 @@ export function KindForm({
       vorname: values.vorname,
       nachname: values.nachname,
       geburtsdatum: values.geburtsdatum,
+      geschlecht: values.geschlecht,
       status: values.status,
       gruppe_id: values.gruppe_id || null,
       platznummer: values.platznummer || null,
@@ -126,6 +130,19 @@ export function KindForm({
           error={errors.geburtsdatum?.message}
         >
           <Input id="geburtsdatum" type="date" {...register("geburtsdatum")} />
+        </Field>
+        <Field id="geschlecht" label="Geschlecht">
+          <select
+            id="geschlecht"
+            className={SELECT_CLASS}
+            {...register("geschlecht")}
+          >
+            {Object.entries(GESCHLECHT_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field id="status" label="Status">
           <select id="status" className={SELECT_CLASS} {...register("status")}>

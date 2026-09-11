@@ -19,6 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { cn } from "cn";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -50,6 +51,10 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       isActive={isActive}
                       render={<Link href={item.href} />}
+                      className={cn(
+                        isActive &&
+                          "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground data-active:bg-primary data-active:text-primary-foreground [&_svg]:text-primary-foreground"
+                      )}
                     >
                       <item.icon />
                       <span>{item.label}</span>

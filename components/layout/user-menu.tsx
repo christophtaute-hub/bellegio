@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Building2 } from "lucide-react";
+import { LogOut, Building2, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +28,16 @@ export function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon-lg" className="rounded-full" />
+          <Button variant="ghost" className="h-9 gap-2 rounded-full pr-3 pl-1" />
         }
       >
-        <Avatar className="size-8">
+        <Avatar className="size-7">
           <AvatarFallback>{initials}</AvatarFallback>
         </Avatar>
+        <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">
+          {fullName ?? "Unbekannt"}
+        </span>
+        <ChevronDown className="size-3.5 text-muted-foreground" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {einrichtungName ? (

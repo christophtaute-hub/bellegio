@@ -20,8 +20,8 @@ function Stat({
       <p
         className={
           tone === "warn"
-            ? "text-lg font-medium text-destructive"
-            : "text-lg font-medium"
+            ? "text-2xl font-semibold text-destructive"
+            : "text-2xl font-semibold text-primary"
         }
       >
         {value}
@@ -74,13 +74,15 @@ export default async function GruppenPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-2xl text-primary">Gruppen</h1>
+      <h1 className="font-heading text-3xl text-primary">Gruppen</h1>
 
       {gruppen && gruppen.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {gruppen.map((gruppe) => {
-            const belegt = belegteByGruppe.get(gruppe.id) ?? 0;
-            const frei = Number(gruppe.sollplatze) - belegt;
+            const belegtRaw = belegteByGruppe.get(gruppe.id) ?? 0;
+            const sollplatzeRounded = Math.round(Number(gruppe.sollplatze));
+            const belegtRounded = Math.round(belegtRaw);
+            const freiRounded = sollplatzeRounded - belegtRounded;
             const nachrueckerCount = nachrueckerByGruppe.get(gruppe.id) ?? 0;
 
             return (
@@ -92,12 +94,12 @@ export default async function GruppenPage() {
                       {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
                     </Badge>
                     <div className="mt-3 grid grid-cols-2 gap-3">
-                      <Stat label="Sollplätze" value={String(gruppe.sollplatze)} />
-                      <Stat label="Belegt" value={belegt.toFixed(1)} />
+                      <Stat label="Sollplätze" value={String(sollplatzeRounded)} />
+                      <Stat label="Belegt" value={String(belegtRounded)} />
                       <Stat
-                        label={frei < 0 ? "Überbelegt" : "Frei"}
-                        value={Math.abs(frei).toFixed(1)}
-                        tone={frei < 0 ? "warn" : "default"}
+                        label={freiRounded < 0 ? "Überbelegt" : "Frei"}
+                        value={String(Math.abs(freiRounded))}
+                        tone={freiRounded < 0 ? "warn" : "default"}
                       />
                       <Stat label="Nachrücker" value={String(nachrueckerCount)} />
                     </div>

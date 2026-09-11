@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { KIND_STATUS_LABEL } from "@/lib/constants";
-import { calculateAge, formatDate } from "@/lib/kita-datum";
+import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
+import { calculateAgeDecimal, formatDate } from "@/lib/kita-datum";
 import {
   Table,
   TableBody,
@@ -36,7 +36,7 @@ export default async function KinderPage({
 
   let query = supabase
     .from("kinder")
-    .select("id, vorname, nachname, geburtsdatum, eintritt, austritt, status, gruppe_id, gruppen(name)")
+    .select("id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name)")
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null)
     .order("nachname");
@@ -56,7 +56,7 @@ export default async function KinderPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-2xl text-primary">Kinder</h1>
+        <h1 className="font-heading text-3xl text-primary">Kinder</h1>
         <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
           Kind anlegen
         </Button>
@@ -121,6 +121,7 @@ export default async function KinderPage({
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Gruppe</TableHead>
+                <TableHead>Geschlecht</TableHead>
                 <TableHead>Geburtstag</TableHead>
                 <TableHead>Alter</TableHead>
                 <TableHead>Eintritt</TableHead>
@@ -140,8 +141,11 @@ export default async function KinderPage({
                     </Link>
                   </TableCell>
                   <TableCell>{kind.gruppen?.name ?? "–"}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
+                  </TableCell>
                   <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                  <TableCell>{calculateAge(kind.geburtsdatum)} J.</TableCell>
+                  <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
                   <TableCell>{formatDate(kind.eintritt)}</TableCell>
                   <TableCell>{formatDate(kind.austritt)}</TableCell>
                   <TableCell>

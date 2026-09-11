@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { StatTile } from "@/components/ui/stat-tile";
 import { KinderTable, type KinderTableRow } from "@/components/gruppen/kinder-table";
 
 const KIND_SELECT =
-  "id, platznummer, vorname, nachname, geburtsdatum, eintritt, austritt, notizen, status, booking_time_bands(label)";
+  "id, platznummer, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, notizen, status, booking_time_bands(label)";
 
 export default async function GruppeDetailPage({
   params,
@@ -51,30 +52,32 @@ export default async function GruppeDetailPage({
         .eq("gruppe_id", gruppeId),
     ]);
 
-  const belegt = (platzwerte ?? []).reduce(
+  const belegtRaw = (platzwerte ?? []).reduce(
     (sum, row) => sum + Number(row.platzwert),
     0
   );
-  const frei = Number(gruppe.sollplatze) - belegt;
+  const sollplatzeRounded = Math.round(Number(gruppe.sollplatze));
+  const belegtRounded = Math.round(belegtRaw);
+  const freiRounded = sollplatzeRounded - belegtRounded;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-2xl text-primary">{gruppe.name}</h1>
+        <h1 className="font-heading text-3xl text-primary">{gruppe.name}</h1>
         <Badge variant="secondary">
           {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
         </Badge>
       </div>
 
-      <div className="flex flex-wrap gap-6">
-        <Metric label="Sollplätze" value={String(gruppe.sollplatze)} />
-        <Metric label="Belegt" value={belegt.toFixed(1)} />
-        <Metric
-          label={frei < 0 ? "Überbelegt" : "Frei"}
-          value={Math.abs(frei).toFixed(1)}
-          tone={frei < 0 ? "warn" : "ok"}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <StatTile label="Sollplätze" value={String(sollplatzeRounded)} />
+        <StatTile label="Belegt" value={String(belegtRounded)} />
+        <StatTile
+          label={freiRounded < 0 ? "Überbelegt" : "Frei"}
+          value={String(Math.abs(freiRounded))}
+          tone={freiRounded < 0 ? "warn" : "default"}
         />
-        <Metric
+        <StatTile
           label="Nachrücker"
           value={String(nachrueckerKinder?.length ?? 0)}
         />
@@ -99,31 +102,6 @@ export default async function GruppeDetailPage({
           />
         </section>
       </div>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  tone = "ok",
-}: {
-  label: string;
-  value: string;
-  tone?: "ok" | "warn";
-}) {
-  return (
-    <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p
-        className={
-          tone === "warn"
-            ? "text-xl font-medium text-destructive"
-            : "text-xl font-medium"
-        }
-      >
-        {value}
-      </p>
     </div>
   );
 }

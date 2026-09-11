@@ -10,3 +10,28 @@ export const KIND_STATUS_LABEL: Record<string, string> = {
   nachruecker: "Nachrücker",
   geplant: "Geplant",
 };
+
+export const GESCHLECHT_LABEL: Record<string, string> = {
+  maennlich: "männlich",
+  weiblich: "weiblich",
+  divers: "divers",
+  keine_angabe: "keine Angabe",
+};
+
+export const TEAM_ROLLE_OPTIONS = [
+  "Einrichtungsleitung",
+  "Stellvertretende Leitung",
+  "Pädagogische Fachkraft (Erzieher/in)",
+  "Pädagogische Ergänzungskraft (Kinderpfleger/in)",
+  "Sozialpädagoge/in",
+  "Praktikant/in",
+  "FSJ/BFD",
+  "Hauswirtschaft/Verwaltung",
+  "Sonstige",
+] as const;
+
+export const TEAM_STATUS_LABEL: Record<string, string> = {
+  aktiv: "Aktiv",
+  inaktiv: "Inaktiv",
+  geplant: "Geplant",
+};

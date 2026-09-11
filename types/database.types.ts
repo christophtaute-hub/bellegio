@@ -53,6 +53,7 @@ export type Database = {
           name: string
           trager_id: string
           updated_at: string
+          vollzeit_wochenstunden: number
         }
         Insert: {
           address_city?: string | null
@@ -65,6 +66,7 @@ export type Database = {
           name: string
           trager_id: string
           updated_at?: string
+          vollzeit_wochenstunden?: number
         }
         Update: {
           address_city?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           name?: string
           trager_id?: string
           updated_at?: string
+          vollzeit_wochenstunden?: number
         }
         Relationships: [
           {
@@ -181,6 +184,7 @@ export type Database = {
           einrichtung_id: string
           eintritt: string | null
           geburtsdatum: string
+          geschlecht: string
           gruppe_id: string | null
           id: string
           nachname: string
@@ -198,6 +202,7 @@ export type Database = {
           einrichtung_id: string
           eintritt?: string | null
           geburtsdatum: string
+          geschlecht?: string
           gruppe_id?: string | null
           id?: string
           nachname: string
@@ -215,6 +220,7 @@ export type Database = {
           einrichtung_id?: string
           eintritt?: string | null
           geburtsdatum?: string
+          geschlecht?: string
           gruppe_id?: string | null
           id?: string
           nachname?: string
@@ -480,7 +486,40 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      kind_max_weighting_factor: {
+        Args: { p_kind_id: string }
+        Returns: {
+          code: string
+          factor: number
+          label: string
+          weighting_factor_id: string
+        }[]
+      }
+      kinder_presence_at_date: {
+        Args: { p_einrichtung_id: string; p_stichtag: string }
+        Returns: {
+          buchungszeit_band_id: string
+          buchungszeit_factor: number
+          buchungszeit_label: string
+          gruppe_id: string
+          kind_id: string
+          weighting_factor_code: string
+          weighting_factor_id: string
+          weighting_factor_label: string
+          weighting_factor_value: number
+        }[]
+      }
+      team_presence_at_date: {
+        Args: { p_einrichtung_id: string; p_stichtag: string }
+        Returns: {
+          fachkraft: boolean
+          nachname: string
+          rolle: string
+          team_id: string
+          vorname: string
+          wochenstunden: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

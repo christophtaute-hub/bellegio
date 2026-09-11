@@ -8,10 +8,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { KIND_STATUS_LABEL } from "@/lib/constants";
+import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
 import {
   austrittWarnung,
-  calculateAge,
+  calculateAgeDecimal,
   formatDate,
 } from "@/lib/kita-datum";
 import { cn } from "cn";
@@ -22,6 +22,7 @@ export type KinderTableRow = {
   vorname: string;
   nachname: string;
   geburtsdatum: string;
+  geschlecht: string;
   eintritt: string | null;
   austritt: string | null;
   notizen: string | null;
@@ -51,6 +52,7 @@ export function KinderTable({
           <TableRow>
             <TableHead>Platz</TableHead>
             <TableHead>Name</TableHead>
+            <TableHead>Geschlecht</TableHead>
             <TableHead>Geburtstag</TableHead>
             <TableHead>Alter</TableHead>
             <TableHead>Eintritt</TableHead>
@@ -84,8 +86,11 @@ export function KinderTable({
                     {kind.vorname} {kind.nachname}
                   </Link>
                 </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
+                </TableCell>
                 <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                <TableCell>{calculateAge(kind.geburtsdatum)} J.</TableCell>
+                <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
                 <TableCell>{formatDate(kind.eintritt)}</TableCell>
                 <TableCell>{formatDate(kind.austritt)}</TableCell>
                 <TableCell>{kind.booking_time_bands?.label ?? "–"}</TableCell>

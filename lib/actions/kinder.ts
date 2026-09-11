@@ -9,6 +9,7 @@ export type KindInput = {
   vorname: string;
   nachname: string;
   geburtsdatum: string;
+  geschlecht: "maennlich" | "weiblich" | "divers" | "keine_angabe";
   status: "aktiv" | "nachruecker" | "geplant";
   gruppe_id: string | null;
   platznummer: string | null;
@@ -44,6 +45,7 @@ export async function createKind(input: KindInput) {
       vorname: input.vorname,
       nachname: input.nachname,
       geburtsdatum: input.geburtsdatum,
+      geschlecht: input.geschlecht,
       status: input.status,
       gruppe_id: input.gruppe_id,
       platznummer: input.platznummer,
@@ -75,6 +77,7 @@ export async function updateKind(kindId: string, input: KindInput) {
       vorname: input.vorname,
       nachname: input.nachname,
       geburtsdatum: input.geburtsdatum,
+      geschlecht: input.geschlecht,
       status: input.status,
       gruppe_id: input.gruppe_id,
       platznummer: input.platznummer,

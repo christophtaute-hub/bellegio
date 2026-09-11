@@ -60,3 +60,29 @@ export function formatDate(value: string | null): string {
     timeZone: "UTC",
   });
 }
+
+/** Alter mit einer Nachkommastelle, z.B. "2,7 Jahre". Nur für die Anzeige —
+ * die BayKiBiG-Altersschwellen-Logik (Platzwert-Berechnung) läuft komplett
+ * in SQL und nutzt diese Funktion nicht. */
+export function calculateAgeDecimal(
+  geburtsdatum: string,
+  today = new Date()
+): string {
+  const birth = parseIsoDate(geburtsdatum);
+  const ageInYears =
+    (today.getTime() - birth.getTime()) / (365.25 * 86_400_000);
+  return Math.max(0, ageInYears).toLocaleString("de-DE", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
+
+export function addMonthsUtc(date: Date, months: number): Date {
+  const result = new Date(date);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  return result;
+}
+
+export function toIsoDateString(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
