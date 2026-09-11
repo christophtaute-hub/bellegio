@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "import:excel": "tsx --env-file=.env.local scripts/import-excel.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -36,6 +37,8 @@
     "eslint-config-next": "16.3.4",
     "shadcn": "^4.21.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.13",
+    "typescript": "^5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

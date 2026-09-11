@@ -33,6 +33,11 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# never commit source data for the import script — may contain real
+# personal data of children/staff
+*.xlsx
+*.xls
+
 # vercel
 .vercel
 
