@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 
@@ -31,4 +32,26 @@ export async function setActiveEinrichtung(einrichtungId: string) {
   });
 
   redirect("/dashboard");
+}
+
+export async function updateVollzeitWochenstunden(
+  einrichtungId: string,
+  vollzeitWochenstunden: number
+) {
+  if (!(vollzeitWochenstunden > 0)) {
+    throw new Error("Bitte eine gültige Stundenzahl angeben.");
+  }
+
+  const supabase = await createClient();
+
+  // RLS on einrichtungen restricts updates to traeger_admin — a
+  // einrichtungsleitung's attempt is rejected here, not just hidden in the UI.
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ vollzeit_wochenstunden: vollzeitWochenstunden })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/team");
 }
