@@ -7,6 +7,7 @@ import {
   Users,
   Baby,
   UserCog,
+  TrendingUp,
   BarChart3,
   Settings,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/gruppen", label: "Gruppen", icon: Users },
   { href: "/kinder", label: "Kinder", icon: Baby },
   { href: "/team", label: "Team", icon: UserCog },
+  { href: "/prognose", label: "Prognose", icon: TrendingUp },
   { href: "/auswertungen", label: "Auswertungen", icon: BarChart3 },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ] as const;

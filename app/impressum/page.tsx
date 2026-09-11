@@ -6,7 +6,7 @@ export default function ImpressumPage() {
       <Link href="/" className="text-sm text-primary hover:underline">
         ← Zurück zur Startseite
       </Link>
-      <h1 className="font-heading text-3xl text-primary">Impressum</h1>
+      <h1 className="font-heading text-3xl tracking-tight text-primary">Impressum</h1>
 
       <p className="rounded-xl border border-dashed border-accent bg-accent/10 p-4 text-sm text-muted-foreground">
         Platzhalter – bitte mit den echten Angaben des Trägers ersetzen,

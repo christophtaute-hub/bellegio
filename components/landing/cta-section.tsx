@@ -6,7 +6,7 @@ export function CtaSection() {
   return (
     <section className="bg-primary py-20 text-primary-foreground">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 text-center">
-        <h2 className="font-heading text-3xl md:text-4xl">
+        <h2 className="font-heading text-3xl tracking-tight md:text-4xl">
           Bereit, den Papierkram hinter dir zu lassen?
         </h2>
         <p className="text-primary-foreground/80">
@@ -16,6 +16,7 @@ export function CtaSection() {
         <Button
           size="lg"
           variant="secondary"
+          shape="pill"
           className="gap-2 bg-white text-primary hover:bg-white/90"
           nativeButton={false}
           render={<Link href="/login" />}

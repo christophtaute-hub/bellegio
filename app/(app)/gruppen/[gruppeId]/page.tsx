@@ -63,7 +63,7 @@ export default async function GruppeDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-3xl text-primary">{gruppe.name}</h1>
+        <h1 className="font-heading text-3xl tracking-tight text-primary">{gruppe.name}</h1>
         <Badge variant="secondary">
           {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
         </Badge>

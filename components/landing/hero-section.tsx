@@ -12,7 +12,7 @@ export function HeroSection() {
           <span className="size-1.5 rounded-full bg-accent" />
           Kita-Controlling für Träger &amp; Einrichtungen
         </div>
-        <h1 className="font-heading max-w-3xl text-4xl leading-tight font-semibold text-balance md:text-6xl">
+        <h1 className="font-heading max-w-3xl text-4xl leading-tight font-semibold tracking-tight text-balance md:text-6xl">
           Kinder, Personal und Belegung – endlich an einem Ort
         </h1>
         <p className="max-w-xl text-lg text-primary-foreground/80">
@@ -23,6 +23,7 @@ export function HeroSection() {
         <Button
           size="lg"
           variant="secondary"
+          shape="pill"
           className="gap-2 bg-white text-primary hover:bg-white/90"
           nativeButton={false}
           render={<Link href="/login" />}

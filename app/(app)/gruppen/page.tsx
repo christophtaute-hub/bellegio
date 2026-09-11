@@ -74,7 +74,7 @@ export default async function GruppenPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-3xl text-primary">Gruppen</h1>
+      <h1 className="font-heading text-3xl tracking-tight text-primary">Gruppen</h1>
 
       {gruppen && gruppen.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

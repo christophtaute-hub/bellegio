@@ -8,7 +8,7 @@ export function LandingHeader() {
         <span className="font-heading text-xl font-semibold text-primary">
           Bellegio
         </span>
-        <Button nativeButton={false} render={<Link href="/login" />}>
+        <Button shape="pill" nativeButton={false} render={<Link href="/login" />}>
           Anmelden
         </Button>
       </div>

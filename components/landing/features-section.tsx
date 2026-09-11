@@ -37,7 +37,7 @@ export function FeaturesSection() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-heading text-3xl text-primary md:text-4xl">
+        <h2 className="font-heading text-3xl tracking-tight text-primary md:text-4xl">
           Alles, was deine Einrichtung wirklich braucht
         </h2>
         <p className="mt-4 text-muted-foreground">

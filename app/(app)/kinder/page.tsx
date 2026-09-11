@@ -56,7 +56,7 @@ export default async function KinderPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl text-primary">Kinder</h1>
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Kinder</h1>
         <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
           Kind anlegen
         </Button>

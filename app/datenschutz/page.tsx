@@ -6,7 +6,7 @@ export default function DatenschutzPage() {
       <Link href="/" className="text-sm text-primary hover:underline">
         ← Zurück zur Startseite
       </Link>
-      <h1 className="font-heading text-3xl text-primary">
+      <h1 className="font-heading text-3xl tracking-tight text-primary">
         Datenschutzerklärung
       </h1>
 
