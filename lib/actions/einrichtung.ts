@@ -54,4 +54,32 @@ export async function updateVollzeitWochenstunden(
   if (error) throw new Error(error.message);
 
   revalidatePath("/team");
+  revalidatePath("/dashboard");
+  revalidatePath("/controlling");
+  revalidatePath("/szenario");
+}
+
+export async function updateEmpfohlenerAnstellungsschluessel(
+  einrichtungId: string,
+  empfohlenerAnstellungsschluessel: number
+) {
+  if (!(empfohlenerAnstellungsschluessel > 0)) {
+    throw new Error("Bitte einen gültigen Schlüssel angeben.");
+  }
+
+  const supabase = await createClient();
+
+  // RLS on einrichtungen restricts updates to traeger_admin — a
+  // einrichtungsleitung's attempt is rejected here, not just hidden in the UI.
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ empfohlener_anstellungsschluessel: empfohlenerAnstellungsschluessel })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/team");
+  revalidatePath("/dashboard");
+  revalidatePath("/controlling");
+  revalidatePath("/szenario");
 }

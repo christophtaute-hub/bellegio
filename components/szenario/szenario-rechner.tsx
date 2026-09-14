@@ -36,20 +36,21 @@ export function SzenarioRechner({
   initialMatrix,
   initialPersonal,
   initialSollplaetzeSumme,
-  initialGruppenAnzahl,
+  empfohlenerSchluesselWert,
+  vollzeitWochenstunden,
 }: {
   bands: BandOption[];
   categories: CategoryOption[];
   initialMatrix: Record<string, Record<string, number>>;
   initialPersonal: { role_category: string; wochenstunden: number }[];
   initialSollplaetzeSumme: number;
-  initialGruppenAnzahl: number;
+  empfohlenerSchluesselWert: number;
+  vollzeitWochenstunden: number;
 }) {
   const [matrix, setMatrix] = useState(initialMatrix);
   const [personal, setPersonal] = useState(
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
   );
-  const [gruppenAnzahl, setGruppenAnzahl] = useState(initialGruppenAnzahl);
   const [sollplaetzeSumme, setSollplaetzeSumme] = useState(
     initialSollplaetzeSumme
   );
@@ -70,6 +71,11 @@ export function SzenarioRechner({
             weighting_factor_code: category.code,
             weighting_factor_label: category.label,
             weighting_factor_value: category.factor,
+            // § 17 Abs. 2 Satz 2 AVBayKiBiG: Integrationsfaktor (4,5) zählt für
+            // die Fachkraftquote nicht — hier mit dem Regelfaktor angenähert,
+            // da der Szenario-Rechner keine echten Kinderdaten kennt.
+            weighting_factor_value_fachkraftquote:
+              category.code === "integrationskinder" ? 1.0 : category.factor,
           });
         }
       }
@@ -88,11 +94,21 @@ export function SzenarioRechner({
     const belegung = buildBelegungKennzahlen(rows, sollplaetzeSumme);
     const personalplanung = buildPersonalplanung(
       teamRows,
-      kpis.gewichteteSumme,
-      gruppenAnzahl
+      kpis.gewichteteKinderzahl,
+      kpis.gewichteteKinderzahlFachkraftquote,
+      vollzeitWochenstunden,
+      empfohlenerSchluesselWert
     );
     return { kpis, belegung, personalplanung };
-  }, [matrix, personal, gruppenAnzahl, sollplaetzeSumme, bands, categories]);
+  }, [
+    matrix,
+    personal,
+    sollplaetzeSumme,
+    bands,
+    categories,
+    empfohlenerSchluesselWert,
+    vollzeitWochenstunden,
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -152,18 +168,6 @@ export function SzenarioRechner({
               className="h-8 w-32"
               value={sollplaetzeSumme}
               onChange={(e) => setSollplaetzeSumme(Number(e.target.value) || 0)}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground">
-              Anzahl Gruppen
-            </label>
-            <Input
-              type="number"
-              min={1}
-              className="h-8 w-24"
-              value={gruppenAnzahl}
-              onChange={(e) => setGruppenAnzahl(Number(e.target.value) || 1)}
             />
           </div>
         </div>
@@ -262,8 +266,8 @@ export function SzenarioRechner({
             tone={!personalplanung.mindestschluesselOk ? "warn" : "default"}
           />
           <MetricCard
-            label="Ist-FK / Soll-FK"
-            value={`${formatNumber(personalplanung.istFk)} / ${formatNumber(personalplanung.sollFk)}`}
+            label="Ist-FK-VZÄ / Soll-FK-VZÄ"
+            value={`${formatNumber(personalplanung.istFk / (vollzeitWochenstunden || 1), 2)} / ${formatNumber(personalplanung.vzaeSollFachkraft, 2)}`}
             icon={<GraduationCap />}
           />
           <MetricCard

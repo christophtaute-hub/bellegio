@@ -24,39 +24,60 @@ export async function getTeamPresenceForMonth(
 }
 
 const MINDESTSCHLUESSEL = 11.0;
-const EMPFOHLENER_SCHLUESSEL = 10.0;
+const FACHKRAFTQUOTE_ANTEIL = 0.5;
 
 export type Ampel = "gruen" | "gelb" | "rot";
 
 /**
- * Formelkette 1:1 aus der real genutzten Personalbelegungsliste übernommen
- * (nicht algebraisch vereinfacht — die Zwischenwerte buchungenGew/sollFk
- * werden einzeln angezeigt und müssen mit dem Excel-Original übereinstimmen).
- * gruppenAnzahl generalisiert die dort fest verdrahtete "5" (Anzahl Gruppen
- * dieser einen Einrichtung) auf die tatsächliche Gruppenzahl der Einrichtung.
+ * § 17 AVBayKiBiG: "für je 11,0 [gewichtete Kinder] jeweils mindestens eine
+ * [Vollzeitstelle] des pädagogischen Personals" (Anstellungsschlüssel 1:11,0).
+ * Der Buchungszeitfaktor aus §24 AVBayKiBiG dient ausschließlich der
+ * kindbezogenen Förderberechnung (Art. 21 BayKiBiG) und hat KEINEN Einfluss
+ * auf Anstellungsschlüssel oder Fachkraftquote — bestätigt durch zwei
+ * unabhängige Fachquellen (Institut für Kindergartenmanagement,
+ * kitazentrale.de) und durch Plausibilitätsprüfung mit echten Einrichtungs-
+ * daten (die wörtliche Buchungszeitfaktor-Variante ergab einen absurden
+ * Schlüssel von 1:0,5). Personal wird in VZÄ (Vollzeitäquivalente) gemessen,
+ * nicht in rohen Wochenstunden — ein VZÄ entspricht `vollzeitWochenstunden`
+ * (Träger-spezifisch, Standard 39).
+ *
+ * Fachkraftquote (§17 Abs. 2): mind. 50% der SOLL-VZÄ müssen von Fachkräften
+ * geleistet werden; der Integrationskinder-Gewichtungsfaktor (4,5) wird dafür
+ * NICHT angesetzt (daher die separate gewichteteKinderzahlFachkraftquote).
+ *
+ * Hinweis: diese Formel stützt sich mangels eines auffindbaren amtlichen
+ * Rechenbeispiels auf Fachquellen statt auf den reinen Gesetzeswortlaut —
+ * siehe Dokumentationsseite für Details und die Empfehlung, den Wert mit dem
+ * zuständigen Jugendamt abzugleichen.
  */
 export type Personalplanung = {
-  buchungenGew: number;
-  sollFk: number;
+  gewichteteKinderzahl: number;
+  vzaeSoll: number;
+  vzaeSollFachkraft: number;
   istFk: number;
   istEk: number;
   istAzGesamt: number;
-  gruppenAnzahl: number;
-  istAzProTagGesamt: number;
+  vzaeIst: number;
+  vollzeitWochenstunden: number;
   anstellungsschluessel: number | null;
   mindestschluesselOk: boolean;
   empfohlenerSchluesselOk: boolean;
+  empfohlenerSchluesselWert: number;
   qualifikationsschluesselOk: boolean;
   ampel: Ampel;
 };
 
 export function buildPersonalplanung(
   teamRows: TeamPresenceRow[],
-  gewichteteSumme: number,
-  gruppenAnzahl: number
+  gewichteteKinderzahl: number,
+  gewichteteKinderzahlFachkraftquote: number,
+  vollzeitWochenstunden: number,
+  empfohlenerSchluesselWert: number = 10.0
 ): Personalplanung {
-  const buchungenGew = 4 * gewichteteSumme;
-  const sollFk = buchungenGew / 11 / 2 * 5;
+  const vzaeSoll = gewichteteKinderzahl / MINDESTSCHLUESSEL;
+  const vzaeSollFachkraft =
+    FACHKRAFTQUOTE_ANTEIL *
+    (gewichteteKinderzahlFachkraftquote / MINDESTSCHLUESSEL);
 
   const istFk = teamRows
     .filter((row) => row.role_category === "fk")
@@ -65,21 +86,24 @@ export function buildPersonalplanung(
     .filter((row) => row.role_category === "ek")
     .reduce((sum, row) => sum + (row.wochenstunden ?? 0), 0);
   const istAzGesamt = istFk + istEk;
-  const istAzProTagGesamt = gruppenAnzahl > 0 ? istAzGesamt / gruppenAnzahl : 0;
+
+  const vzaeIst = vollzeitWochenstunden > 0 ? istAzGesamt / vollzeitWochenstunden : 0;
+  const istFkVzae = vollzeitWochenstunden > 0 ? istFk / vollzeitWochenstunden : 0;
 
   const anstellungsschluessel =
-    istAzProTagGesamt > 0
-      ? Math.round((buchungenGew / istAzProTagGesamt) * 100) / 100
+    vzaeIst > 0
+      ? Math.round((gewichteteKinderzahl / vzaeIst) * 100) / 100
       : null;
 
   const mindestschluesselOk =
     anstellungsschluessel !== null && anstellungsschluessel <= MINDESTSCHLUESSEL;
   const empfohlenerSchluesselOk =
-    anstellungsschluessel !== null && anstellungsschluessel <= EMPFOHLENER_SCHLUESSEL;
-  const qualifikationsschluesselOk = istFk >= sollFk;
+    anstellungsschluessel !== null &&
+    anstellungsschluessel <= empfohlenerSchluesselWert;
+  const qualifikationsschluesselOk = istFkVzae >= vzaeSollFachkraft;
 
   let ampel: Ampel;
-  if (gewichteteSumme === 0) {
+  if (gewichteteKinderzahl === 0) {
     ampel = "gruen";
   } else if (mindestschluesselOk && qualifikationsschluesselOk) {
     ampel = "gruen";
@@ -90,16 +114,18 @@ export function buildPersonalplanung(
   }
 
   return {
-    buchungenGew,
-    sollFk,
+    gewichteteKinderzahl,
+    vzaeSoll,
+    vzaeSollFachkraft,
     istFk,
     istEk,
     istAzGesamt,
-    gruppenAnzahl,
-    istAzProTagGesamt,
+    vzaeIst,
+    vollzeitWochenstunden,
     anstellungsschluessel,
     mindestschluesselOk,
     empfohlenerSchluesselOk,
+    empfohlenerSchluesselWert,
     qualifikationsschluesselOk,
     ampel,
   };

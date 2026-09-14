@@ -27,21 +27,32 @@ export default async function SzenarioPage() {
 
   const today = toIsoDateString(new Date());
 
-  const [{ data: bookingTimeBands }, { data: weightingFactors }, { data: gruppen }] =
-    await Promise.all([
-      supabase
-        .from("booking_time_bands")
-        .select("id, label, factor")
-        .order("sort_order"),
-      supabase.from("weighting_factors").select("id, code, label, factor"),
-      einrichtungId
-        ? supabase
-            .from("gruppen")
-            .select("id, sollplatze")
-            .eq("einrichtung_id", einrichtungId)
-            .is("archived_at", null)
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    { data: bookingTimeBands },
+    { data: weightingFactors },
+    { data: gruppen },
+    { data: einrichtung },
+  ] = await Promise.all([
+    supabase
+      .from("booking_time_bands")
+      .select("id, label, factor")
+      .order("sort_order"),
+    supabase.from("weighting_factors").select("id, code, label, factor"),
+    einrichtungId
+      ? supabase
+          .from("gruppen")
+          .select("id, sollplatze")
+          .eq("einrichtung_id", einrichtungId)
+          .is("archived_at", null)
+      : Promise.resolve({ data: null }),
+    einrichtungId
+      ? supabase
+          .from("einrichtungen")
+          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+          .eq("id", einrichtungId)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
 
   const [kinderRows, teamRows] = einrichtungId
     ? await Promise.all([
@@ -84,7 +95,9 @@ export default async function SzenarioPage() {
     (sum, g) => sum + Number(g.sollplatze),
     0
   );
-  const initialGruppenAnzahl = gruppen?.length ?? 1;
+  const empfohlenerSchluesselWert =
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0;
+  const vollzeitWochenstunden = einrichtung?.vollzeit_wochenstunden ?? 39;
 
   return (
     <div className="flex flex-col gap-6">
@@ -103,7 +116,8 @@ export default async function SzenarioPage() {
         initialMatrix={initialMatrix}
         initialPersonal={initialPersonal}
         initialSollplaetzeSumme={initialSollplaetzeSumme}
-        initialGruppenAnzahl={initialGruppenAnzahl}
+        empfohlenerSchluesselWert={empfohlenerSchluesselWert}
+        vollzeitWochenstunden={vollzeitWochenstunden}
       />
     </div>
   );

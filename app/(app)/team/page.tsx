@@ -56,7 +56,7 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, role] = await Promise.all([
+  const [{ data: gruppen }, role, { data: einrichtung }] = await Promise.all([
     einrichtungId
       ? supabase
           .from("gruppen")
@@ -66,8 +66,14 @@ export default async function TeamPage({
           .order("name")
       : Promise.resolve({ data: null }),
     getCurrentUserRole(),
+    einrichtungId
+      ? supabase
+          .from("einrichtungen")
+          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+          .eq("id", einrichtungId)
+          .single()
+      : Promise.resolve({ data: null }),
   ]);
-  const gruppenAnzahl = gruppen?.length ?? 0;
   const canEditPersonal = canWritePersonal(role);
 
   const [kinderRows, teamPresenceRows] = einrichtungId
@@ -77,11 +83,14 @@ export default async function TeamPage({
       ])
     : [[], []];
 
-  const { gewichteteSumme } = buildKpis(kinderRows);
+  const { gewichteteKinderzahl, gewichteteKinderzahlFachkraftquote } =
+    buildKpis(kinderRows);
   const personal = buildPersonalplanung(
     teamPresenceRows,
-    gewichteteSumme,
-    gruppenAnzahl
+    gewichteteKinderzahl,
+    gewichteteKinderzahlFachkraftquote,
+    einrichtung?.vollzeit_wochenstunden ?? 39,
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
   );
 
   let query = supabase
@@ -138,8 +147,8 @@ export default async function TeamPage({
             tone={!personal.mindestschluesselOk ? "warn" : "default"}
           />
           <StatTile
-            label="Ist-FK / Soll-FK"
-            value={`${formatNumber(personal.istFk, 1)} / ${formatNumber(personal.sollFk, 1)}`}
+            label="Ist-FK-VZÄ / Soll-FK-VZÄ"
+            value={`${formatNumber(personal.istFk / (personal.vollzeitWochenstunden || 1), 2)} / ${formatNumber(personal.vzaeSollFachkraft, 2)}`}
             icon={Users}
           />
           <StatTile
@@ -148,8 +157,8 @@ export default async function TeamPage({
             icon={GraduationCap}
           />
           <StatTile
-            label="Ist-AZ pro Gruppe"
-            value={`${formatNumber(personal.istAzProTagGesamt, 1)} Std.`}
+            label="Ist-VZÄ gesamt"
+            value={formatNumber(personal.vzaeIst, 2)}
             icon={Scale}
           />
         </div>
@@ -161,7 +170,9 @@ export default async function TeamPage({
           <Badge
             variant={personal.empfohlenerSchluesselOk ? "secondary" : "destructive"}
           >
-            Empfohlener Schlüssel 1:10: {personal.empfohlenerSchluesselOk ? "Ja" : "Nein"}
+            Eigene Zielgröße (nicht gesetzlich) 1:
+            {formatNumber(personal.empfohlenerSchluesselWert, 1)}:{" "}
+            {personal.empfohlenerSchluesselOk ? "Ja" : "Nein"}
           </Badge>
           <Badge
             variant={personal.qualifikationsschluesselOk ? "secondary" : "destructive"}

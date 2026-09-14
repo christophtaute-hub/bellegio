@@ -28,12 +28,23 @@ function buildRows(months: ForecastMonth[]) {
     },
     { label: "Differenz (+/-)", values: months.map((m) => m.belegung.differenz) },
     {
-      label: "Buchungen gew.",
-      values: months.map((m) => Number(m.personal.buchungenGew.toFixed(1))),
+      label: "Gewichtete Kinderzahl",
+      values: months.map((m) => Number(m.personal.gewichteteKinderzahl.toFixed(1))),
     },
-    { label: "Soll-FK", values: months.map((m) => Number(m.personal.sollFk.toFixed(1))) },
-    { label: "Ist-FK", values: months.map((m) => Number(m.personal.istFk.toFixed(1))) },
-    { label: "Ist-EK", values: months.map((m) => Number(m.personal.istEk.toFixed(1))) },
+    {
+      label: "Ist-VZÄ",
+      values: months.map((m) => Number(m.personal.vzaeIst.toFixed(2))),
+    },
+    {
+      label: "Soll-VZÄ",
+      values: months.map((m) => Number(m.personal.vzaeSoll.toFixed(2))),
+    },
+    {
+      label: "Soll-Fachkraft-VZÄ",
+      values: months.map((m) => Number(m.personal.vzaeSollFachkraft.toFixed(2))),
+    },
+    { label: "Ist-FK (Std.)", values: months.map((m) => Number(m.personal.istFk.toFixed(1))) },
+    { label: "Ist-EK (Std.)", values: months.map((m) => Number(m.personal.istEk.toFixed(1))) },
     {
       label: "Anstellungsschlüssel (1:X)",
       values: months.map((m) => m.personal.anstellungsschluessel ?? ""),
@@ -43,7 +54,7 @@ function buildRows(months: ForecastMonth[]) {
       values: months.map((m) => (m.personal.mindestschluesselOk ? "Ja" : "Nein")),
     },
     {
-      label: "Empfohlener Schlüssel 1:10",
+      label: "Eigene Zielgröße (nicht gesetzlich)",
       values: months.map((m) => (m.personal.empfohlenerSchluesselOk ? "Ja" : "Nein")),
     },
     {

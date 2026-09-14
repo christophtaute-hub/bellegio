@@ -48,6 +48,7 @@ export type Database = {
           address_zip: string | null
           archived_at: string | null
           created_at: string
+          empfohlener_anstellungsschluessel: number
           id: string
           kita_year_start_month: number
           name: string
@@ -61,6 +62,7 @@ export type Database = {
           address_zip?: string | null
           archived_at?: string | null
           created_at?: string
+          empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
           name: string
@@ -74,6 +76,7 @@ export type Database = {
           address_zip?: string | null
           archived_at?: string | null
           created_at?: string
+          empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
           name?: string
@@ -629,6 +632,15 @@ export type Database = {
           weighting_factor_id: string
         }[]
       }
+      kind_max_weighting_factor_ohne_integration: {
+        Args: { p_kind_id: string }
+        Returns: {
+          code: string
+          factor: number
+          label: string
+          weighting_factor_id: string
+        }[]
+      }
       kinder_presence_at_date: {
         Args: { p_einrichtung_id: string; p_stichtag: string }
         Returns: {
@@ -641,6 +653,7 @@ export type Database = {
           weighting_factor_id: string
           weighting_factor_label: string
           weighting_factor_value: number
+          weighting_factor_value_fachkraftquote: number
         }[]
       }
       team_presence_at_date: {

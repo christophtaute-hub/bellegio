@@ -32,19 +32,26 @@ export async function buildForecastMonths(
   startMonth: string,
   monthCount: number
 ): Promise<ForecastMonth[]> {
-  const [{ data: gruppen }] = await Promise.all([
+  const [{ data: gruppen }, { data: einrichtung }] = await Promise.all([
     supabase
       .from("gruppen")
       .select("sollplatze")
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null),
+    supabase
+      .from("einrichtungen")
+      .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+      .eq("id", einrichtungId)
+      .single(),
   ]);
 
-  const gruppenAnzahl = gruppen?.length ?? 0;
   const gruppenSollplatzeSumme = (gruppen ?? []).reduce(
     (sum, g) => sum + Number(g.sollplatze),
     0
   );
+  const empfohlenerSchluesselWert =
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0;
+  const vollzeitWochenstunden = einrichtung?.vollzeit_wochenstunden ?? 39;
 
   const start = monthStart(startMonth);
   const months = Array.from({ length: monthCount }, (_, i) =>
@@ -62,8 +69,10 @@ export async function buildForecastMonths(
       const belegung = buildBelegungKennzahlen(kinderRows, gruppenSollplatzeSumme);
       const personal = buildPersonalplanung(
         teamRows,
-        kpis.gewichteteSumme,
-        gruppenAnzahl
+        kpis.gewichteteKinderzahl,
+        kpis.gewichteteKinderzahlFachkraftquote,
+        vollzeitWochenstunden,
+        empfohlenerSchluesselWert
       );
 
       return { month, kpis, belegung, personal };

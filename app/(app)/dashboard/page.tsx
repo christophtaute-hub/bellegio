@@ -7,6 +7,10 @@ import {
   buildCompositionMatrix,
   buildKpis,
 } from "@/lib/dashboard/presence";
+import {
+  getTeamPresenceForMonth,
+  buildPersonalplanung,
+} from "@/lib/team/anstellungsschluessel";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { MetricCard } from "@/components/ui/metric-card";
 import { CompositionTable } from "@/components/dashboard/composition-table";
@@ -30,30 +34,55 @@ export default async function DashboardPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const rows = einrichtungId
-    ? await getKinderPresenceAtDate(supabase, einrichtungId, stichtag)
-    : [];
+  const [rows, teamPresenceRows, { data: einrichtung }] = einrichtungId
+    ? await Promise.all([
+        getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
+        getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
+        supabase
+          .from("einrichtungen")
+          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+          .eq("id", einrichtungId)
+          .single(),
+      ])
+    : [[], [], { data: null }];
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
+  const personal = buildPersonalplanung(
+    teamPresenceRows,
+    kpis.gewichteteKinderzahl,
+    kpis.gewichteteKinderzahlFachkraftquote,
+    einrichtung?.vollzeit_wochenstunden ?? 39,
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
+  );
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
   );
-  const trendKpis = einrichtungId
+  const trendData = einrichtungId
     ? await Promise.all(
         trendMonths.map(async (month) => {
-          const monthRows = await getKinderPresenceAtDate(
-            supabase,
-            einrichtungId,
-            month
+          const [monthRows, monthTeamRows] = await Promise.all([
+            getKinderPresenceAtDate(supabase, einrichtungId, month),
+            getTeamPresenceForMonth(supabase, einrichtungId, month),
+          ]);
+          const monthKpis = buildKpis(monthRows);
+          const monthPersonal = buildPersonalplanung(
+            monthTeamRows,
+            monthKpis.gewichteteKinderzahl,
+            monthKpis.gewichteteKinderzahlFachkraftquote,
+            einrichtung?.vollzeit_wochenstunden ?? 39,
+            einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
           );
-          return buildKpis(monthRows);
+          return { kpis: monthKpis, personal: monthPersonal };
         })
       )
     : [];
-  const trendKinderGesamt = trendKpis.map((k) => k.kinderGesamt);
-  const trendGewichteteSumme = trendKpis.map((k) => k.gewichteteSumme);
-  const trendOhneBuchungszeit = trendKpis.map((k) => k.ohneBuchungszeit);
+  const trendKinderGesamt = trendData.map((t) => t.kpis.kinderGesamt);
+  const trendGewichteteSumme = trendData.map((t) => t.kpis.gewichteteSumme);
+  const trendOhneBuchungszeit = trendData.map((t) => t.kpis.ohneBuchungszeit);
+  const trendAnstellungsschluessel = trendData.map(
+    (t) => t.personal.anstellungsschluessel ?? 0
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,7 +92,7 @@ export default async function DashboardPage({
 
       <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <MetricCard
           label="Kinder am Stichtag"
           value={String(kpis.kinderGesamt)}
@@ -75,6 +104,17 @@ export default async function DashboardPage({
           value={formatGewichtet(kpis.gewichteteSumme)}
           icon={<Scale />}
           trend={trendGewichteteSumme}
+        />
+        <MetricCard
+          label="Anstellungsschlüssel"
+          value={
+            personal.anstellungsschluessel !== null
+              ? `1 : ${formatGewichtet(personal.anstellungsschluessel)}`
+              : "–"
+          }
+          icon={<Scale />}
+          tone={!personal.mindestschluesselOk ? "warn" : "default"}
+          trend={trendAnstellungsschluessel}
         />
         <MetricCard
           label="Ohne Buchungszeit"

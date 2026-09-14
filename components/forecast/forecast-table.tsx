@@ -97,61 +97,42 @@ export function ForecastTable({ months }: { months: ForecastMonth[] }) {
 
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Buchungen gew.
+              Gewichtete Kinderzahl
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.buchungenGew)}
+                {formatNumber(m.personal.gewichteteKinderzahl)}
               </TableCell>
             ))}
           </TableRow>
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Soll-FK
+              Ist-VZÄ / Soll-VZÄ
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.sollFk)}
+                {formatNumber(m.personal.vzaeIst, 2)} / {formatNumber(m.personal.vzaeSoll, 2)}
               </TableCell>
             ))}
           </TableRow>
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Ist-FK
+              Ist-FK-VZÄ / Soll-FK-VZÄ
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.istFk)}
+                {formatNumber(m.personal.istFk / (m.personal.vollzeitWochenstunden || 1), 2)}{" "}
+                / {formatNumber(m.personal.vzaeSollFachkraft, 2)}
               </TableCell>
             ))}
           </TableRow>
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Ist-EK
+              Ist-AZ gesamt (FK+EK)
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.istEk)}
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Ist-AZ gesamt
-            </TableCell>
-            {months.map((m) => (
-              <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.istAzGesamt)}
-              </TableCell>
-            ))}
-          </TableRow>
-          <TableRow>
-            <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Ist-AZ pro Gruppe
-            </TableCell>
-            {months.map((m) => (
-              <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.personal.istAzProTagGesamt)}
+                {formatNumber(m.personal.istAzGesamt)} Std.
               </TableCell>
             ))}
           </TableRow>
@@ -182,7 +163,7 @@ export function ForecastTable({ months }: { months: ForecastMonth[] }) {
           </TableRow>
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Empfohlener Schlüssel 1:10
+              Eigene Zielgröße (nicht gesetzlich)
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right">
