@@ -1,15 +1,17 @@
 import { Users, Scale, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { toIsoDateString } from "@/lib/kita-datum";
+import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import {
   getKinderPresenceAtDate,
   buildCompositionMatrix,
   buildKpis,
 } from "@/lib/dashboard/presence";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
-import { StatTile } from "@/components/ui/stat-tile";
+import { MetricCard } from "@/components/ui/metric-card";
 import { CompositionTable } from "@/components/dashboard/composition-table";
+
+const TREND_MONTHS = 6;
 
 function formatGewichtet(value: number): string {
   return value.toLocaleString("de-DE", {
@@ -34,6 +36,25 @@ export default async function DashboardPage({
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
 
+  const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
+    toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
+  );
+  const trendKpis = einrichtungId
+    ? await Promise.all(
+        trendMonths.map(async (month) => {
+          const monthRows = await getKinderPresenceAtDate(
+            supabase,
+            einrichtungId,
+            month
+          );
+          return buildKpis(monthRows);
+        })
+      )
+    : [];
+  const trendKinderGesamt = trendKpis.map((k) => k.kinderGesamt);
+  const trendGewichteteSumme = trendKpis.map((k) => k.gewichteteSumme);
+  const trendOhneBuchungszeit = trendKpis.map((k) => k.ohneBuchungszeit);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -43,21 +64,24 @@ export default async function DashboardPage({
       <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatTile
+        <MetricCard
           label="Kinder am Stichtag"
           value={String(kpis.kinderGesamt)}
-          icon={Users}
+          icon={<Users />}
+          trend={trendKinderGesamt}
         />
-        <StatTile
+        <MetricCard
           label="Gewichtete Buchungsstunden"
           value={formatGewichtet(kpis.gewichteteSumme)}
-          icon={Scale}
+          icon={<Scale />}
+          trend={trendGewichteteSumme}
         />
-        <StatTile
+        <MetricCard
           label="Ohne Buchungszeit"
           value={String(kpis.ohneBuchungszeit)}
-          icon={AlertTriangle}
+          icon={<AlertTriangle />}
           tone={kpis.ohneBuchungszeit > 0 ? "warn" : "default"}
+          trend={trendOhneBuchungszeit}
         />
       </div>
 

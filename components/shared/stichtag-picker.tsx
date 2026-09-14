@@ -8,8 +8,10 @@ const PRESETS = [
   { label: "Heute", months: 0 },
   { label: "+3 Monate", months: 3 },
   { label: "+6 Monate", months: 6 },
+  { label: "+9 Monate", months: 9 },
   { label: "+12 Monate", months: 12 },
   { label: "+18 Monate", months: 18 },
+  { label: "+24 Monate", months: 24 },
 ] as const;
 
 export function StichtagPicker({
