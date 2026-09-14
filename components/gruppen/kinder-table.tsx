@@ -7,8 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
+import { GESCHLECHT_LABEL } from "@/lib/constants";
 import {
   austrittWarnung,
   calculateAgeDecimal,
@@ -28,6 +27,7 @@ export type KinderTableRow = {
   notizen: string | null;
   status: string;
   booking_time_bands: { label: string } | null;
+  weighting_factor_label?: string | null;
 };
 
 export function KinderTable({
@@ -58,7 +58,7 @@ export function KinderTable({
             <TableHead>Eintritt</TableHead>
             <TableHead>Austritt</TableHead>
             <TableHead>Buchungszeit</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Gewichtungsfaktor</TableHead>
             <TableHead>Notizen</TableHead>
           </TableRow>
         </TableHeader>
@@ -71,11 +71,14 @@ export function KinderTable({
               <TableRow
                 key={kind.id}
                 className={cn(
-                  warnung === "rot" && "bg-destructive/10",
-                  warnung === "hellrot" && "bg-destructive/5"
+                  warnung === "rot" && "bg-destructive text-destructive-foreground"
                 )}
               >
-                <TableCell className="text-muted-foreground">
+                <TableCell
+                  className={cn(
+                    warnung !== "rot" && "text-muted-foreground"
+                  )}
+                >
                   {kind.platznummer ?? "–"}
                 </TableCell>
                 <TableCell className="font-medium">
@@ -86,20 +89,33 @@ export function KinderTable({
                     {kind.vorname} {kind.nachname}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell
+                  className={cn(warnung !== "rot" && "text-muted-foreground")}
+                >
                   {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
                 </TableCell>
                 <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
                 <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
                 <TableCell>{formatDate(kind.eintritt)}</TableCell>
-                <TableCell>{formatDate(kind.austritt)}</TableCell>
-                <TableCell>{kind.booking_time_bands?.label ?? "–"}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {KIND_STATUS_LABEL[kind.status] ?? kind.status}
-                  </Badge>
+                <TableCell
+                  className={cn(
+                    warnung === "hellrot" && "font-medium text-destructive"
+                  )}
+                >
+                  {formatDate(kind.austritt)}
                 </TableCell>
-                <TableCell className="max-w-48 truncate text-muted-foreground">
+                <TableCell>{kind.booking_time_bands?.label ?? "–"}</TableCell>
+                <TableCell
+                  className={cn(warnung !== "rot" && "text-muted-foreground")}
+                >
+                  {kind.weighting_factor_label ?? "Regelfaktor"}
+                </TableCell>
+                <TableCell
+                  className={cn(
+                    "max-w-48 truncate",
+                    warnung !== "rot" && "text-muted-foreground"
+                  )}
+                >
                   {kind.notizen ?? ""}
                 </TableCell>
               </TableRow>

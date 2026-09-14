@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KindForm } from "@/components/kinder/kind-form";
+import {
+  Aenderungshistorie,
+  type AenderungsEintrag,
+} from "@/components/kinder/aenderungshistorie";
 
 export default async function KindDetailPage({
   params,
@@ -44,6 +48,20 @@ export default async function KindDetailPage({
       .eq("kind_id", kindId),
   ]);
 
+  const { data: auditLog } = await supabase
+    .from("kinder_audit_log")
+    .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
+    .eq("kind_id", kindId)
+    .order("changed_at", { ascending: false });
+
+  const aenderungen: AenderungsEintrag[] = (auditLog ?? []).map((entry) => ({
+    id: entry.id,
+    changed_at: entry.changed_at,
+    changed_by_name: entry.user_profiles?.full_name ?? null,
+    old_data: entry.old_data as Record<string, unknown> | null,
+    new_data: entry.new_data as Record<string, unknown>,
+  }));
+
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <h1 className="font-heading text-2xl text-primary">
@@ -82,6 +100,7 @@ export default async function KindDetailPage({
           label: w.label,
         }))}
       />
+      <Aenderungshistorie eintraege={aenderungen} />
     </div>
   );
 }

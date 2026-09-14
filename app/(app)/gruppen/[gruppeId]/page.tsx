@@ -9,6 +9,40 @@ import { KinderTable, type KinderTableRow } from "@/components/gruppen/kinder-ta
 const KIND_SELECT =
   "id, platznummer, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, notizen, status, booking_time_bands(label)";
 
+async function resolveWeightingFactorLabels(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  kindIds: string[]
+): Promise<Map<string, string>> {
+  if (kindIds.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from("kind_weighting_factors")
+    .select("kind_id, weighting_factors(label, factor)")
+    .in("kind_id", kindIds);
+
+  const byKind = new Map<string, string>();
+  const maxFactor = new Map<string, number>();
+  for (const row of data ?? []) {
+    const factor = row.weighting_factors?.factor ?? 0;
+    const current = maxFactor.get(row.kind_id) ?? -1;
+    if (factor > current && row.weighting_factors) {
+      maxFactor.set(row.kind_id, factor);
+      byKind.set(row.kind_id, row.weighting_factors.label);
+    }
+  }
+  return byKind;
+}
+
+function withWeightingLabels(
+  kinder: unknown[] | null,
+  labels: Map<string, string>
+): KinderTableRow[] {
+  return ((kinder ?? []) as unknown as KinderTableRow[]).map((kind) => ({
+    ...kind,
+    weighting_factor_label: labels.get(kind.id) ?? null,
+  }));
+}
+
 export default async function GruppeDetailPage({
   params,
 }: {
@@ -38,19 +72,28 @@ export default async function GruppeDetailPage({
         .eq("gruppe_id", gruppeId)
         .eq("status", "aktiv")
         .is("archived_at", null)
-        .order("platznummer"),
+        .order("geburtsdatum", { ascending: true }),
       supabase
         .from("kinder")
         .select(KIND_SELECT)
         .eq("gruppe_id", gruppeId)
-        .eq("status", "nachruecker")
+        .in("status", ["nachruecker", "geplant"])
         .is("archived_at", null)
-        .order("created_at"),
+        .order("geburtsdatum", { ascending: true }),
       supabase
         .from("children_place_calculation_view")
         .select("platzwert")
         .eq("gruppe_id", gruppeId),
     ]);
+
+  const allKindIds = [
+    ...(aktiveKinder ?? []).map((k) => k.id),
+    ...(nachrueckerKinder ?? []).map((k) => k.id),
+  ];
+  const weightingLabels = await resolveWeightingFactorLabels(
+    supabase,
+    allKindIds
+  );
 
   const belegtRaw = (platzwerte ?? []).reduce(
     (sum, row) => sum + Number(row.platzwert),
@@ -62,11 +105,14 @@ export default async function GruppeDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">{gruppe.name}</h1>
-        <Badge variant="secondary">
-          {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
-        </Badge>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="font-heading text-3xl tracking-tight text-primary">{gruppe.name}</h1>
+          <Badge variant="secondary">
+            {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">Belegungsmanagement</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -78,27 +124,31 @@ export default async function GruppeDetailPage({
           tone={freiRounded < 0 ? "warn" : "default"}
         />
         <StatTile
-          label="Nachrücker"
+          label="Nachrücker/geplant"
           value={String(nachrueckerKinder?.length ?? 0)}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-lg">Aktive Kinder</h2>
+        <section className="flex flex-col gap-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/5 p-4">
+          <h2 className="font-heading text-lg text-emerald-700 dark:text-emerald-400">
+            Aktive Kinder
+          </h2>
           <KinderTable
-            rows={(aktiveKinder ?? []) as unknown as KinderTableRow[]}
+            rows={withWeightingLabels(aktiveKinder, weightingLabels)}
             kitaYearStartMonth={kitaYearStartMonth}
             highlightAustritt
             emptyMessage="Noch keine aktiven Kinder in dieser Gruppe."
           />
         </section>
-        <section className="flex flex-col gap-3">
-          <h2 className="font-heading text-lg">Nachrücker</h2>
+        <section className="flex flex-col gap-3 rounded-2xl border-2 border-sky-500/60 bg-sky-500/5 p-4">
+          <h2 className="font-heading text-lg text-sky-700 dark:text-sky-400">
+            Nachrücker &amp; geplante Kinder
+          </h2>
           <KinderTable
-            rows={(nachrueckerKinder ?? []) as unknown as KinderTableRow[]}
+            rows={withWeightingLabels(nachrueckerKinder, weightingLabels)}
             kitaYearStartMonth={kitaYearStartMonth}
-            emptyMessage="Keine Nachrücker für diese Gruppe."
+            emptyMessage="Keine Nachrücker oder geplanten Kinder für diese Gruppe."
           />
         </section>
       </div>

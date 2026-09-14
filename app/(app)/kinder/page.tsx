@@ -2,7 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
-import { calculateAgeDecimal, formatDate } from "@/lib/kita-datum";
+import { austrittWarnung, calculateAgeDecimal, formatDate } from "@/lib/kita-datum";
+import { getCurrentUserRole, canWriteBelegung } from "@/lib/server/current-user-role";
+import { cn } from "cn";
 import {
   Table,
   TableBody,
@@ -27,19 +29,31 @@ export default async function KinderPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const { data: gruppen } = await supabase
-    .from("gruppen")
-    .select("id, name")
-    .eq("einrichtung_id", einrichtungId ?? "")
-    .is("archived_at", null)
-    .order("sort_order");
+  const [{ data: gruppen }, { data: einrichtung }, role] = await Promise.all([
+    supabase
+      .from("gruppen")
+      .select("id, name")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .is("archived_at", null)
+      .order("sort_order"),
+    einrichtungId
+      ? supabase
+          .from("einrichtungen")
+          .select("kita_year_start_month")
+          .eq("id", einrichtungId)
+          .single()
+      : Promise.resolve({ data: null }),
+    getCurrentUserRole(),
+  ]);
+  const kitaYearStartMonth = einrichtung?.kita_year_start_month ?? 9;
+  const canEditBelegung = canWriteBelegung(role);
 
   let query = supabase
     .from("kinder")
     .select("id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name)")
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null)
-    .order("nachname");
+    .order("geburtsdatum", { ascending: true });
 
   if (status !== "alle") {
     query = query.eq("status", status);
@@ -57,9 +71,11 @@ export default async function KinderPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Kinder</h1>
-        <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
-          Kind anlegen
-        </Button>
+        {canEditBelegung ? (
+          <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
+            Kind anlegen
+          </Button>
+        ) : null}
       </div>
 
       <form className="flex flex-wrap items-end gap-3" method="get">
@@ -130,31 +146,55 @@ export default async function KinderPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {kinder.map((kind) => (
-                <TableRow key={kind.id}>
-                  <TableCell className="font-medium">
-                    <Link
-                      href={`/kinder/${kind.id}`}
-                      className="hover:underline"
+              {kinder.map((kind) => {
+                const warnung = austrittWarnung(
+                  kind.austritt,
+                  kitaYearStartMonth
+                );
+                return (
+                  <TableRow
+                    key={kind.id}
+                    className={cn(
+                      warnung === "rot" &&
+                        "bg-destructive text-destructive-foreground"
+                    )}
+                  >
+                    <TableCell className="font-medium">
+                      <Link
+                        href={`/kinder/${kind.id}`}
+                        className="hover:underline"
+                      >
+                        {kind.vorname} {kind.nachname}
+                      </Link>
+                    </TableCell>
+                    <TableCell
+                      className={cn(warnung !== "rot" && "text-muted-foreground")}
                     >
-                      {kind.vorname} {kind.nachname}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{kind.gruppen?.name ?? "–"}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
-                  </TableCell>
-                  <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                  <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
-                  <TableCell>{formatDate(kind.eintritt)}</TableCell>
-                  <TableCell>{formatDate(kind.austritt)}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {KIND_STATUS_LABEL[kind.status] ?? kind.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {kind.gruppen?.name ?? "–"}
+                    </TableCell>
+                    <TableCell
+                      className={cn(warnung !== "rot" && "text-muted-foreground")}
+                    >
+                      {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
+                    </TableCell>
+                    <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
+                    <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
+                    <TableCell>{formatDate(kind.eintritt)}</TableCell>
+                    <TableCell
+                      className={cn(
+                        warnung === "hellrot" && "font-medium text-destructive"
+                      )}
+                    >
+                      {formatDate(kind.austritt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">
+                        {KIND_STATUS_LABEL[kind.status] ?? kind.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
