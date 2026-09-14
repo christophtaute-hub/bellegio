@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Calculator,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/team", label: "Team", icon: UserCog },
   { href: "/controlling", label: "Controlling", icon: TrendingUp },
   { href: "/szenario", label: "Szenario-Rechner", icon: Calculator },
+  { href: "/dokumentation", label: "Dokumentation", icon: BookOpen },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ] as const;
 
