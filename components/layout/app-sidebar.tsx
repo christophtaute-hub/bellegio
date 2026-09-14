@@ -11,6 +11,7 @@ import {
   Calculator,
   Settings,
   BookOpen,
+  ListChecks,
 } from "lucide-react";
 import {
   Sidebar,
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/gruppen", label: "Gruppen", icon: Users },
   { href: "/kinder", label: "Kinder", icon: Baby },
+  { href: "/warteliste", label: "Warteliste", icon: ListChecks },
   { href: "/team", label: "Team", icon: UserCog },
   { href: "/controlling", label: "Controlling", icon: TrendingUp },
   { href: "/szenario", label: "Szenario-Rechner", icon: Calculator },
