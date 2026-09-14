@@ -21,9 +21,9 @@ const FEATURES: { icon: LucideIcon; title: string; description: string }[] = [
   },
   {
     icon: LayoutDashboard,
-    title: "Dashboard & Prognose",
+    title: "Dashboard & Controlling",
     description:
-      "Belegung und Personalbedarf für jeden Stichtag – auch Monate im Voraus, für vorausschauende Personalplanung.",
+      "Belegung und Personalbedarf für jeden Stichtag – auch Monate im Voraus oder rückblickend aufs Kalenderjahr.",
   },
   {
     icon: ShieldCheck,
@@ -37,7 +37,7 @@ export function FeaturesSection() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="font-heading text-3xl tracking-tight text-primary md:text-4xl">
+        <h2 className="font-heading text-4xl font-semibold tracking-tight text-primary md:text-5xl">
           Alles, was deine Einrichtung wirklich braucht
         </h2>
         <p className="mt-4 text-muted-foreground">

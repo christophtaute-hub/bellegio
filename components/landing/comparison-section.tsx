@@ -11,7 +11,7 @@ const MIT_BELLEGIO = [
   "Eine zentrale, immer aktuelle Übersicht",
   "Digitale Verwaltung von Kindern und Personal",
   "Anstellungsschlüssel automatisch berechnet",
-  "Prognose für beliebige Stichtage",
+  "Controlling für jeden Zeitraum, auch rückblickend",
 ];
 
 export function ComparisonSection() {
@@ -19,7 +19,7 @@ export function ComparisonSection() {
     <section className="bg-secondary/40 py-24">
       <div className="mx-auto max-w-5xl px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="font-heading text-3xl tracking-tight text-primary md:text-4xl">
+          <h2 className="font-heading text-4xl font-semibold tracking-tight text-primary md:text-5xl">
             Was Bellegio ersetzt
           </h2>
         </div>
