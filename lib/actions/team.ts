@@ -54,7 +54,7 @@ export async function createTeamMitglied(input: TeamInput) {
   }
 
   revalidatePath("/team");
-  revalidatePath("/prognose");
+  revalidatePath("/controlling");
   redirect(`/team/${mitglied.id}`);
 }
 
@@ -81,6 +81,65 @@ export async function updateTeamMitglied(teamId: string, input: TeamInput) {
 
   revalidatePath("/team");
   revalidatePath(`/team/${teamId}`);
-  revalidatePath("/prognose");
+  revalidatePath("/controlling");
   redirect(`/team/${teamId}`);
+}
+
+export async function updateTeamGruppe(teamId: string, gruppeId: string | null) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("team")
+    .update({ gruppe_id: gruppeId })
+    .eq("id", teamId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/team");
+  revalidatePath("/controlling");
+}
+
+export type AusfallzeitArt =
+  | "mutterschutz"
+  | "schwangerschaft"
+  | "krankheit"
+  | "sonderurlaub"
+  | "sonstiges";
+
+export type AusfallzeitInput = {
+  art: AusfallzeitArt;
+  von: string;
+  bis: string | null;
+  notizen: string | null;
+};
+
+export async function createAusfallzeit(teamId: string, input: AusfallzeitInput) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("team_ausfallzeiten").insert({
+    team_id: teamId,
+    art: input.art,
+    von: input.von,
+    bis: input.bis,
+    notizen: input.notizen,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/team/${teamId}`);
+  revalidatePath("/controlling");
+}
+
+export async function deleteAusfallzeit(ausfallzeitId: string, teamId: string) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("team_ausfallzeiten")
+    .delete()
+    .eq("id", ausfallzeitId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/team/${teamId}`);
+  revalidatePath("/controlling");
 }

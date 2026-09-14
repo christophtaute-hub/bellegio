@@ -45,3 +45,11 @@ export const TEAM_ROLE_CATEGORY_LABEL: Record<string, string> = {
   hausmeister: "Hausmeister",
   hauswirtschaft: "Hauswirtschaftskraft",
 };
+
+export const AUSFALLZEIT_ART_LABEL: Record<string, string> = {
+  mutterschutz: "Mutterschutz",
+  schwangerschaft: "Schwangerschaft (Beschäftigungsverbot)",
+  krankheit: "Krankheit",
+  sonderurlaub: "Sonderurlaub",
+  sonstiges: "Sonstiges",
+};

@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { getCurrentUserRole, canWritePersonal } from "@/lib/server/current-user-role";
 import { TeamForm } from "@/components/team/team-form";
+import { AusfallzeitenListe } from "@/components/team/ausfallzeiten-liste";
 
 export default async function TeamDetailPage({
   params,
@@ -24,12 +26,21 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const { data: gruppen } = await supabase
-    .from("gruppen")
-    .select("id, name")
-    .eq("einrichtung_id", einrichtungId ?? "")
-    .is("archived_at", null)
-    .order("sort_order");
+  const [{ data: gruppen }, { data: ausfallzeiten }, role] = await Promise.all([
+    supabase
+      .from("gruppen")
+      .select("id, name")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .is("archived_at", null)
+      .order("sort_order"),
+    supabase
+      .from("team_ausfallzeiten")
+      .select("id, art, von, bis, notizen")
+      .eq("team_id", teamId)
+      .order("von", { ascending: false }),
+    getCurrentUserRole(),
+  ]);
+  const canEditPersonal = canWritePersonal(role);
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -59,6 +70,11 @@ export default async function TeamDetailPage({
           austritt: mitglied.austritt ?? "",
         }}
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
+      />
+      <AusfallzeitenListe
+        teamId={mitglied.id}
+        ausfallzeiten={ausfallzeiten ?? []}
+        canEdit={canEditPersonal}
       />
     </div>
   );

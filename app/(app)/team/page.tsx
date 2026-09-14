@@ -12,6 +12,8 @@ import {
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { StatTile } from "@/components/ui/stat-tile";
 import { AmpelBadge } from "@/components/team/ampel-badge";
+import { GruppeQuickSelect } from "@/components/team/gruppe-quick-select";
+import { getCurrentUserRole, canWritePersonal } from "@/lib/server/current-user-role";
 import {
   Table,
   TableBody,
@@ -54,16 +56,19 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }] = await Promise.all([
+  const [{ data: gruppen }, role] = await Promise.all([
     einrichtungId
       ? supabase
           .from("gruppen")
-          .select("id")
+          .select("id, name")
           .eq("einrichtung_id", einrichtungId)
           .is("archived_at", null)
+          .order("name")
       : Promise.resolve({ data: null }),
+    getCurrentUserRole(),
   ]);
   const gruppenAnzahl = gruppen?.length ?? 0;
+  const canEditPersonal = canWritePersonal(role);
 
   const [kinderRows, teamPresenceRows] = einrichtungId
     ? await Promise.all([
@@ -82,7 +87,7 @@ export default async function TeamPage({
   let query = supabase
     .from("team")
     .select(
-      "id, vorname, nachname, rolle, wochenstunden, role_category, status, eintritt, austritt, gruppen(name)"
+      "id, vorname, nachname, rolle, wochenstunden, role_category, status, eintritt, austritt, gruppe_id, gruppen(name)"
     )
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null)
@@ -104,9 +109,11 @@ export default async function TeamPage({
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Team</h1>
-        <Button nativeButton={false} render={<Link href="/team/neu" />}>
-          Personal anlegen
-        </Button>
+        {canEditPersonal ? (
+          <Button nativeButton={false} render={<Link href="/team/neu" />}>
+            Personal anlegen
+          </Button>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
@@ -242,7 +249,14 @@ export default async function TeamPage({
                     </Link>
                   </TableCell>
                   <TableCell>{mitglied.rolle ?? "–"}</TableCell>
-                  <TableCell>{mitglied.gruppen?.name ?? "–"}</TableCell>
+                  <TableCell>
+                    <GruppeQuickSelect
+                      teamId={mitglied.id}
+                      gruppeId={mitglied.gruppe_id}
+                      gruppen={gruppen ?? []}
+                      canEdit={canEditPersonal}
+                    />
+                  </TableCell>
                   <TableCell>
                     {mitglied.wochenstunden !== null
                       ? `${mitglied.wochenstunden} Std.`
