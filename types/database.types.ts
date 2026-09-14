@@ -260,6 +260,55 @@ export type Database = {
           },
         ]
       }
+      kinder_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          kind_id: string
+          new_data: Json
+          old_data: Json | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          kind_id: string
+          new_data: Json
+          old_data?: Json | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          kind_id?: string
+          new_data?: Json
+          old_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kinder_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kinder_audit_log_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "children_place_calculation_view"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "kinder_audit_log_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "kinder"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platzwert_rules: {
         Row: {
           age_matches_expected: boolean
@@ -346,6 +395,47 @@ export type Database = {
             columns: ["gruppe_id"]
             isOneToOne: false
             referencedRelation: "gruppen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_ausfallzeiten: {
+        Row: {
+          art: string
+          bis: string | null
+          created_at: string
+          id: string
+          notizen: string | null
+          team_id: string
+          updated_at: string
+          von: string
+        }
+        Insert: {
+          art: string
+          bis?: string | null
+          created_at?: string
+          id?: string
+          notizen?: string | null
+          team_id: string
+          updated_at?: string
+          von: string
+        }
+        Update: {
+          art?: string
+          bis?: string | null
+          created_at?: string
+          id?: string
+          notizen?: string | null
+          team_id?: string
+          updated_at?: string
+          von?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_ausfallzeiten_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
             referencedColumns: ["id"]
           },
         ]
