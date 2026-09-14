@@ -6,6 +6,15 @@ export default async function KindNeuPage() {
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
+  const { data: einrichtung } = einrichtungId
+    ? await supabase
+        .from("einrichtungen")
+        .select("bundesland_code")
+        .eq("id", einrichtungId)
+        .single()
+    : { data: null };
+  const bundeslandCode = einrichtung?.bundesland_code ?? "by";
+
   const [{ data: gruppen }, { data: bookingTimeBands }, { data: weightingFactors }] =
     await Promise.all([
       supabase
@@ -17,8 +26,12 @@ export default async function KindNeuPage() {
       supabase
         .from("booking_time_bands")
         .select("id, label")
+        .eq("bundesland_code", bundeslandCode)
         .order("sort_order"),
-      supabase.from("weighting_factors").select("id, label"),
+      supabase
+        .from("weighting_factors")
+        .select("id, label")
+        .eq("bundesland_code", bundeslandCode),
     ]);
 
   return (

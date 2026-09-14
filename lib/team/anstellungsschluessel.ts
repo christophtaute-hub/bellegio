@@ -10,6 +10,22 @@ export type TeamPresenceRow = {
   wochenstunden: number | null;
 };
 
+export async function getStaffingRules(
+  supabase: SupabaseClient<Database>,
+  bundeslandCode: string
+): Promise<StaffingRules> {
+  const { data } = await supabase
+    .from("staffing_rules")
+    .select("mindestschluessel, fachkraftquote_anteil")
+    .eq("bundesland_code", bundeslandCode)
+    .single();
+
+  return {
+    mindestschluessel: data?.mindestschluessel ?? BAYERN_MINDESTSCHLUESSEL,
+    fachkraftquoteAnteil: data?.fachkraftquote_anteil ?? BAYERN_FACHKRAFTQUOTE_ANTEIL,
+  };
+}
+
 export async function getTeamPresenceForMonth(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
@@ -23,10 +39,15 @@ export async function getTeamPresenceForMonth(
   return data ?? [];
 }
 
-const MINDESTSCHLUESSEL = 11.0;
-const FACHKRAFTQUOTE_ANTEIL = 0.5;
+export const BAYERN_MINDESTSCHLUESSEL = 11.0;
+export const BAYERN_FACHKRAFTQUOTE_ANTEIL = 0.5;
 
 export type Ampel = "gruen" | "gelb" | "rot";
+
+export type StaffingRules = {
+  mindestschluessel: number;
+  fachkraftquoteAnteil: number;
+};
 
 /**
  * § 17 AVBayKiBiG: "für je 11,0 [gewichtete Kinder] jeweils mindestens eine
@@ -72,8 +93,14 @@ export function buildPersonalplanung(
   gewichteteKinderzahl: number,
   gewichteteKinderzahlFachkraftquote: number,
   vollzeitWochenstunden: number,
-  empfohlenerSchluesselWert: number = 10.0
+  empfohlenerSchluesselWert: number = 10.0,
+  rules: StaffingRules = {
+    mindestschluessel: BAYERN_MINDESTSCHLUESSEL,
+    fachkraftquoteAnteil: BAYERN_FACHKRAFTQUOTE_ANTEIL,
+  }
 ): Personalplanung {
+  const { mindestschluessel: MINDESTSCHLUESSEL, fachkraftquoteAnteil: FACHKRAFTQUOTE_ANTEIL } =
+    rules;
   const vzaeSoll = gewichteteKinderzahl / MINDESTSCHLUESSEL;
   const vzaeSollFachkraft =
     FACHKRAFTQUOTE_ANTEIL *

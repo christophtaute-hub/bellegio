@@ -3,7 +3,7 @@ import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { getCurrentUserRole, canUseSzenarioRechner } from "@/lib/server/current-user-role";
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
-import { getTeamPresenceForMonth } from "@/lib/team/anstellungsschluessel";
+import { getTeamPresenceForMonth, getStaffingRules } from "@/lib/team/anstellungsschluessel";
 import { SzenarioRechner } from "@/components/szenario/szenario-rechner";
 
 export default async function SzenarioPage() {
@@ -27,39 +27,42 @@ export default async function SzenarioPage() {
 
   const today = toIsoDateString(new Date());
 
-  const [
-    { data: bookingTimeBands },
-    { data: weightingFactors },
-    { data: gruppen },
-    { data: einrichtung },
-  ] = await Promise.all([
-    supabase
-      .from("booking_time_bands")
-      .select("id, label, factor")
-      .order("sort_order"),
-    supabase.from("weighting_factors").select("id, code, label, factor"),
-    einrichtungId
-      ? supabase
-          .from("gruppen")
-          .select("id, sollplatze")
-          .eq("einrichtung_id", einrichtungId)
-          .is("archived_at", null)
-      : Promise.resolve({ data: null }),
-    einrichtungId
-      ? supabase
-          .from("einrichtungen")
-          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
-          .eq("id", einrichtungId)
-          .single()
-      : Promise.resolve({ data: null }),
-  ]);
+  const { data: einrichtung } = einrichtungId
+    ? await supabase
+        .from("einrichtungen")
+        .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
+        .eq("id", einrichtungId)
+        .single()
+    : { data: null };
+  const bundeslandCode = einrichtung?.bundesland_code ?? "by";
 
-  const [kinderRows, teamRows] = einrichtungId
+  const [{ data: bookingTimeBands }, { data: weightingFactors }, { data: gruppen }] =
+    await Promise.all([
+      supabase
+        .from("booking_time_bands")
+        .select("id, label, factor")
+        .eq("bundesland_code", bundeslandCode)
+        .order("sort_order"),
+      supabase
+        .from("weighting_factors")
+        .select("id, code, label, factor")
+        .eq("bundesland_code", bundeslandCode),
+      einrichtungId
+        ? supabase
+            .from("gruppen")
+            .select("id, sollplatze")
+            .eq("einrichtung_id", einrichtungId)
+            .is("archived_at", null)
+        : Promise.resolve({ data: null }),
+    ]);
+
+  const [kinderRows, teamRows, staffingRules] = einrichtungId
     ? await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, today),
         getTeamPresenceForMonth(supabase, einrichtungId, today),
+        getStaffingRules(supabase, bundeslandCode),
       ])
-    : [[], []];
+    : [[], [], await getStaffingRules(supabase, bundeslandCode)];
 
   const bands = (bookingTimeBands ?? []).map((b) => ({
     id: b.id,
@@ -118,6 +121,7 @@ export default async function SzenarioPage() {
         initialSollplaetzeSumme={initialSollplaetzeSumme}
         empfohlenerSchluesselWert={empfohlenerSchluesselWert}
         vollzeitWochenstunden={vollzeitWochenstunden}
+        staffingRules={staffingRules}
       />
     </div>
   );

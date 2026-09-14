@@ -16,6 +16,7 @@ import {
 import {
   buildPersonalplanung,
   type TeamPresenceRow,
+  type StaffingRules,
 } from "@/lib/team/anstellungsschluessel";
 
 type BandOption = { id: string; label: string; factor: number };
@@ -38,6 +39,7 @@ export function SzenarioRechner({
   initialSollplaetzeSumme,
   empfohlenerSchluesselWert,
   vollzeitWochenstunden,
+  staffingRules,
 }: {
   bands: BandOption[];
   categories: CategoryOption[];
@@ -46,6 +48,7 @@ export function SzenarioRechner({
   initialSollplaetzeSumme: number;
   empfohlenerSchluesselWert: number;
   vollzeitWochenstunden: number;
+  staffingRules: StaffingRules;
 }) {
   const [matrix, setMatrix] = useState(initialMatrix);
   const [personal, setPersonal] = useState(
@@ -97,7 +100,8 @@ export function SzenarioRechner({
       kpis.gewichteteKinderzahl,
       kpis.gewichteteKinderzahlFachkraftquote,
       vollzeitWochenstunden,
-      empfohlenerSchluesselWert
+      empfohlenerSchluesselWert,
+      staffingRules
     );
     return { kpis, belegung, personalplanung };
   }, [
@@ -106,6 +110,7 @@ export function SzenarioRechner({
     sollplaetzeSumme,
     bands,
     categories,
+    staffingRules,
     empfohlenerSchluesselWert,
     vollzeitWochenstunden,
   ]);

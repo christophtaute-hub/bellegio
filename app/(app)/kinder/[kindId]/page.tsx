@@ -28,6 +28,13 @@ export default async function KindDetailPage({
     notFound();
   }
 
+  const { data: einrichtung } = await supabase
+    .from("einrichtungen")
+    .select("bundesland_code")
+    .eq("id", einrichtungId ?? "")
+    .single();
+  const bundeslandCode = einrichtung?.bundesland_code ?? "by";
+
   const [
     { data: gruppen },
     { data: bookingTimeBands },
@@ -40,8 +47,15 @@ export default async function KindDetailPage({
       .eq("einrichtung_id", einrichtungId ?? "")
       .is("archived_at", null)
       .order("sort_order"),
-    supabase.from("booking_time_bands").select("id, label").order("sort_order"),
-    supabase.from("weighting_factors").select("id, label"),
+    supabase
+      .from("booking_time_bands")
+      .select("id, label")
+      .eq("bundesland_code", bundeslandCode)
+      .order("sort_order"),
+    supabase
+      .from("weighting_factors")
+      .select("id, label")
+      .eq("bundesland_code", bundeslandCode),
     supabase
       .from("kind_weighting_factors")
       .select("weighting_factor_id")

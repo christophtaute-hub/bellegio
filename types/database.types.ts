@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       booking_time_bands: {
         Row: {
+          bundesland_code: string
           factor: number
           id: string
           label: string
@@ -24,6 +25,7 @@ export type Database = {
           sort_order: number
         }
         Insert: {
+          bundesland_code?: string
           factor: number
           id?: string
           label: string
@@ -32,12 +34,36 @@ export type Database = {
           sort_order?: number
         }
         Update: {
+          bundesland_code?: string
           factor?: number
           id?: string
           label?: string
           max_hours?: number | null
           min_hours?: number
           sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_time_bands_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      bundeslaender: {
+        Row: {
+          code: string
+          name: string
+        }
+        Insert: {
+          code: string
+          name: string
+        }
+        Update: {
+          code?: string
+          name?: string
         }
         Relationships: []
       }
@@ -47,6 +73,7 @@ export type Database = {
           address_street: string | null
           address_zip: string | null
           archived_at: string | null
+          bundesland_code: string
           created_at: string
           empfohlener_anstellungsschluessel: number
           id: string
@@ -61,6 +88,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           archived_at?: string | null
+          bundesland_code?: string
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           id?: string
@@ -75,6 +103,7 @@ export type Database = {
           address_street?: string | null
           address_zip?: string | null
           archived_at?: string | null
+          bundesland_code?: string
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           id?: string
@@ -85,6 +114,13 @@ export type Database = {
           vollzeit_wochenstunden?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "einrichtungen_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "einrichtungen_trager_id_fkey"
             columns: ["trager_id"]
@@ -315,23 +351,60 @@ export type Database = {
       platzwert_rules: {
         Row: {
           age_matches_expected: boolean
+          bundesland_code: string
           gruppenart: string
           id: string
           platzwert: number
         }
         Insert: {
           age_matches_expected: boolean
+          bundesland_code?: string
           gruppenart: string
           id?: string
           platzwert: number
         }
         Update: {
           age_matches_expected?: boolean
+          bundesland_code?: string
           gruppenart?: string
           id?: string
           platzwert?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "platzwert_rules_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      staffing_rules: {
+        Row: {
+          bundesland_code: string
+          fachkraftquote_anteil: number
+          mindestschluessel: number
+        }
+        Insert: {
+          bundesland_code: string
+          fachkraftquote_anteil: number
+          mindestschluessel: number
+        }
+        Update: {
+          bundesland_code?: string
+          fachkraftquote_anteil?: number
+          mindestschluessel?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staffing_rules_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: true
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       team: {
         Row: {
@@ -575,24 +648,35 @@ export type Database = {
       }
       weighting_factors: {
         Row: {
+          bundesland_code: string
           code: string
           factor: number
           id: string
           label: string
         }
         Insert: {
+          bundesland_code?: string
           code: string
           factor: number
           id?: string
           label: string
         }
         Update: {
+          bundesland_code?: string
           code?: string
           factor?: number
           id?: string
           label?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "weighting_factors_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
       }
     }
     Views: {

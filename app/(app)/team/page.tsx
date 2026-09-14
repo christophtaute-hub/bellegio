@@ -7,6 +7,7 @@ import { TEAM_STATUS_LABEL, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
 import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import {
   getTeamPresenceForMonth,
+  getStaffingRules,
   buildPersonalplanung,
 } from "@/lib/team/anstellungsschluessel";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
@@ -69,19 +70,20 @@ export default async function TeamPage({
     einrichtungId
       ? supabase
           .from("einrichtungen")
-          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
           .eq("id", einrichtungId)
           .single()
       : Promise.resolve({ data: null }),
   ]);
   const canEditPersonal = canWritePersonal(role);
 
-  const [kinderRows, teamPresenceRows] = einrichtungId
+  const [kinderRows, teamPresenceRows, staffingRules] = einrichtungId
     ? await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
         getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
+        getStaffingRules(supabase, einrichtung?.bundesland_code ?? "by"),
       ])
-    : [[], []];
+    : [[], [], undefined];
 
   const { gewichteteKinderzahl, gewichteteKinderzahlFachkraftquote } =
     buildKpis(kinderRows);
@@ -90,7 +92,8 @@ export default async function TeamPage({
     gewichteteKinderzahl,
     gewichteteKinderzahlFachkraftquote,
     einrichtung?.vollzeit_wochenstunden ?? 39,
-    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
+    staffingRules
   );
 
   let query = supabase

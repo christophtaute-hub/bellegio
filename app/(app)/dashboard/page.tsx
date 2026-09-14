@@ -9,6 +9,7 @@ import {
 } from "@/lib/dashboard/presence";
 import {
   getTeamPresenceForMonth,
+  getStaffingRules,
   buildPersonalplanung,
 } from "@/lib/team/anstellungsschluessel";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
@@ -40,19 +41,24 @@ export default async function DashboardPage({
         getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
         supabase
           .from("einrichtungen")
-          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
           .eq("id", einrichtungId)
           .single(),
       ])
     : [[], [], { data: null }];
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
+  const staffingRules = await getStaffingRules(
+    supabase,
+    einrichtung?.bundesland_code ?? "by"
+  );
   const personal = buildPersonalplanung(
     teamPresenceRows,
     kpis.gewichteteKinderzahl,
     kpis.gewichteteKinderzahlFachkraftquote,
     einrichtung?.vollzeit_wochenstunden ?? 39,
-    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
+    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
+    staffingRules
   );
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
@@ -71,7 +77,8 @@ export default async function DashboardPage({
             monthKpis.gewichteteKinderzahl,
             monthKpis.gewichteteKinderzahlFachkraftquote,
             einrichtung?.vollzeit_wochenstunden ?? 39,
-            einrichtung?.empfohlener_anstellungsschluessel ?? 10.0
+            einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
+            staffingRules
           );
           return { kpis: monthKpis, personal: monthPersonal };
         })

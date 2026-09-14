@@ -10,6 +10,7 @@ import {
 } from "@/lib/dashboard/presence";
 import {
   getTeamPresenceForMonth,
+  getStaffingRules,
   buildPersonalplanung,
   type Personalplanung,
 } from "@/lib/team/anstellungsschluessel";
@@ -40,7 +41,7 @@ export async function buildForecastMonths(
       .is("archived_at", null),
     supabase
       .from("einrichtungen")
-      .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden")
+      .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
       .eq("id", einrichtungId)
       .single(),
   ]);
@@ -52,6 +53,10 @@ export async function buildForecastMonths(
   const empfohlenerSchluesselWert =
     einrichtung?.empfohlener_anstellungsschluessel ?? 10.0;
   const vollzeitWochenstunden = einrichtung?.vollzeit_wochenstunden ?? 39;
+  const staffingRules = await getStaffingRules(
+    supabase,
+    einrichtung?.bundesland_code ?? "by"
+  );
 
   const start = monthStart(startMonth);
   const months = Array.from({ length: monthCount }, (_, i) =>
@@ -72,7 +77,8 @@ export async function buildForecastMonths(
         kpis.gewichteteKinderzahl,
         kpis.gewichteteKinderzahlFachkraftquote,
         vollzeitWochenstunden,
-        empfohlenerSchluesselWert
+        empfohlenerSchluesselWert,
+        staffingRules
       );
 
       return { month, kpis, belegung, personal };
