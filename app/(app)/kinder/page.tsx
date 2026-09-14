@@ -72,9 +72,18 @@ export default async function KinderPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Kinder</h1>
         {canEditBelegung ? (
-          <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
-            Kind anlegen
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              nativeButton={false}
+              render={<Link href="/kinder/warteliste-import" />}
+            >
+              Warteliste importieren
+            </Button>
+            <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
+              Kind anlegen
+            </Button>
+          </div>
         ) : null}
       </div>
 
