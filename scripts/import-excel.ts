@@ -8,8 +8,12 @@
  * keine Klarnamen — auch nicht bei --apply.
  *
  * Nutzung:
- *   npm run import:excel -- --file=/pfad/zur/datei.xlsx
- *   npm run import:excel -- --file=/pfad/zur/datei.xlsx --apply --confirm-einrichtung="Villa Kunterbunt"
+ *   npm run import:excel -- --file=/pfad/zur/datei.xlsx --einrichtung-name="Villa Kunterbunt" --einrichtung-city="München" --trager-name="Villa Kunterbunt"
+ *   npm run import:excel -- --file=/pfad/zur/datei.xlsx --einrichtung-name="..." --trager-name="..." --apply --confirm-einrichtung="..."
+ *
+ * --trager-name: wird ein bestehender Träger mit exakt diesem Namen
+ * gefunden, wird die neue Einrichtung DORT angehängt (mehrere
+ * Einrichtungen desselben Betreibers) statt einen neuen Träger anzulegen.
  *
  * Ohne --apply wird NICHTS geschrieben (Trockenlauf).
  */
@@ -18,9 +22,9 @@ import * as XLSX from "xlsx";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database.types";
 
-const EINRICHTUNG_NAME = "Villa Kunterbunt";
-const EINRICHTUNG_CITY = "München";
-const TRAGER_NAME = "Villa Kunterbunt";
+const DEFAULT_EINRICHTUNG_NAME = "Villa Kunterbunt";
+const DEFAULT_EINRICHTUNG_CITY = "München";
+const DEFAULT_TRAGER_NAME = "Villa Kunterbunt";
 
 const GRUPPEN_SHEETS = [
   "KiGa Pinguine",
@@ -100,6 +104,9 @@ function parseArgs() {
     file: get("file") ?? process.env.EXCEL_PATH,
     apply: args.includes("--apply"),
     confirmEinrichtung: get("confirm-einrichtung"),
+    einrichtungName: get("einrichtung-name") ?? DEFAULT_EINRICHTUNG_NAME,
+    einrichtungCity: get("einrichtung-city") ?? DEFAULT_EINRICHTUNG_CITY,
+    tragerName: get("trager-name") ?? DEFAULT_TRAGER_NAME,
   };
 }
 
@@ -139,7 +146,8 @@ function extractDateFromBemerkung(
 }
 
 async function main() {
-  const { file, apply, confirmEinrichtung } = parseArgs();
+  const { file, apply, confirmEinrichtung, einrichtungName, einrichtungCity, tragerName } =
+    parseArgs();
 
   if (!file) {
     console.error(
@@ -147,9 +155,9 @@ async function main() {
     );
     process.exit(1);
   }
-  if (apply && confirmEinrichtung !== EINRICHTUNG_NAME) {
+  if (apply && confirmEinrichtung !== einrichtungName) {
     console.error(
-      `Zum Schreiben bitte --confirm-einrichtung="${EINRICHTUNG_NAME}" exakt angeben.`
+      `Zum Schreiben bitte --confirm-einrichtung="${einrichtungName}" exakt angeben.`
     );
     process.exit(1);
   }
@@ -166,7 +174,7 @@ async function main() {
   const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
 
   console.log(`Modus: ${apply ? "APPLY (schreibt in die Datenbank)" : "TROCKENLAUF (keine Schreibvorgänge)"}`);
-  console.log(`Ziel-Einrichtung: "${EINRICHTUNG_NAME}"`);
+  console.log(`Ziel-Einrichtung: "${einrichtungName}" (Träger: "${tragerName}")`);
 
   const workbook = XLSX.readFile(file, { cellDates: true });
   const summary: ImportSummary = {
@@ -199,7 +207,7 @@ async function main() {
     const { data: existing } = await supabase
       .from("einrichtungen")
       .select("id, trager_id")
-      .eq("name", EINRICHTUNG_NAME)
+      .eq("name", einrichtungName)
       .maybeSingle();
 
     if (existing) {
@@ -209,20 +217,33 @@ async function main() {
       einrichtungId = "00000000-0000-0000-0000-000000000000";
       console.log("[Trockenlauf] Einrichtung würde neu angelegt.");
     } else {
-      const { data: trager, error: tragerError } = await supabase
+      const { data: existingTrager } = await supabase
         .from("trager")
-        .insert({ name: TRAGER_NAME })
         .select("id")
-        .single();
-      if (tragerError || !trager) {
-        throw new Error(`Träger konnte nicht angelegt werden: ${tragerError?.message}`);
+        .eq("name", tragerName)
+        .maybeSingle();
+
+      let tragerId: string;
+      if (existingTrager) {
+        tragerId = existingTrager.id;
+        console.log(`Träger existiert bereits (${tragerId}) — Einrichtung wird dort angehängt.`);
+      } else {
+        const { data: trager, error: tragerError } = await supabase
+          .from("trager")
+          .insert({ name: tragerName })
+          .select("id")
+          .single();
+        if (tragerError || !trager) {
+          throw new Error(`Träger konnte nicht angelegt werden: ${tragerError?.message}`);
+        }
+        tragerId = trager.id;
       }
       const { data: neueEinrichtung, error: einrichtungError } = await supabase
         .from("einrichtungen")
         .insert({
-          name: EINRICHTUNG_NAME,
-          trager_id: trager.id,
-          address_city: EINRICHTUNG_CITY,
+          name: einrichtungName,
+          trager_id: tragerId,
+          address_city: einrichtungCity,
         })
         .select("id")
         .single();
@@ -641,7 +662,7 @@ async function main() {
   }
   if (!apply) {
     console.log(
-      "\nTrockenlauf abgeschlossen — nichts wurde geschrieben. Mit --apply --confirm-einrichtung=\"Villa Kunterbunt\" ausführen, um zu schreiben."
+      `\nTrockenlauf abgeschlossen — nichts wurde geschrieben. Mit --apply --confirm-einrichtung="${einrichtungName}" ausführen, um zu schreiben.`
     );
   }
 }
