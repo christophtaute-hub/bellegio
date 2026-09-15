@@ -53,6 +53,15 @@ export function wochenstundenAusBuchungszeitBand(band: {
   return taeglich * 5;
 }
 
+/** BW/NRW: booking_time_bands ist dort bereits wöchentlich (kein ×5 wie in
+ * Bayern) — einfacher Mittelwert von min/max. */
+export function wochenstundenAusWoechentlichemBand(band: {
+  min_hours: number;
+  max_hours: number | null;
+}): number {
+  return band.max_hours ? (band.min_hours + band.max_hours) / 2 : band.min_hours;
+}
+
 export type JahreskategorisierungEintrag = {
   wochenstunden: number;
   hatBehinderung: boolean;
@@ -109,9 +118,7 @@ export async function getJahreskategorisierung(
   let query = supabase
     .from("kinder")
     .select(
-      bundeslandCode === "by"
-        ? "hat_behinderung, booking_time_bands(min_hours, max_hours)"
-        : "hat_behinderung, gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
+      "hat_behinderung, booking_time_bands(min_hours, max_hours), gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
     )
     .eq("einrichtung_id", einrichtungId)
     .is("archived_at", null)
@@ -132,18 +139,29 @@ export async function getJahreskategorisierung(
         .booking_time_bands;
       if (band) wochenstunden = wochenstundenAusBuchungszeitBand(band);
     } else {
-      const gruppe = (
-        kind as {
-          gruppen: {
-            bw_oeffnungszeit_stunden: number | null;
-            nrw_buchungszeit_stunden: number | null;
-          } | null;
+      // Echte, pro Kind erfasste Buchungszeit hat Vorrang, falls gepflegt
+      // (bestätigt durch reale Personalbelegungslisten aus NRW/BW) — die
+      // Gruppen-Öffnungszeit dient nur noch als Näherung für Kinder ohne
+      // eigenen Wert.
+      const band = (
+        kind as { booking_time_bands: { min_hours: number; max_hours: number | null } | null }
+      ).booking_time_bands;
+      if (band) {
+        wochenstunden = wochenstundenAusWoechentlichemBand(band);
+      } else {
+        const gruppe = (
+          kind as {
+            gruppen: {
+              bw_oeffnungszeit_stunden: number | null;
+              nrw_buchungszeit_stunden: number | null;
+            } | null;
+          }
+        ).gruppen;
+        if (bundeslandCode === "bw" && gruppe?.bw_oeffnungszeit_stunden) {
+          wochenstunden = gruppe.bw_oeffnungszeit_stunden * 5;
+        } else if (bundeslandCode === "nrw" && gruppe?.nrw_buchungszeit_stunden) {
+          wochenstunden = gruppe.nrw_buchungszeit_stunden;
         }
-      ).gruppen;
-      if (bundeslandCode === "bw" && gruppe?.bw_oeffnungszeit_stunden) {
-        wochenstunden = gruppe.bw_oeffnungszeit_stunden * 5;
-      } else if (bundeslandCode === "nrw" && gruppe?.nrw_buchungszeit_stunden) {
-        wochenstunden = gruppe.nrw_buchungszeit_stunden;
       }
     }
 

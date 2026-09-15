@@ -314,6 +314,12 @@ export default async function DokumentationPage() {
             Soll-VZÄ = Referenz-VZÄ + (Öffnungszeit − Referenz-Öffnungszeit) ×
             Stellen/Std.
           </p>
+          <p className="text-sm text-muted-foreground">
+            Bellegio erfasst zusätzlich pro Kind eine Buchungszeit (z.B. für
+            die jährliche Kinder- und Jugendhilfestatistik weiter unten) —
+            diese fließt aber NICHT in den Personalschlüssel ein, der bleibt
+            wie oben rein gruppenbezogen.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
@@ -432,6 +438,12 @@ export default async function DokumentationPage() {
             Zusätzlich Leitungsfreistellung je Gruppe: +5 / +7 / +9 Std. je
             Buchungszeit-Band (§29 Abs. 2 KiBiz).
           </p>
+          <p className="text-sm text-muted-foreground">
+            Bellegio erfasst zusätzlich pro Kind eine Buchungszeit (z.B. für
+            die jährliche Kinder- und Jugendhilfestatistik weiter unten) —
+            diese fließt aber NICHT in den Personalschlüssel ein, der bleibt
+            wie oben rein gruppenbezogen.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
@@ -528,10 +540,13 @@ export default async function DokumentationPage() {
             In Bayern wird die wöchentliche Stundenzahl aus der täglichen
             Buchungszeit-Band-Spanne abgeleitet (Mittelwert × 5
             Betreuungstage) — eine Näherung, da nur die tägliche Buchungszeit
-            erfasst wird. In Baden-Württemberg und NRW gibt es keine
-            Pro-Kind-Stundenerfassung; dort wird ersatzweise die
-            Öffnungszeit bzw. Buchungszeit-Stunden der Gruppe verwendet, der
-            das Kind zugeordnet ist.
+            erfasst wird. In Baden-Württemberg und NRW wird die Buchungszeit
+            ebenfalls pro Kind erfasst (bestätigt durch reale
+            Personalbelegungslisten) — allerdings direkt als wöchentliche
+            Stundenzahl statt einer täglichen Spanne wie in Bayern. Ist bei
+            einem Kind eine eigene Buchungszeit hinterlegt, wird diese
+            verwendet; nur wenn sie fehlt, wird ersatzweise die Öffnungszeit
+            bzw. Buchungszeit-Stunden der zugeordneten Gruppe herangezogen.
           </p>
         </div>
 
