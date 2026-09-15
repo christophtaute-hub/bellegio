@@ -54,11 +54,16 @@ export function austrittWarnung(
   return null;
 }
 
+/** Immer tt.mm.jjjj mit führenden Nullen — toLocaleDateString("de-DE") lässt
+ * sie sonst je nach Laufzeitumgebung weg (z.B. "27.9.2020" statt
+ * "27.09.2020"), was Tabellenspalten unvorhersehbar breit macht. */
 export function formatDate(value: string | null): string {
   if (!value) return "–";
-  return parseIsoDate(value).toLocaleDateString("de-DE", {
-    timeZone: "UTC",
-  });
+  const date = parseIsoDate(value);
+  const tag = String(date.getUTCDate()).padStart(2, "0");
+  const monat = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const jahr = date.getUTCFullYear();
+  return `${tag}.${monat}.${jahr}`;
 }
 
 /** Alter mit einer Nachkommastelle, z.B. "2,7 Jahre". Nur für die Anzeige —

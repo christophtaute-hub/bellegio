@@ -279,18 +279,14 @@ export type Database = {
           eintritt: string | null
           geburtsdatum: string
           geschlecht: string
-          gewuenschte_betreuungsart: string | null
           gruppe_id: string | null
           id: string
-          kontakt_email: string | null
-          kontakt_telefon: string | null
           nachname: string
           notizen: string | null
           platznummer: string | null
           status: string
           updated_at: string
           vorname: string
-          warteliste_quelle: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -303,18 +299,14 @@ export type Database = {
           eintritt?: string | null
           geburtsdatum: string
           geschlecht?: string
-          gewuenschte_betreuungsart?: string | null
           gruppe_id?: string | null
           id?: string
-          kontakt_email?: string | null
-          kontakt_telefon?: string | null
           nachname: string
           notizen?: string | null
           platznummer?: string | null
           status: string
           updated_at?: string
           vorname: string
-          warteliste_quelle?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -327,18 +319,14 @@ export type Database = {
           eintritt?: string | null
           geburtsdatum?: string
           geschlecht?: string
-          gewuenschte_betreuungsart?: string | null
           gruppe_id?: string | null
           id?: string
-          kontakt_email?: string | null
-          kontakt_telefon?: string | null
           nachname?: string
           notizen?: string | null
           platznummer?: string | null
           status?: string
           updated_at?: string
           vorname?: string
-          warteliste_quelle?: string | null
         }
         Relationships: [
           {

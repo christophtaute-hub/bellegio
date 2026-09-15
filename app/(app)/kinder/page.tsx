@@ -13,6 +13,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +56,9 @@ export default async function KinderPage({
 
   let query = supabase
     .from("kinder")
-    .select("id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name)")
+    .select(
+      "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, notizen, gruppe_id, gruppen(name), booking_time_bands(label), kind_weighting_factors(weighting_factors(label))"
+    )
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null)
     .order("geburtsdatum", { ascending: true });
@@ -72,18 +80,9 @@ export default async function KinderPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Kinder</h1>
         {canEditBelegung ? (
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              nativeButton={false}
-              render={<Link href="/kinder/warteliste-import" />}
-            >
-              Warteliste importieren
-            </Button>
-            <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
-              Kind anlegen
-            </Button>
-          </div>
+          <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
+            Kind anlegen
+          </Button>
         ) : null}
       </div>
 
@@ -140,73 +139,96 @@ export default async function KinderPage({
       </form>
 
       {kinder && kinder.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Gruppe</TableHead>
-                <TableHead>Geschlecht</TableHead>
-                <TableHead>Geburtstag</TableHead>
-                <TableHead>Alter</TableHead>
-                <TableHead>Eintritt</TableHead>
-                <TableHead>Austritt</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {kinder.map((kind) => {
-                const warnung = austrittWarnung(
-                  kind.austritt,
-                  kitaYearStartMonth
-                );
-                return (
-                  <TableRow
-                    key={kind.id}
-                    className={cn(
-                      warnung === "rot" &&
-                        "bg-destructive text-destructive-foreground"
-                    )}
-                  >
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/kinder/${kind.id}`}
-                        className="hover:underline"
-                      >
-                        {kind.vorname} {kind.nachname}
-                      </Link>
-                    </TableCell>
-                    <TableCell
-                      className={cn(warnung !== "rot" && "text-muted-foreground")}
-                    >
-                      {kind.gruppen?.name ?? "–"}
-                    </TableCell>
-                    <TableCell
-                      className={cn(warnung !== "rot" && "text-muted-foreground")}
-                    >
-                      {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
-                    </TableCell>
-                    <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                    <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
-                    <TableCell>{formatDate(kind.eintritt)}</TableCell>
-                    <TableCell
+        <TooltipProvider>
+          <div className="overflow-x-auto rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Gruppe</TableHead>
+                  <TableHead>Geburtstag</TableHead>
+                  <TableHead>Eintritt</TableHead>
+                  <TableHead>Austritt</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {kinder.map((kind) => {
+                  const warnung = austrittWarnung(
+                    kind.austritt,
+                    kitaYearStartMonth
+                  );
+                  const gewichtungsfaktoren = kind.kind_weighting_factors
+                    .map((kwf) => kwf.weighting_factors?.label)
+                    .filter((label): label is string => Boolean(label));
+                  return (
+                    <TableRow
+                      key={kind.id}
                       className={cn(
-                        warnung === "hellrot" && "font-medium text-destructive"
+                        "group/row",
+                        warnung === "rot" &&
+                          "bg-destructive text-destructive-foreground"
                       )}
                     >
-                      {formatDate(kind.austritt)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {KIND_STATUS_LABEL[kind.status] ?? kind.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                      <TableCell className="font-medium">
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Link
+                                href={`/kinder/${kind.id}`}
+                                className="rounded underline-offset-2 group-hover/row:underline"
+                              />
+                            }
+                          >
+                            {kind.vorname} {kind.nachname}
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <div className="flex flex-col gap-0.5">
+                              <span>
+                                {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
+                                {" · "}
+                                {calculateAgeDecimal(kind.geburtsdatum)} Jahre
+                              </span>
+                              <span>
+                                Buchungszeit: {kind.booking_time_bands?.label ?? "–"}
+                              </span>
+                              <span>
+                                Gewichtung:{" "}
+                                {gewichtungsfaktoren.length > 0
+                                  ? gewichtungsfaktoren.join(", ")
+                                  : "Regelfaktor"}
+                              </span>
+                              {kind.notizen ? <span>Notiz: {kind.notizen}</span> : null}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell
+                        className={cn(warnung !== "rot" && "text-muted-foreground")}
+                      >
+                        {kind.gruppen?.name ?? "–"}
+                      </TableCell>
+                      <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
+                      <TableCell>{formatDate(kind.eintritt)}</TableCell>
+                      <TableCell
+                        className={cn(
+                          warnung === "hellrot" && "font-medium text-destructive"
+                        )}
+                      >
+                        {formatDate(kind.austritt)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">
+                          {KIND_STATUS_LABEL[kind.status] ?? kind.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </TooltipProvider>
       ) : (
         <p className="text-sm text-muted-foreground">
           Keine Kinder gefunden.
