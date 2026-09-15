@@ -280,6 +280,7 @@ export type Database = {
           geburtsdatum: string
           geschlecht: string
           gruppe_id: string | null
+          hat_behinderung: boolean
           id: string
           nachname: string
           notizen: string | null
@@ -300,6 +301,7 @@ export type Database = {
           geburtsdatum: string
           geschlecht?: string
           gruppe_id?: string | null
+          hat_behinderung?: boolean
           id?: string
           nachname: string
           notizen?: string | null
@@ -320,6 +322,7 @@ export type Database = {
           geburtsdatum?: string
           geschlecht?: string
           gruppe_id?: string | null
+          hat_behinderung?: boolean
           id?: string
           nachname?: string
           notizen?: string | null

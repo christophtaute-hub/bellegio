@@ -17,6 +17,7 @@ export type KindInput = {
   austritt: string | null;
   buchungszeit_band_id: string | null;
   notizen: string | null;
+  hat_behinderung: boolean;
   weighting_factor_ids: string[];
 };
 
@@ -53,6 +54,7 @@ export async function createKind(input: KindInput) {
       austritt: input.austritt,
       buchungszeit_band_id: input.buchungszeit_band_id,
       notizen: input.notizen,
+      hat_behinderung: input.hat_behinderung,
     })
     .select("id")
     .single();
@@ -85,6 +87,7 @@ export async function updateKind(kindId: string, input: KindInput) {
       austritt: input.austritt,
       buchungszeit_band_id: input.buchungszeit_band_id,
       notizen: input.notizen,
+      hat_behinderung: input.hat_behinderung,
     })
     .eq("id", kindId);
 

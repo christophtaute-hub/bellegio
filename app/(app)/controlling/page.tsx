@@ -3,9 +3,14 @@ import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { getKinderPresenceAtDate, buildCompositionMatrix } from "@/lib/dashboard/presence";
+import { getJahreskategorisierung } from "@/lib/controlling/jahreskategorisierung";
 import { ForecastTable } from "@/components/forecast/forecast-table";
 import { ZeitraumPicker } from "@/components/forecast/zeitraum-picker";
 import { ExportButtons } from "@/components/forecast/export-buttons";
+import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
+import { JahreskategorisierungTabelle } from "@/components/forecast/jahreskategorisierung-tabelle";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_MONTH_COUNT = 12;
 const MAX_MONTH_COUNT = 24;
@@ -52,9 +57,9 @@ async function buildBudgetReferenz(
 export default async function ControllingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ von?: string; monate?: string }>;
+  searchParams: Promise<{ von?: string; monate?: string; jahr?: string }>;
 }) {
-  const { von, monate } = await searchParams;
+  const { von, monate, jahr } = await searchParams;
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
@@ -78,12 +83,18 @@ export default async function ControllingPage({
     Math.max(1, Number(monate) || DEFAULT_MONTH_COUNT)
   );
 
-  const [months, budgetReferenz] = einrichtungId
+  const jahreskategorisierungJahr = Math.min(
+    today.getUTCFullYear(),
+    Math.max(2020, Number(jahr) || today.getUTCFullYear())
+  );
+
+  const [months, budgetReferenz, jahreskategorisierung] = einrichtungId
     ? await Promise.all([
         buildForecastMonths(supabase, einrichtungId, vonMonth, monthCount),
         buildBudgetReferenz(supabase, einrichtungId, letztesKalenderjahrIso),
+        getJahreskategorisierung(supabase, einrichtungId, jahreskategorisierungJahr),
       ])
-    : [[], []];
+    : [[], [], null];
 
   return (
     <div className="flex flex-col gap-6">
@@ -113,6 +124,62 @@ export default async function ControllingPage({
           Keine Daten verfügbar.
         </p>
       )}
+
+      {months.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <h2 className="font-heading text-lg text-primary">
+            Zeitkategorie je Monat
+          </h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Wie viele Kinder in welcher Zeitkategorie waren — je Bundesland
+            so, wie es dort tatsächlich erfasst wird.
+          </p>
+          <ZeitkategorieTabelle months={months} />
+        </div>
+      ) : null}
+
+      {jahreskategorisierung ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-heading text-lg text-primary">
+              Jährliche Kategorisierung (Kinder- und Jugendhilfestatistik)
+            </h2>
+            <form className="flex items-end gap-2" method="get">
+              <input type="hidden" name="von" value={vonMonth} />
+              <input type="hidden" name="monate" value={monthCount} />
+              <div className="flex flex-col gap-1">
+                <label htmlFor="jahr" className="text-xs text-muted-foreground">
+                  Jahr (Stichtag 1. März)
+                </label>
+                <Input
+                  id="jahr"
+                  name="jahr"
+                  type="number"
+                  min={2020}
+                  max={today.getUTCFullYear()}
+                  defaultValue={jahreskategorisierungJahr}
+                  className="h-8 w-28"
+                />
+              </div>
+              <Button type="submit" variant="secondary" size="sm">
+                Anzeigen
+              </Button>
+            </form>
+          </div>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Jedes am {jahreskategorisierung.stichtag.split("-").reverse().join(".")}{" "}
+            aktive Kind, eingeordnet nach vertraglich vereinbarter
+            wöchentlicher Betreuungszeit. Die Bänder entsprechen keinem
+            bundesweit einheitlichen Meldebogen — vor der ersten echten
+            Meldung mit dem zuständigen Jugendamt/Statistischen Landesamt
+            abgleichen (siehe Dokumentation).
+          </p>
+          <JahreskategorisierungTabelle
+            baender={jahreskategorisierung.baender}
+            nichtZugeordnet={jahreskategorisierung.nichtZugeordnet}
+          />
+        </div>
+      ) : null}
 
       {budgetReferenz.length > 0 ? (
         <div className="flex flex-col gap-3">

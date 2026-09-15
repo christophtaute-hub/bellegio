@@ -28,6 +28,7 @@ const kindFormSchema = z
     austritt: z.string(),
     buchungszeit_band_id: z.string(),
     notizen: z.string(),
+    hat_behinderung: z.boolean(),
     weighting_factor_ids: z.array(z.string()),
   })
   .refine((data) => data.status !== "aktiv" || data.gruppe_id !== "", {
@@ -38,6 +39,7 @@ const kindFormSchema = z
 type KindFormValues = z.infer<typeof kindFormSchema>;
 
 export type KindFormOption = { id: string; label: string };
+export type WeightingFactorOption = KindFormOption & { code: string };
 
 export function KindForm({
   mode,
@@ -52,7 +54,7 @@ export function KindForm({
   defaultValues?: Partial<KindFormValues>;
   gruppen: KindFormOption[];
   bookingTimeBands: KindFormOption[];
-  weightingFactors: KindFormOption[];
+  weightingFactors: WeightingFactorOption[];
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -76,12 +78,16 @@ export function KindForm({
       austritt: "",
       buchungszeit_band_id: "",
       notizen: "",
+      hat_behinderung: false,
       weighting_factor_ids: [],
       ...defaultValues,
     },
   });
 
   const selectedWeightingFactors = watch("weighting_factor_ids");
+  const integrationsfaktorId = weightingFactors.find(
+    (f) => f.code === "integrationskinder"
+  )?.id;
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
@@ -97,6 +103,7 @@ export function KindForm({
       austritt: values.austritt || null,
       buchungszeit_band_id: values.buchungszeit_band_id || null,
       notizen: values.notizen || null,
+      hat_behinderung: values.hat_behinderung,
       weighting_factor_ids: values.weighting_factor_ids,
     };
 
@@ -208,6 +215,9 @@ export function KindForm({
                   setValue("weighting_factor_ids", next, {
                     shouldValidate: true,
                   });
+                  if (checked && factor.id === integrationsfaktorId) {
+                    setValue("hat_behinderung", true);
+                  }
                 }}
               />
               {factor.label}
@@ -215,6 +225,18 @@ export function KindForm({
           ))}
         </div>
       </Field>
+
+      <label htmlFor="hat_behinderung" className="flex items-center gap-2 text-sm">
+        <Checkbox
+          id="hat_behinderung"
+          checked={watch("hat_behinderung")}
+          onCheckedChange={(checked) =>
+            setValue("hat_behinderung", checked === true)
+          }
+        />
+        Kind mit (drohender) Behinderung — bundeslandunabhängig, z.B. für die
+        jährliche Kinder- und Jugendhilfestatistik
+      </label>
 
       <Field id="notizen" label="Notizen">
         <Textarea id="notizen" rows={4} {...register("notizen")} />

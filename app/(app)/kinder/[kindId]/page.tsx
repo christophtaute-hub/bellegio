@@ -19,7 +19,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, buchungszeit_band_id, notizen"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, buchungszeit_band_id, notizen, hat_behinderung"
     )
     .eq("id", kindId)
     .single();
@@ -54,7 +54,7 @@ export default async function KindDetailPage({
       .order("sort_order"),
     supabase
       .from("weighting_factors")
-      .select("id, label")
+      .select("id, label, code")
       .eq("bundesland_code", bundeslandCode),
     supabase
       .from("kind_weighting_factors")
@@ -100,6 +100,7 @@ export default async function KindDetailPage({
           austritt: kind.austritt ?? "",
           buchungszeit_band_id: kind.buchungszeit_band_id ?? "",
           notizen: kind.notizen ?? "",
+          hat_behinderung: kind.hat_behinderung,
           weighting_factor_ids: (kindWeightingFactors ?? []).map(
             (row) => row.weighting_factor_id
           ),
@@ -112,6 +113,7 @@ export default async function KindDetailPage({
         weightingFactors={(weightingFactors ?? []).map((w) => ({
           id: w.id,
           label: w.label,
+          code: w.code,
         }))}
       />
       <Aenderungshistorie eintraege={aenderungen} />

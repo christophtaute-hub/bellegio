@@ -30,7 +30,7 @@ export default async function KindNeuPage() {
         .order("sort_order"),
       supabase
         .from("weighting_factors")
-        .select("id, label")
+        .select("id, label, code")
         .eq("bundesland_code", bundeslandCode),
     ]);
 
@@ -47,6 +47,7 @@ export default async function KindNeuPage() {
         weightingFactors={(weightingFactors ?? []).map((w) => ({
           id: w.id,
           label: w.label,
+          code: w.code,
         }))}
       />
     </div>

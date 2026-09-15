@@ -427,6 +427,53 @@ export default async function DokumentationPage() {
           </ul>
         </div>
       </section>
+
+      {/* Jahreskategorisierung */}
+      <section className="flex flex-col gap-6">
+        <h2 className="font-heading text-2xl text-primary">
+          Jährliche Kategorisierung (Kinder- und Jugendhilfestatistik)
+        </h2>
+
+        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
+          <h3 className="font-heading text-lg text-primary">Bänder</h3>
+          <p className="text-sm text-muted-foreground">
+            Controlling ordnet einmal jährlich (Stichtag 1. März, analog zum
+            amtlichen Erhebungsstichtag der Kinder- und
+            Jugendhilfestatistik) jedes aktive Kind nach vertraglich
+            vereinbarter wöchentlicher Betreuungszeit einem Band zu: 10 bis
+            unter 15 · 15 bis unter 20 · 20 bis unter 25 · 25 bis unter 30 ·
+            30 bis unter 35 · 35 bis unter 40 · 40 bis unter 45 · 45 bis
+            unter 50 · 50 bis unter 55 · 55 Std. und mehr, jeweils mit einer
+            Spalte für Kinder mit (drohender) Behinderung.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            In Bayern wird die wöchentliche Stundenzahl aus der täglichen
+            Buchungszeit-Band-Spanne abgeleitet (Mittelwert × 5
+            Betreuungstage) — eine Näherung, da nur die tägliche Buchungszeit
+            erfasst wird. In Baden-Württemberg und NRW gibt es keine
+            Pro-Kind-Stundenerfassung; dort wird ersatzweise die
+            Öffnungszeit bzw. Buchungszeit-Stunden der Gruppe verwendet, der
+            das Kind zugeordnet ist.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Wichtiger Hinweis zur Quellenlage
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Es gibt kein bundesweit einheitliches Stundenraster für diese
+            Meldung — Meldebögen unterscheiden sich je Bundesland und
+            teils je Kommune (Hamburg nutzt z.B. bis 10 / 11–20 / 21–25 /
+            26–30 / 31–40 / 41+ Std., andere Grenzen als hier). Die oben
+            genannten Bänder in 5-Std.-Schritten sind daher als Vorgabe
+            übernommen und nicht durch eine bundesweit gültige Primärquelle
+            bestätigt — vor der ersten echten Meldung unbedingt mit dem
+            eigenen Jugendamt bzw. Statistischen Landesamt abgleichen, ob
+            diese Bänder dem tatsächlich verwendeten Meldebogen entsprechen.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
