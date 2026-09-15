@@ -1,19 +1,12 @@
-import { Users, Scale, AlertTriangle } from "lucide-react";
+import { Users, Scale, AlertTriangle, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
-import {
-  getKinderPresenceAtDate,
-  buildCompositionMatrix,
-  buildKpis,
-} from "@/lib/dashboard/presence";
-import {
-  getTeamPresenceForMonth,
-  getStaffingRules,
-  buildPersonalplanung,
-} from "@/lib/team/anstellungsschluessel";
+import { getKinderPresenceAtDate, buildCompositionMatrix, buildKpis } from "@/lib/dashboard/presence";
+import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { MetricCard } from "@/components/ui/metric-card";
+import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 
 const TREND_MONTHS = 6;
@@ -23,6 +16,36 @@ function formatGewichtet(value: number): string {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
+}
+
+function personalKennzahl(
+  ergebnis: Awaited<ReturnType<typeof getPersonalplanungFuerEinrichtung>>
+): { label: string; value: string; warnt: boolean; trendWert: number } {
+  if (ergebnis.modell === "bayern") {
+    const { anstellungsschluessel, mindestschluesselOk } = ergebnis.daten;
+    return {
+      label: "Anstellungsschlüssel",
+      value: anstellungsschluessel !== null ? `1 : ${formatGewichtet(anstellungsschluessel)}` : "–",
+      warnt: !mindestschluesselOk,
+      trendWert: anstellungsschluessel ?? 0,
+    };
+  }
+  if (ergebnis.modell === "bw") {
+    const { istVzaeGesamt, sollVzaeGesamt } = ergebnis.daten;
+    return {
+      label: "Ist-VZÄ / Soll-VZÄ",
+      value: `${formatGewichtet(istVzaeGesamt)} / ${formatGewichtet(sollVzaeGesamt)}`,
+      warnt: istVzaeGesamt < sollVzaeGesamt,
+      trendWert: istVzaeGesamt,
+    };
+  }
+  const { istFk, sollFachkraftStundenGesamt } = ergebnis.daten;
+  return {
+    label: "Ist-FK / Soll-FK Std.",
+    value: `${formatGewichtet(istFk)} / ${formatGewichtet(sollFachkraftStundenGesamt)}`,
+    warnt: istFk < sollFachkraftStundenGesamt,
+    trendWert: istFk,
+  };
 }
 
 export default async function DashboardPage({
@@ -35,31 +58,16 @@ export default async function DashboardPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [rows, teamPresenceRows, { data: einrichtung }] = einrichtungId
+  const [rows, { data: einrichtung }, personalErgebnis] = einrichtungId
     ? await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
-        getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
-        supabase
-          .from("einrichtungen")
-          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
-          .eq("id", einrichtungId)
-          .single(),
+        supabase.from("einrichtungen").select("name").eq("id", einrichtungId).single(),
+        getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag),
       ])
-    : [[], [], { data: null }];
+    : [[], { data: null }, null];
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
-  const staffingRules = await getStaffingRules(
-    supabase,
-    einrichtung?.bundesland_code ?? "by"
-  );
-  const personal = buildPersonalplanung(
-    teamPresenceRows,
-    kpis.gewichteteKinderzahl,
-    kpis.gewichteteKinderzahlFachkraftquote,
-    einrichtung?.vollzeit_wochenstunden ?? 39,
-    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
-    staffingRules
-  );
+  const personal = personalErgebnis ? personalKennzahl(personalErgebnis) : null;
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
@@ -67,34 +75,31 @@ export default async function DashboardPage({
   const trendData = einrichtungId
     ? await Promise.all(
         trendMonths.map(async (month) => {
-          const [monthRows, monthTeamRows] = await Promise.all([
+          const [monthRows, monthPersonal] = await Promise.all([
             getKinderPresenceAtDate(supabase, einrichtungId, month),
-            getTeamPresenceForMonth(supabase, einrichtungId, month),
+            getPersonalplanungFuerEinrichtung(supabase, einrichtungId, month),
           ]);
-          const monthKpis = buildKpis(monthRows);
-          const monthPersonal = buildPersonalplanung(
-            monthTeamRows,
-            monthKpis.gewichteteKinderzahl,
-            monthKpis.gewichteteKinderzahlFachkraftquote,
-            einrichtung?.vollzeit_wochenstunden ?? 39,
-            einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
-            staffingRules
-          );
-          return { kpis: monthKpis, personal: monthPersonal };
+          return {
+            kpis: buildKpis(monthRows),
+            personal: personalKennzahl(monthPersonal),
+          };
         })
       )
     : [];
   const trendKinderGesamt = trendData.map((t) => t.kpis.kinderGesamt);
   const trendGewichteteSumme = trendData.map((t) => t.kpis.gewichteteSumme);
   const trendOhneBuchungszeit = trendData.map((t) => t.kpis.ohneBuchungszeit);
-  const trendAnstellungsschluessel = trendData.map(
-    (t) => t.personal.anstellungsschluessel ?? 0
-  );
+  const trendPersonal = trendData.map((t) => t.personal.trendWert);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">Dashboard</h1>
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="font-heading text-3xl tracking-tight text-primary">
+          {einrichtung?.name ? `Willkommen zurück, ${einrichtung.name}` : "Dashboard"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Eure Belegung und Personalsituation auf einen Blick.
+        </p>
       </div>
 
       <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
@@ -109,20 +114,18 @@ export default async function DashboardPage({
         <MetricCard
           label="Gewichtete Buchungsstunden"
           value={formatGewichtet(kpis.gewichteteSumme)}
-          icon={<Scale />}
+          icon={<Wallet />}
           trend={trendGewichteteSumme}
         />
-        <MetricCard
-          label="Anstellungsschlüssel"
-          value={
-            personal.anstellungsschluessel !== null
-              ? `1 : ${formatGewichtet(personal.anstellungsschluessel)}`
-              : "–"
-          }
-          icon={<Scale />}
-          tone={!personal.mindestschluesselOk ? "warn" : "default"}
-          trend={trendAnstellungsschluessel}
-        />
+        {personal ? (
+          <MetricCard
+            label={personal.label}
+            value={personal.value}
+            icon={<Scale />}
+            tone={personal.warnt ? "warn" : "default"}
+            trend={trendPersonal}
+          />
+        ) : null}
         <MetricCard
           label="Ohne Buchungszeit"
           value={String(kpis.ohneBuchungszeit)}
@@ -132,10 +135,17 @@ export default async function DashboardPage({
         />
       </div>
 
-      <div className="flex flex-col gap-3">
-        <h2 className="font-heading text-lg text-primary">
-          Zusammensetzung nach Buchungszeit und Gewichtungsfaktor
-        </h2>
+      <div className="flex flex-col gap-4 rounded-2xl border bg-secondary/30 p-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-heading text-lg text-primary">
+            Zusammensetzung nach Buchungszeit und Gewichtungsfaktor
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Wer wie lange gebucht hat, auf einen Blick — die genauen Zahlen
+            stehen in der Tabelle darunter.
+          </p>
+        </div>
+        <CompositionChart matrix={matrix} />
         <CompositionTable matrix={matrix} />
       </div>
     </div>
