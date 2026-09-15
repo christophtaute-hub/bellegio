@@ -7,6 +7,7 @@ import { Settings } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
+import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 
 export default async function AppLayout({
   children,
@@ -34,7 +35,7 @@ export default async function AppLayout({
     activeEinrichtungId
       ? supabase
           .from("einrichtungen")
-          .select("name")
+          .select("name, bundesland_code")
           .eq("id", activeEinrichtungId)
           .single()
       : Promise.resolve({ data: null }),
@@ -65,6 +66,9 @@ export default async function AppLayout({
             <p className="hidden truncate text-sm font-medium text-primary sm:block">
               Aloha, {vorname}
             </p>
+          ) : null}
+          {einrichtung?.bundesland_code ? (
+            <BundeslandBadge code={einrichtung.bundesland_code} />
           ) : null}
           <div className="flex-1" />
           <Link

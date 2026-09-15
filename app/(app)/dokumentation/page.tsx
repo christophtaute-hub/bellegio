@@ -63,11 +63,21 @@ function Quelle({ label, href }: { label: string; href: string }) {
   );
 }
 
+const BUNDESLAND_TONE: Record<string, string> = {
+  by: "border-blue-500/60 bg-blue-500/10 text-blue-800 dark:text-blue-400",
+  bw: "border-amber-500/60 bg-amber-500/10 text-amber-800 dark:text-amber-400",
+  nrw: "border-emerald-500/60 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400",
+};
+
 function AktuelleEinrichtungBadge({ bundesland }: { bundesland: string }) {
+  const tone = BUNDESLAND_TONE[bundesland] ?? "border-primary bg-primary/10 text-primary";
   return (
-    <span className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
-      Deine aktive Einrichtung rechnet nach: {BUNDESLAND_LABEL[bundesland] ?? bundesland}
-    </span>
+    <div
+      className={`flex w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-base font-semibold ${tone}`}
+    >
+      Diese Seite zeigt nur die Berechnung für dein aktuelles Bundesland:{" "}
+      {BUNDESLAND_LABEL[bundesland] ?? bundesland}
+    </div>
   );
 }
 
@@ -306,6 +316,35 @@ export default async function DokumentationPage() {
           </p>
         </div>
 
+        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Eigenes Rechenbeispiel
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
+            gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
+            BW (Demo)&ldquo; (Testaccount katrin@bellegio.test), live
+            nachvollziehbar im Team/Dashboard dieser Einrichtung.
+          </p>
+          <div className="flex flex-col gap-1 font-mono text-sm">
+            <p>Regelgruppe, keine AM, 6 Std./Tag (Referenz) → Soll-VZÄ 1,80</p>
+            <p>Ganztagsgruppe, keine AM, 7 Std./Tag (Referenz) → Soll-VZÄ 2,30</p>
+            <p>Kinderkrippe, keine AM, 7 Std./Tag (Referenz) → Soll-VZÄ 2,06</p>
+            <p className="mt-1 font-semibold">Soll-VZÄ gesamt = 1,80 + 2,30 + 2,06 = 6,16</p>
+            <p className="mt-2">
+              Personal gesamt: 240,0 Std./Woche (bei einer Vollzeit-Referenz
+              von 39 Std./Woche)
+            </p>
+            <p className="font-semibold text-primary">
+              Ist-VZÄ = 240,0 ÷ 39 = 6,15
+            </p>
+            <p className="text-muted-foreground">
+              6,15 &lt; 6,16, aber ≥ 90 % des Sollwerts → knapp erfüllt, kein
+              akuter Handlungsbedarf, aber kein Puffer mehr.
+            </p>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
           <h3 className="font-heading text-lg text-primary">
             Wichtiger Hinweis zur Quellenlage
@@ -393,6 +432,39 @@ export default async function DokumentationPage() {
             Zusätzlich Leitungsfreistellung je Gruppe: +5 / +7 / +9 Std. je
             Buchungszeit-Band (§29 Abs. 2 KiBiz).
           </p>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Eigenes Rechenbeispiel
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
+            gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
+            NRW (Demo)&ldquo; (Testaccount katrin@bellegio.test), live
+            nachvollziehbar im Team/Dashboard dieser Einrichtung.
+          </p>
+          <div className="flex flex-col gap-1 font-mono text-sm">
+            <p>Gruppe I, GF I, 35 Std./Wo. → 77 FK + 7 Leitung = 84,0 Soll-FK</p>
+            <p>Gruppe II, GF II, 25 Std./Wo. → 55 FK + 5 Leitung = 60,0 Soll-FK</p>
+            <p>
+              Gruppe III, GF III, 45 Std./Wo. → 49,5 FK + 9 Leitung = 58,5
+              Soll-FK, 49,5 Soll-EK
+            </p>
+            <p className="mt-1 font-semibold">
+              Soll-FK gesamt = 84,0 + 60,0 + 58,5 = 202,5 · Soll-EK gesamt = 49,5
+            </p>
+            <p className="mt-2">
+              Personal: Fachkräfte 202,5 Std./Woche, Ergänzungskräfte 49,5
+              Std./Woche
+            </p>
+            <p className="font-semibold text-primary">
+              Ist-FK 202,5 = Soll-FK 202,5 · Ist-EK 49,5 = Soll-EK 49,5
+            </p>
+            <p className="text-muted-foreground">
+              Beide Werte exakt erfüllt → kein Handlungsbedarf.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
