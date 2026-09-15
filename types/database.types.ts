@@ -67,6 +67,44 @@ export type Database = {
         }
         Relationships: []
       }
+      bw_personalschluessel: {
+        Row: {
+          altersmischung: boolean
+          betriebsform: string
+          bundesland_code: string
+          id: string
+          referenz_oeffnungszeit_stunden: number
+          referenz_vzae: number
+          stellen_pro_stunde: number
+        }
+        Insert: {
+          altersmischung?: boolean
+          betriebsform: string
+          bundesland_code?: string
+          id?: string
+          referenz_oeffnungszeit_stunden: number
+          referenz_vzae: number
+          stellen_pro_stunde: number
+        }
+        Update: {
+          altersmischung?: boolean
+          betriebsform?: string
+          bundesland_code?: string
+          id?: string
+          referenz_oeffnungszeit_stunden?: number
+          referenz_vzae?: number
+          stellen_pro_stunde?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bw_personalschluessel_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       einrichtungen: {
         Row: {
           address_city: string | null
@@ -133,33 +171,48 @@ export type Database = {
       gruppen: {
         Row: {
           archived_at: string | null
+          bw_altersmischung: boolean
+          bw_betriebsform: string | null
+          bw_oeffnungszeit_stunden: number | null
           created_at: string
           einrichtung_id: string
           gruppenart: string
           id: string
           name: string
+          nrw_buchungszeit_stunden: number | null
+          nrw_gruppenform: string | null
           sollplatze: number
           sort_order: number
           updated_at: string
         }
         Insert: {
           archived_at?: string | null
+          bw_altersmischung?: boolean
+          bw_betriebsform?: string | null
+          bw_oeffnungszeit_stunden?: number | null
           created_at?: string
           einrichtung_id: string
           gruppenart: string
           id?: string
           name: string
+          nrw_buchungszeit_stunden?: number | null
+          nrw_gruppenform?: string | null
           sollplatze?: number
           sort_order?: number
           updated_at?: string
         }
         Update: {
           archived_at?: string | null
+          bw_altersmischung?: boolean
+          bw_betriebsform?: string | null
+          bw_oeffnungszeit_stunden?: number | null
           created_at?: string
           einrichtung_id?: string
           gruppenart?: string
           id?: string
           name?: string
+          nrw_buchungszeit_stunden?: number | null
+          nrw_gruppenform?: string | null
           sollplatze?: number
           sort_order?: number
           updated_at?: string
@@ -357,6 +410,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "kinder"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      nrw_personalstunden: {
+        Row: {
+          buchungszeit_stunden: number
+          bundesland_code: string
+          ergaenzungskraft_stunden: number
+          fachkraft_stunden: number
+          gruppenform: string
+          id: string
+          leitungsfreistellung_stunden: number
+        }
+        Insert: {
+          buchungszeit_stunden: number
+          bundesland_code?: string
+          ergaenzungskraft_stunden: number
+          fachkraft_stunden: number
+          gruppenform: string
+          id?: string
+          leitungsfreistellung_stunden: number
+        }
+        Update: {
+          buchungszeit_stunden?: number
+          bundesland_code?: string
+          ergaenzungskraft_stunden?: number
+          fachkraft_stunden?: number
+          gruppenform?: string
+          id?: string
+          leitungsfreistellung_stunden?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nrw_personalstunden_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
           },
         ]
       }

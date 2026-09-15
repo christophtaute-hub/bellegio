@@ -1,18 +1,12 @@
 import Link from "next/link";
-import { Scale, GraduationCap, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { TEAM_STATUS_LABEL, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
-import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
-import {
-  getTeamPresenceForMonth,
-  getStaffingRules,
-  buildPersonalplanung,
-} from "@/lib/team/anstellungsschluessel";
-import { StichtagPicker } from "@/components/shared/stichtag-picker";
-import { StatTile } from "@/components/ui/stat-tile";
-import { AmpelBadge } from "@/components/team/ampel-badge";
+import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
+import { PersonalplanungBayern } from "@/components/team/personalplanung-bayern";
+import { PersonalplanungBW } from "@/components/team/personalplanung-bw";
+import { PersonalplanungNRW } from "@/components/team/personalplanung-nrw";
 import { GruppeQuickSelect } from "@/components/team/gruppe-quick-select";
 import { getCurrentUserRole, canWritePersonal } from "@/lib/server/current-user-role";
 import {
@@ -29,13 +23,6 @@ import { Input } from "@/components/ui/input";
 
 const SELECT_CLASS =
   "h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
-
-function formatNumber(value: number, decimals = 2): string {
-  return value.toLocaleString("de-DE", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
-}
 
 export default async function TeamPage({
   searchParams,
@@ -57,7 +44,7 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, role, { data: einrichtung }] = await Promise.all([
+  const [{ data: gruppen }, role, personalplanung] = await Promise.all([
     einrichtungId
       ? supabase
           .from("gruppen")
@@ -68,33 +55,10 @@ export default async function TeamPage({
       : Promise.resolve({ data: null }),
     getCurrentUserRole(),
     einrichtungId
-      ? supabase
-          .from("einrichtungen")
-          .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
-          .eq("id", einrichtungId)
-          .single()
-      : Promise.resolve({ data: null }),
+      ? getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag)
+      : null,
   ]);
   const canEditPersonal = canWritePersonal(role);
-
-  const [kinderRows, teamPresenceRows, staffingRules] = einrichtungId
-    ? await Promise.all([
-        getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
-        getTeamPresenceForMonth(supabase, einrichtungId, stichtag),
-        getStaffingRules(supabase, einrichtung?.bundesland_code ?? "by"),
-      ])
-    : [[], [], undefined];
-
-  const { gewichteteKinderzahl, gewichteteKinderzahlFachkraftquote } =
-    buildKpis(kinderRows);
-  const personal = buildPersonalplanung(
-    teamPresenceRows,
-    gewichteteKinderzahl,
-    gewichteteKinderzahlFachkraftquote,
-    einrichtung?.vollzeit_wochenstunden ?? 39,
-    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0,
-    staffingRules
-  );
 
   let query = supabase
     .from("team")
@@ -128,62 +92,25 @@ export default async function TeamPage({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-heading text-lg text-primary">
-            Anstellungsschlüssel (Bayern)
-          </h2>
-          <AmpelBadge ampel={personal.ampel} />
-        </div>
-
-        <StichtagPicker basePath="/team" stichtag={stichtag} />
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatTile
-            label="Anstellungsschlüssel"
-            value={
-              personal.anstellungsschluessel !== null
-                ? `1 : ${formatNumber(personal.anstellungsschluessel, 2)}`
-                : "–"
-            }
-            icon={Scale}
-            tone={!personal.mindestschluesselOk ? "warn" : "default"}
-          />
-          <StatTile
-            label="Ist-FK-VZÄ / Soll-FK-VZÄ"
-            value={`${formatNumber(personal.istFk / (personal.vollzeitWochenstunden || 1), 2)} / ${formatNumber(personal.vzaeSollFachkraft, 2)}`}
-            icon={Users}
-          />
-          <StatTile
-            label="Ist-EK"
-            value={`${formatNumber(personal.istEk, 1)} Std.`}
-            icon={GraduationCap}
-          />
-          <StatTile
-            label="Ist-VZÄ gesamt"
-            value={formatNumber(personal.vzaeIst, 2)}
-            icon={Scale}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={personal.mindestschluesselOk ? "secondary" : "destructive"}>
-            Mindestschlüssel 1:11,0: {personal.mindestschluesselOk ? "Ja" : "Nein"}
-          </Badge>
-          <Badge
-            variant={personal.empfohlenerSchluesselOk ? "secondary" : "destructive"}
-          >
-            Eigene Zielgröße (nicht gesetzlich) 1:
-            {formatNumber(personal.empfohlenerSchluesselWert, 1)}:{" "}
-            {personal.empfohlenerSchluesselOk ? "Ja" : "Nein"}
-          </Badge>
-          <Badge
-            variant={personal.qualifikationsschluesselOk ? "secondary" : "destructive"}
-          >
-            Qualifikationsschlüssel: {personal.qualifikationsschluesselOk ? "Ja" : "Nein"}
-          </Badge>
-        </div>
-      </div>
+      {personalplanung?.modell === "bayern" ? (
+        <PersonalplanungBayern
+          personal={personalplanung.daten}
+          stichtag={stichtag}
+          basePath="/team"
+        />
+      ) : personalplanung?.modell === "bw" ? (
+        <PersonalplanungBW
+          daten={personalplanung.daten}
+          stichtag={stichtag}
+          basePath="/team"
+        />
+      ) : personalplanung?.modell === "nrw" ? (
+        <PersonalplanungNRW
+          daten={personalplanung.daten}
+          stichtag={stichtag}
+          basePath="/team"
+        />
+      ) : null}
 
       <form className="flex flex-wrap items-end gap-3" method="get">
         <input type="hidden" name="stichtag" value={stichtag} />
