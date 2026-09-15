@@ -62,13 +62,18 @@ export default async function AppLayout({
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
-          {vorname ? (
-            <p className="hidden truncate text-sm font-medium text-primary sm:block">
-              Aloha, {vorname}
+          {einrichtung?.name ? (
+            <p className="truncate text-sm font-semibold text-primary">
+              {einrichtung.name}
             </p>
           ) : null}
           {einrichtung?.bundesland_code ? (
             <BundeslandBadge code={einrichtung.bundesland_code} />
+          ) : null}
+          {vorname ? (
+            <p className="hidden truncate text-sm text-muted-foreground sm:block">
+              Aloha, {vorname}
+            </p>
           ) : null}
           <div className="flex-1" />
           <Link
