@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
-import { getCurrentUserRole, canUseSzenarioRechner } from "@/lib/server/current-user-role";
+import { canUseSzenarioRechner } from "@/lib/server/current-user-role";
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { getTeamPresenceForMonth, getStaffingRules } from "@/lib/team/anstellungsschluessel";
 import { SzenarioRechner } from "@/components/szenario/szenario-rechner";
@@ -9,9 +9,11 @@ import { SzenarioRechner } from "@/components/szenario/szenario-rechner";
 export default async function SzenarioPage() {
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
-  const role = await getCurrentUserRole();
+  const erlaubt = einrichtungId
+    ? await canUseSzenarioRechner(supabase, einrichtungId)
+    : false;
 
-  if (!canUseSzenarioRechner(role)) {
+  if (!erlaubt) {
     return (
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl tracking-tight text-primary">

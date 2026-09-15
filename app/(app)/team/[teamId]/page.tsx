@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { getCurrentUserRole, canWritePersonal } from "@/lib/server/current-user-role";
+import { canWritePersonal } from "@/lib/server/current-user-role";
 import { TeamForm } from "@/components/team/team-form";
 import { AusfallzeitenListe } from "@/components/team/ausfallzeiten-liste";
 
@@ -26,7 +26,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const [{ data: gruppen }, { data: ausfallzeiten }, role] = await Promise.all([
+  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal] = await Promise.all([
     supabase
       .from("gruppen")
       .select("id, name")
@@ -38,9 +38,8 @@ export default async function TeamDetailPage({
       .select("id, art, von, bis, notizen")
       .eq("team_id", teamId)
       .order("von", { ascending: false }),
-    getCurrentUserRole(),
+    einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
   ]);
-  const canEditPersonal = canWritePersonal(role);
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">

@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserRole =
@@ -5,7 +7,11 @@ export type UserRole =
   | "einrichtungsleitung"
   | "belegung"
   | "personal"
-  | "controlling";
+  | "controlling"
+  | "mitarbeiter";
+
+export type Bereich = "belegung" | "personal" | "controlling" | "szenario";
+export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
 
 export async function getCurrentUserRole(): Promise<UserRole | null> {
   const supabase = await createClient();
@@ -23,22 +29,69 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
   return (profile?.role as UserRole) ?? null;
 }
 
-export function canWriteBelegung(role: UserRole | null): boolean {
-  return (
-    role === "traeger_admin" ||
-    role === "einrichtungsleitung" ||
-    role === "belegung"
-  );
+/**
+ * Effektiver Zugriff des aktuellen Nutzers auf einen Bereich einer
+ * Einrichtung. traeger_admin/einrichtungsleitung haben immer "bearbeiten";
+ * alle anderen Nutzer werden granular über einrichtung_berechtigungen
+ * geprüft (spiegelt app.current_user_zugriff() aus der RLS — die
+ * eigentliche Durchsetzung passiert dort, diese Funktion steuert nur, was
+ * die UI anzeigt/anbietet).
+ */
+export async function getZugriff(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string,
+  bereich: Bereich
+): Promise<Zugriff> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "kein_zugriff";
+
+  const { data: profile } = await supabase
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role === "traeger_admin" || profile?.role === "einrichtungsleitung") {
+    return "bearbeiten";
+  }
+
+  const { data } = await supabase
+    .from("einrichtung_berechtigungen")
+    .select("zugriff")
+    .eq("user_id", user.id)
+    .eq("einrichtung_id", einrichtungId)
+    .eq("bereich", bereich)
+    .maybeSingle();
+
+  return (data?.zugriff as Zugriff | undefined) ?? "kein_zugriff";
 }
 
-export function canWritePersonal(role: UserRole | null): boolean {
-  return (
-    role === "traeger_admin" ||
-    role === "einrichtungsleitung" ||
-    role === "personal"
-  );
+export async function canWriteBelegung(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "belegung")) === "bearbeiten";
 }
 
-export function canUseSzenarioRechner(role: UserRole | null): boolean {
-  return role === "traeger_admin" || role === "einrichtungsleitung";
+export async function canWritePersonal(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "personal")) === "bearbeiten";
+}
+
+export async function canUseSzenarioRechner(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "szenario")) !== "kein_zugriff";
+}
+
+export async function canViewControlling(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "controlling")) !== "kein_zugriff";
 }

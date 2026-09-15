@@ -168,6 +168,51 @@ export type Database = {
           },
         ]
       }
+      einrichtung_berechtigungen: {
+        Row: {
+          bereich: string
+          created_at: string
+          einrichtung_id: string
+          id: string
+          updated_at: string
+          user_id: string
+          zugriff: string
+        }
+        Insert: {
+          bereich: string
+          created_at?: string
+          einrichtung_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          zugriff: string
+        }
+        Update: {
+          bereich?: string
+          created_at?: string
+          einrichtung_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          zugriff?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einrichtung_berechtigungen_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einrichtung_berechtigungen_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gruppen: {
         Row: {
           archived_at: string | null
@@ -708,6 +753,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          kann_rechte_verwalten: boolean
           role: string
           trager_id: string
           updated_at: string
@@ -717,6 +763,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          kann_rechte_verwalten?: boolean
           role: string
           trager_id: string
           updated_at?: string
@@ -726,6 +773,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          kann_rechte_verwalten?: boolean
           role?: string
           trager_id?: string
           updated_at?: string

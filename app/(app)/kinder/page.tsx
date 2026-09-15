@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
 import { austrittWarnung, calculateAgeDecimal, formatDate } from "@/lib/kita-datum";
-import { getCurrentUserRole, canWriteBelegung } from "@/lib/server/current-user-role";
+import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { cn } from "cn";
 import {
   Table,
@@ -35,7 +35,7 @@ export default async function KinderPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, { data: einrichtung }, role] = await Promise.all([
+  const [{ data: gruppen }, { data: einrichtung }, canEditBelegung] = await Promise.all([
     supabase
       .from("gruppen")
       .select("id, name")
@@ -49,10 +49,9 @@ export default async function KinderPage({
           .eq("id", einrichtungId)
           .single()
       : Promise.resolve({ data: null }),
-    getCurrentUserRole(),
+    einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
   ]);
   const kitaYearStartMonth = einrichtung?.kita_year_start_month ?? 9;
-  const canEditBelegung = canWriteBelegung(role);
 
   let query = supabase
     .from("kinder")

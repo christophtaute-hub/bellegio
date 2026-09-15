@@ -8,7 +8,7 @@ import { PersonalplanungBayern } from "@/components/team/personalplanung-bayern"
 import { PersonalplanungBW } from "@/components/team/personalplanung-bw";
 import { PersonalplanungNRW } from "@/components/team/personalplanung-nrw";
 import { GruppeQuickSelect } from "@/components/team/gruppe-quick-select";
-import { getCurrentUserRole, canWritePersonal } from "@/lib/server/current-user-role";
+import { canWritePersonal } from "@/lib/server/current-user-role";
 import {
   Table,
   TableBody,
@@ -44,7 +44,7 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, role, personalplanung] = await Promise.all([
+  const [{ data: gruppen }, canEditPersonal, personalplanung] = await Promise.all([
     einrichtungId
       ? supabase
           .from("gruppen")
@@ -53,12 +53,11 @@ export default async function TeamPage({
           .is("archived_at", null)
           .order("name")
       : Promise.resolve({ data: null }),
-    getCurrentUserRole(),
+    einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
     einrichtungId
       ? getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag)
       : null,
   ]);
-  const canEditPersonal = canWritePersonal(role);
 
   let query = supabase
     .from("team")

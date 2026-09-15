@@ -4,6 +4,7 @@ import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { getKinderPresenceAtDate, buildCompositionMatrix } from "@/lib/dashboard/presence";
 import { getJahreskategorisierung } from "@/lib/controlling/jahreskategorisierung";
+import { canViewControlling } from "@/lib/server/current-user-role";
 import { ForecastTable } from "@/components/forecast/forecast-table";
 import { ZeitraumPicker } from "@/components/forecast/zeitraum-picker";
 import { ExportButtons } from "@/components/forecast/export-buttons";
@@ -62,6 +63,24 @@ export default async function ControllingPage({
   const { von, monate, jahr } = await searchParams;
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
+
+  const erlaubt = einrichtungId
+    ? await canViewControlling(supabase, einrichtungId)
+    : false;
+
+  if (!erlaubt) {
+    return (
+      <div className="flex flex-col gap-2">
+        <h1 className="font-heading text-3xl tracking-tight text-primary">
+          Controlling
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Für diesen Bereich hast du keinen Zugriff auf die aktuelle
+          Einrichtung.
+        </p>
+      </div>
+    );
+  }
 
   const { data: einrichtung } = einrichtungId
     ? await supabase
