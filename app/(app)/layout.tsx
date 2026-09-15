@@ -51,7 +51,7 @@ export default async function AppLayout({
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
+        <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
           <div className="flex-1" />
           <UserMenu
@@ -59,9 +59,9 @@ export default async function AppLayout({
             einrichtungName={einrichtung?.name ?? null}
           />
         </header>
-        <main className="flex flex-1 flex-col gap-6 p-6 md:gap-8 md:p-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:gap-8 md:p-8">
           {children}
-        </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

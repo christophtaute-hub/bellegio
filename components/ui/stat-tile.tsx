@@ -16,15 +16,15 @@ export function StatTile({
   className?: string;
 }) {
   return (
-    <Card className={cn("border-0 bg-secondary/60 py-6 shadow-none", className)}>
+    <Card className={cn("min-w-0 border-0 bg-secondary/60 py-6 shadow-none", className)}>
       <CardContent className="flex items-center gap-4 px-6">
         {Icon ? (
           <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <Icon className="size-5" />
           </div>
         ) : null}
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm text-muted-foreground">{label}</p>
           <p
             className={cn(
               "text-3xl font-semibold tabular-nums",

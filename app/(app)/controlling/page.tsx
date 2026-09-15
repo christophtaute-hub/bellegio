@@ -124,7 +124,7 @@ export default async function ControllingPage({
             letzten Kalenderjahr — als Orientierung für die eigene
             Personal-/Budgetplanung, kein automatisch übernommener Wert.
           </p>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {budgetReferenz.map((ref) => (
               <div
                 key={ref.label}

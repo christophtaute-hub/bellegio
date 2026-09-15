@@ -254,7 +254,7 @@ export function SzenarioRechner({
           <h2 className="font-heading text-lg text-primary">Ergebnis</h2>
           <AmpelBadge ampel={personalplanung.ampel} />
         </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <MetricCard
             label="Kinder gesamt"
             value={String(kpis.kinderGesamt)}
