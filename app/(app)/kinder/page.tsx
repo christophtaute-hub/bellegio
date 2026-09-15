@@ -207,10 +207,15 @@ export default async function KinderPage({
                       >
                         {kind.gruppen?.name ?? "–"}
                       </TableCell>
-                      <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                      <TableCell>{formatDate(kind.eintritt)}</TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatDate(kind.geburtsdatum)}
+                      </TableCell>
+                      <TableCell className="tabular-nums">
+                        {formatDate(kind.eintritt)}
+                      </TableCell>
                       <TableCell
                         className={cn(
+                          "tabular-nums",
                           warnung === "hellrot" && "font-medium text-destructive"
                         )}
                       >

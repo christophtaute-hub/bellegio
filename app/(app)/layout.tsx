@@ -2,6 +2,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
+import Link from "next/link";
+import { Settings } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
@@ -25,7 +27,7 @@ export default async function AppLayout({
     user
       ? supabase
           .from("user_profiles")
-          .select("full_name")
+          .select("full_name, email")
           .eq("id", user.id)
           .single()
       : Promise.resolve({ data: null }),
@@ -47,13 +49,31 @@ export default async function AppLayout({
     redirect("/einrichtung-auswahl");
   }
 
+  const vorname =
+    profile?.full_name?.trim().split(/\s+/)[0] ??
+    profile?.email?.split("@")[0] ??
+    user?.email?.split("@")[0] ??
+    null;
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
+          {vorname ? (
+            <p className="hidden truncate text-sm font-medium text-primary sm:block">
+              Aloha, {vorname}
+            </p>
+          ) : null}
           <div className="flex-1" />
+          <Link
+            href="/einstellungen"
+            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Einstellungen"
+          >
+            <Settings className="size-4" />
+          </Link>
           <UserMenu
             fullName={profile?.full_name ?? user?.email ?? null}
             einrichtungName={einrichtung?.name ?? null}

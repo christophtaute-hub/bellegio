@@ -19,7 +19,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, buchungszeit_band_id, notizen, hat_behinderung"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, notizen, hat_behinderung"
     )
     .eq("id", kindId)
     .single();
@@ -98,6 +98,7 @@ export default async function KindDetailPage({
           platznummer: kind.platznummer ?? "",
           eintritt: kind.eintritt ?? "",
           austritt: kind.austritt ?? "",
+          vertrag_gueltig_bis: kind.vertrag_gueltig_bis ?? "",
           buchungszeit_band_id: kind.buchungszeit_band_id ?? "",
           notizen: kind.notizen ?? "",
           hat_behinderung: kind.hat_behinderung,

@@ -332,6 +332,7 @@ export type Database = {
           platznummer: string | null
           status: string
           updated_at: string
+          vertrag_gueltig_bis: string | null
           vorname: string
         }
         Insert: {
@@ -353,6 +354,7 @@ export type Database = {
           platznummer?: string | null
           status: string
           updated_at?: string
+          vertrag_gueltig_bis?: string | null
           vorname: string
         }
         Update: {
@@ -374,6 +376,7 @@ export type Database = {
           platznummer?: string | null
           status?: string
           updated_at?: string
+          vertrag_gueltig_bis?: string | null
           vorname?: string
         }
         Relationships: [

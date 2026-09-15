@@ -59,6 +59,47 @@ export async function updateVollzeitWochenstunden(
   revalidatePath("/szenario");
 }
 
+export type EinrichtungGrunddatenInput = {
+  name: string;
+  address_street: string | null;
+  address_city: string | null;
+  address_zip: string | null;
+  kita_year_start_month: number;
+};
+
+export async function updateEinrichtungGrunddaten(
+  einrichtungId: string,
+  input: EinrichtungGrunddatenInput
+) {
+  if (!input.name.trim()) {
+    throw new Error("Bitte einen Namen angeben.");
+  }
+  if (input.kita_year_start_month < 1 || input.kita_year_start_month > 12) {
+    throw new Error("Bitte einen gültigen Monat (1–12) angeben.");
+  }
+
+  const supabase = await createClient();
+
+  // RLS on einrichtungen restricts updates to traeger_admin — a
+  // einrichtungsleitung's attempt is rejected here, not just hidden in the UI.
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({
+      name: input.name.trim(),
+      address_street: input.address_street,
+      address_city: input.address_city,
+      address_zip: input.address_zip,
+      kita_year_start_month: input.kita_year_start_month,
+    })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+  revalidatePath("/dashboard");
+  revalidatePath("/einrichtung-auswahl");
+}
+
 export async function updateEmpfohlenerAnstellungsschluessel(
   einrichtungId: string,
   empfohlenerAnstellungsschluessel: number

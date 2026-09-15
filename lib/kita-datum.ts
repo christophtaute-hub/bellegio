@@ -54,6 +54,25 @@ export function austrittWarnung(
   return null;
 }
 
+/**
+ * rot: Vertrag/Buchung läuft in den nächsten 3 Monaten aus.
+ * Analog zu austrittWarnung, aber ohne Kitajahr-Bezug — eine Verlängerung
+ * kann jederzeit im Jahr anstehen, nicht nur zum Kitajahreswechsel.
+ */
+export function verlaengerungWarnung(
+  vertragGueltigBis: string | null,
+  today = new Date()
+): "rot" | null {
+  if (!vertragGueltigBis) return null;
+  const gueltigBisDate = parseIsoDate(vertragGueltigBis);
+
+  const in3Monaten = new Date(today);
+  in3Monaten.setUTCMonth(in3Monaten.getUTCMonth() + 3);
+  if (gueltigBisDate <= in3Monaten) return "rot";
+
+  return null;
+}
+
 /** Immer tt.mm.jjjj mit führenden Nullen — toLocaleDateString("de-DE") lässt
  * sie sonst je nach Laufzeitumgebung weg (z.B. "27.9.2020" statt
  * "27.09.2020"), was Tabellenspalten unvorhersehbar breit macht. */

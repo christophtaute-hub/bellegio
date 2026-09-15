@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 
 function Stat({
   label,
@@ -103,6 +105,16 @@ export default async function GruppenPage() {
                       />
                       <Stat label="Nachrücker" value={String(nachrueckerCount)} />
                     </div>
+                    <span
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "sm",
+                        className: "mt-3 w-fit",
+                      })}
+                    >
+                      Gruppe öffnen
+                      <ArrowRight className="size-3.5" />
+                    </span>
                   </CardHeader>
                 </Card>
               </Link>

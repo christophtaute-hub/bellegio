@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Clock, Scale } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -7,7 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { GESCHLECHT_LABEL } from "@/lib/constants";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
 import {
   austrittWarnung,
   calculateAgeDecimal,
@@ -24,11 +31,30 @@ export type KinderTableRow = {
   geschlecht: string;
   eintritt: string | null;
   austritt: string | null;
+  vertrag_gueltig_bis: string | null;
   notizen: string | null;
   status: string;
   booking_time_bands: { label: string } | null;
   weighting_factor_label?: string | null;
 };
+
+function SpaltenIcon({
+  icon: Icon,
+  label,
+}: {
+  icon: typeof Clock;
+  label: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger className="inline-flex items-center justify-center rounded p-0.5 text-muted-foreground hover:text-foreground">
+        <Icon className="size-4" aria-hidden />
+        <span className="sr-only">{label}</span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 export function KinderTable({
   rows,
@@ -46,83 +72,106 @@ export function KinderTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Platz</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Geschlecht</TableHead>
-            <TableHead>Geburtstag</TableHead>
-            <TableHead>Alter</TableHead>
-            <TableHead>Eintritt</TableHead>
-            <TableHead>Austritt</TableHead>
-            <TableHead>Buchungszeit</TableHead>
-            <TableHead>Gewichtungsfaktor</TableHead>
-            <TableHead>Notizen</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((kind) => {
-            const warnung = highlightAustritt
-              ? austrittWarnung(kind.austritt, kitaYearStartMonth)
-              : null;
-            return (
-              <TableRow
-                key={kind.id}
-                className={cn(
-                  warnung === "rot" && "bg-destructive text-destructive-foreground"
-                )}
-              >
-                <TableCell
+    <TooltipProvider>
+      <div className="overflow-x-auto rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Platz</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="text-center">
+                <SpaltenIcon icon={Clock} label="Buchungszeit" />
+              </TableHead>
+              <TableHead className="text-center">
+                <SpaltenIcon icon={Scale} label="Gewichtungsfaktor" />
+              </TableHead>
+              <TableHead>Eintritt</TableHead>
+              <TableHead>Austritt</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((kind, index) => {
+              const warnung = highlightAustritt
+                ? austrittWarnung(kind.austritt, kitaYearStartMonth)
+                : null;
+              return (
+                <TableRow
+                  key={kind.id}
                   className={cn(
-                    warnung !== "rot" && "text-muted-foreground"
+                    warnung === "rot" && "bg-destructive text-destructive-foreground"
                   )}
                 >
-                  {kind.platznummer ?? "–"}
-                </TableCell>
-                <TableCell className="font-medium">
-                  <Link
-                    href={`/kinder/${kind.id}`}
-                    className="hover:underline"
+                  <TableCell
+                    className={cn(
+                      "tabular-nums",
+                      warnung !== "rot" && "text-muted-foreground"
+                    )}
                   >
-                    {kind.vorname} {kind.nachname}
-                  </Link>
-                </TableCell>
-                <TableCell
-                  className={cn(warnung !== "rot" && "text-muted-foreground")}
-                >
-                  {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
-                </TableCell>
-                <TableCell>{formatDate(kind.geburtsdatum)}</TableCell>
-                <TableCell>{calculateAgeDecimal(kind.geburtsdatum)} Jahre</TableCell>
-                <TableCell>{formatDate(kind.eintritt)}</TableCell>
-                <TableCell
-                  className={cn(
-                    warnung === "hellrot" && "font-medium text-destructive"
-                  )}
-                >
-                  {formatDate(kind.austritt)}
-                </TableCell>
-                <TableCell>{kind.booking_time_bands?.label ?? "–"}</TableCell>
-                <TableCell
-                  className={cn(warnung !== "rot" && "text-muted-foreground")}
-                >
-                  {kind.weighting_factor_label ?? "Regelfaktor"}
-                </TableCell>
-                <TableCell
-                  className={cn(
-                    "max-w-48 truncate",
-                    warnung !== "rot" && "text-muted-foreground"
-                  )}
-                >
-                  {kind.notizen ?? ""}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+                    {kind.platznummer ?? index + 1}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <Link
+                            href={`/kinder/${kind.id}`}
+                            className="rounded underline-offset-2 hover:underline"
+                          />
+                        }
+                      >
+                        {kind.vorname} {kind.nachname}
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <div className="flex flex-col gap-0.5">
+                          <span>
+                            {GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}
+                            {" · "}
+                            {calculateAgeDecimal(kind.geburtsdatum)} Jahre
+                          </span>
+                          {kind.vertrag_gueltig_bis ? (
+                            <span>
+                              Vertrag gültig bis: {formatDate(kind.vertrag_gueltig_bis)}
+                            </span>
+                          ) : null}
+                          {kind.notizen ? <span>Notiz: {kind.notizen}</span> : null}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {kind.booking_time_bands?.label ?? "–"}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "text-center",
+                      warnung !== "rot" && "text-muted-foreground"
+                    )}
+                  >
+                    {kind.weighting_factor_label ?? "Regelfaktor"}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {formatDate(kind.eintritt)}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      "tabular-nums",
+                      warnung === "hellrot" && "font-medium text-destructive"
+                    )}
+                  >
+                    {formatDate(kind.austritt)}
+                  </TableCell>
+                  <TableCell
+                    className={cn(warnung !== "rot" && "text-muted-foreground")}
+                  >
+                    {KIND_STATUS_LABEL[kind.status] ?? kind.status}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </TooltipProvider>
   );
 }

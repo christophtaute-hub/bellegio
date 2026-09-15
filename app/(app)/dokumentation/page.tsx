@@ -120,6 +120,7 @@ export default async function DokumentationPage() {
       </section>
 
       {/* Bayern */}
+      {bundeslandCode === "by" ? (
       <section className="flex flex-col gap-6">
         <h2 className="font-heading text-2xl text-primary">Bayern</h2>
 
@@ -231,8 +232,10 @@ export default async function DokumentationPage() {
           </ul>
         </div>
       </section>
+      ) : null}
 
       {/* Baden-Württemberg */}
+      {bundeslandCode === "bw" ? (
       <section className="flex flex-col gap-6">
         <h2 className="font-heading text-2xl text-primary">Baden-Württemberg</h2>
 
@@ -335,8 +338,10 @@ export default async function DokumentationPage() {
           </ul>
         </div>
       </section>
+      ) : null}
 
       {/* NRW */}
+      {bundeslandCode === "nrw" ? (
       <section className="flex flex-col gap-6">
         <h2 className="font-heading text-2xl text-primary">Nordrhein-Westfalen</h2>
 
@@ -427,6 +432,7 @@ export default async function DokumentationPage() {
           </ul>
         </div>
       </section>
+      ) : null}
 
       {/* Jahreskategorisierung */}
       <section className="flex flex-col gap-6">

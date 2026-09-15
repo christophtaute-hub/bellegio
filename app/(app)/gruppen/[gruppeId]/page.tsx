@@ -5,9 +5,11 @@ import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { StatTile } from "@/components/ui/stat-tile";
 import { KinderTable, type KinderTableRow } from "@/components/gruppen/kinder-table";
+import { HinweiseBox, type HinweisEintrag } from "@/components/gruppen/hinweise-box";
+import { austrittWarnung, verlaengerungWarnung } from "@/lib/kita-datum";
 
 const KIND_SELECT =
-  "id, platznummer, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, notizen, status, booking_time_bands(label)";
+  "id, platznummer, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, vertrag_gueltig_bis, notizen, status, booking_time_bands(label)";
 
 async function resolveWeightingFactorLabels(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -103,6 +105,27 @@ export default async function GruppeDetailPage({
   const belegtRounded = Math.round(belegtRaw);
   const freiRounded = sollplatzeRounded - belegtRounded;
 
+  const hinweise: HinweisEintrag[] = (aktiveKinder ?? []).flatMap((kind) => {
+    const eintraege: HinweisEintrag[] = [];
+    if (austrittWarnung(kind.austritt, kitaYearStartMonth) === "rot" && kind.austritt) {
+      eintraege.push({
+        id: kind.id,
+        name: `${kind.vorname} ${kind.nachname}`,
+        grund: "Austritt",
+        datum: kind.austritt,
+      });
+    }
+    if (verlaengerungWarnung(kind.vertrag_gueltig_bis) === "rot" && kind.vertrag_gueltig_bis) {
+      eintraege.push({
+        id: kind.id,
+        name: `${kind.vorname} ${kind.nachname}`,
+        grund: "Vertrag/Buchung läuft ab",
+        datum: kind.vertrag_gueltig_bis,
+      });
+    }
+    return eintraege;
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -128,6 +151,8 @@ export default async function GruppeDetailPage({
           value={String(nachrueckerKinder?.length ?? 0)}
         />
       </div>
+
+      <HinweiseBox eintraege={hinweise} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/5 p-4">

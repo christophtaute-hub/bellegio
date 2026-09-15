@@ -26,6 +26,7 @@ const kindFormSchema = z
     platznummer: z.string(),
     eintritt: z.string(),
     austritt: z.string(),
+    vertrag_gueltig_bis: z.string(),
     buchungszeit_band_id: z.string(),
     notizen: z.string(),
     hat_behinderung: z.boolean(),
@@ -76,6 +77,7 @@ export function KindForm({
       platznummer: "",
       eintritt: "",
       austritt: "",
+      vertrag_gueltig_bis: "",
       buchungszeit_band_id: "",
       notizen: "",
       hat_behinderung: false,
@@ -101,6 +103,7 @@ export function KindForm({
       platznummer: values.platznummer || null,
       eintritt: values.eintritt || null,
       austritt: values.austritt || null,
+      vertrag_gueltig_bis: values.vertrag_gueltig_bis || null,
       buchungszeit_band_id: values.buchungszeit_band_id || null,
       notizen: values.notizen || null,
       hat_behinderung: values.hat_behinderung,
@@ -180,6 +183,16 @@ export function KindForm({
         </Field>
         <Field id="austritt" label="Austritt">
           <Input id="austritt" type="date" {...register("austritt")} />
+        </Field>
+        <Field
+          id="vertrag_gueltig_bis"
+          label="Vertrag/Buchung gültig bis"
+        >
+          <Input
+            id="vertrag_gueltig_bis"
+            type="date"
+            {...register("vertrag_gueltig_bis")}
+          />
         </Field>
         <Field id="buchungszeit_band_id" label="Buchungszeit">
           <select
