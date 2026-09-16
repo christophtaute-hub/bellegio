@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
@@ -22,16 +23,136 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { KinderExportButtons } from "@/components/kinder/kinder-export-buttons";
 
 const SELECT_CLASS =
   "h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
 
+const SORT_SPALTEN = [
+  "name",
+  "gruppe",
+  "geburtsdatum",
+  "eintritt",
+  "austritt",
+  "status",
+] as const;
+type SortSpalte = (typeof SORT_SPALTEN)[number];
+
+function istSortSpalte(value: string | undefined): value is SortSpalte {
+  return SORT_SPALTEN.includes(value as SortSpalte);
+}
+
+/** ISO-Datumsstrings vergleichen sich lexikalisch korrekt; fehlende Werte
+ * werden unabhängig von der Richtung ans Ende sortiert. */
+function vergleicheNullableDatum(a: string | null, b: string | null): number {
+  if (a === b) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a.localeCompare(b);
+}
+
+type SortierbaresKind = {
+  vorname: string;
+  nachname: string;
+  geburtsdatum: string;
+  eintritt: string | null;
+  austritt: string | null;
+  status: string;
+  gruppen: { name: string } | null;
+};
+
+function sortiereKinder<T extends SortierbaresKind>(
+  kinder: T[],
+  spalte: SortSpalte,
+  richtung: "asc" | "desc"
+): T[] {
+  const vorzeichen = richtung === "desc" ? -1 : 1;
+  return [...kinder].sort((a, b) => {
+    switch (spalte) {
+      case "name":
+        return (
+          vorzeichen *
+          `${a.nachname} ${a.vorname}`.localeCompare(`${b.nachname} ${b.vorname}`, "de")
+        );
+      case "gruppe":
+        return (
+          vorzeichen *
+          (a.gruppen?.name ?? "").localeCompare(b.gruppen?.name ?? "", "de")
+        );
+      case "geburtsdatum":
+        return vorzeichen * a.geburtsdatum.localeCompare(b.geburtsdatum);
+      case "eintritt":
+        return vorzeichen * vergleicheNullableDatum(a.eintritt, b.eintritt);
+      case "austritt":
+        return vorzeichen * vergleicheNullableDatum(a.austritt, b.austritt);
+      case "status":
+        return vorzeichen * a.status.localeCompare(b.status, "de");
+      default:
+        return 0;
+    }
+  });
+}
+
+function SortableHead({
+  spalte,
+  label,
+  aktuelleSpalte,
+  aktuelleRichtung,
+  query,
+}: {
+  spalte: SortSpalte;
+  label: string;
+  aktuelleSpalte: SortSpalte;
+  aktuelleRichtung: "asc" | "desc";
+  query: { q: string; status: string; gruppe: string };
+}) {
+  const istAktiv = spalte === aktuelleSpalte;
+  const naechsteRichtung = istAktiv && aktuelleRichtung === "asc" ? "desc" : "asc";
+  const params = new URLSearchParams();
+  if (query.q) params.set("q", query.q);
+  if (query.status !== "alle") params.set("status", query.status);
+  if (query.gruppe !== "alle") params.set("gruppe", query.gruppe);
+  params.set("sort", spalte);
+  params.set("dir", naechsteRichtung);
+
+  const Icon = !istAktiv ? ArrowUpDown : aktuelleRichtung === "asc" ? ArrowUp : ArrowDown;
+
+  return (
+    <TableHead>
+      <Link
+        href={`/kinder?${params.toString()}`}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground",
+          istAktiv && "font-semibold text-foreground"
+        )}
+      >
+        {label}
+        <Icon className="size-3.5 text-muted-foreground" />
+      </Link>
+    </TableHead>
+  );
+}
+
 export default async function KinderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; gruppe?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    gruppe?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }) {
-  const { q = "", status = "alle", gruppe = "alle" } = await searchParams;
+  const {
+    q = "",
+    status = "alle",
+    gruppe = "alle",
+    sort: sortParam,
+    dir: dirParam,
+  } = await searchParams;
+  const sort: SortSpalte = istSortSpalte(sortParam) ? sortParam : "geburtsdatum";
+  const dir: "asc" | "desc" = dirParam === "desc" ? "desc" : "asc";
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
@@ -59,8 +180,7 @@ export default async function KinderPage({
       "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, notizen, gruppe_id, gruppen(name), booking_time_bands(label), kind_weighting_factors(weighting_factors(label))"
     )
     .eq("einrichtung_id", einrichtungId ?? "")
-    .is("archived_at", null)
-    .order("geburtsdatum", { ascending: true });
+    .is("archived_at", null);
 
   if (status !== "alle") {
     query = query.eq("status", status);
@@ -72,20 +192,41 @@ export default async function KinderPage({
     query = query.or(`vorname.ilike.%${q.trim()}%,nachname.ilike.%${q.trim()}%`);
   }
 
-  const { data: kinder } = await query;
+  const { data: kinderRoh } = await query;
+  // Sortierung passiert clientseitig statt über PostgREST: eine Sortierung
+  // über die eingebettete gruppen(name)-Relation würde ohne !inner-Join
+  // die Reihenfolge der Kinder-Zeilen gar nicht beeinflussen — !inner
+  // wiederum würde Kinder ohne Gruppe (z.B. Nachrücker) aus der Liste
+  // werfen. Bei den hier üblichen Listengrößen (einzelne Kitas) ist ein
+  // JS-Sort unproblematisch.
+  const kinder = kinderRoh ? sortiereKinder(kinderRoh, sort, dir) : null;
+
+  const exportRows = (kinder ?? []).map((kind) => ({
+    Name: `${kind.vorname} ${kind.nachname}`,
+    Gruppe: kind.gruppen?.name ?? "–",
+    Geburtstag: formatDate(kind.geburtsdatum),
+    Eintritt: formatDate(kind.eintritt),
+    Austritt: formatDate(kind.austritt),
+    Status: KIND_STATUS_LABEL[kind.status] ?? kind.status,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Kinder</h1>
-        {canEditBelegung ? (
-          <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
-            Kind anlegen
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <KinderExportButtons rows={exportRows} />
+          {canEditBelegung ? (
+            <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
+              Kind anlegen
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3" method="get">
+      <form className="flex flex-wrap items-end gap-3 print:hidden" method="get">
+        <input type="hidden" name="sort" value={sort} />
+        <input type="hidden" name="dir" value={dir} />
         <div className="flex flex-col gap-1">
           <label htmlFor="q" className="text-xs text-muted-foreground">
             Suche
@@ -143,12 +284,12 @@ export default async function KinderPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Gruppe</TableHead>
-                  <TableHead>Geburtstag</TableHead>
-                  <TableHead>Eintritt</TableHead>
-                  <TableHead>Austritt</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHead spalte="name" label="Name" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  <SortableHead spalte="gruppe" label="Gruppe" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  <SortableHead spalte="geburtsdatum" label="Geburtstag" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  <SortableHead spalte="eintritt" label="Eintritt" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  <SortableHead spalte="austritt" label="Austritt" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  <SortableHead spalte="status" label="Status" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
                 </TableRow>
               </TableHeader>
               <TableBody>

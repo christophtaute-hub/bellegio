@@ -617,6 +617,48 @@ export type Database = {
           },
         ]
       }
+      team_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_data: Json
+          old_data: Json | null
+          team_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_data: Json
+          old_data?: Json | null
+          team_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_data?: Json
+          old_data?: Json | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_audit_log_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_ausfallzeiten: {
         Row: {
           art: string

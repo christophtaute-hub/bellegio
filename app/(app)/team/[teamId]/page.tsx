@@ -4,6 +4,10 @@ import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { canWritePersonal } from "@/lib/server/current-user-role";
 import { TeamForm } from "@/components/team/team-form";
 import { AusfallzeitenListe } from "@/components/team/ausfallzeiten-liste";
+import {
+  Aenderungshistorie,
+  type AenderungsEintrag,
+} from "@/components/kinder/aenderungshistorie";
 
 export default async function TeamDetailPage({
   params,
@@ -26,20 +30,34 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal] = await Promise.all([
-    supabase
-      .from("gruppen")
-      .select("id, name")
-      .eq("einrichtung_id", einrichtungId ?? "")
-      .is("archived_at", null)
-      .order("sort_order"),
-    supabase
-      .from("team_ausfallzeiten")
-      .select("id, art, von, bis, notizen")
-      .eq("team_id", teamId)
-      .order("von", { ascending: false }),
-    einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
-  ]);
+  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal, { data: auditLog }] =
+    await Promise.all([
+      supabase
+        .from("gruppen")
+        .select("id, name")
+        .eq("einrichtung_id", einrichtungId ?? "")
+        .is("archived_at", null)
+        .order("sort_order"),
+      supabase
+        .from("team_ausfallzeiten")
+        .select("id, art, von, bis, notizen")
+        .eq("team_id", teamId)
+        .order("von", { ascending: false }),
+      einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
+      supabase
+        .from("team_audit_log")
+        .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
+        .eq("team_id", teamId)
+        .order("changed_at", { ascending: false }),
+    ]);
+
+  const aenderungen: AenderungsEintrag[] = (auditLog ?? []).map((entry) => ({
+    id: entry.id,
+    changed_at: entry.changed_at,
+    changed_by_name: entry.user_profiles?.full_name ?? null,
+    old_data: entry.old_data as Record<string, unknown> | null,
+    new_data: entry.new_data as Record<string, unknown>,
+  }));
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -75,6 +93,7 @@ export default async function TeamDetailPage({
         ausfallzeiten={ausfallzeiten ?? []}
         canEdit={canEditPersonal}
       />
+      <Aenderungshistorie eintraege={aenderungen} />
     </div>
   );
 }
