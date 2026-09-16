@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { Settings, ArrowLeftRight } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
+import { Button } from "@/components/ui/button";
 
 export default async function AppLayout({
   children,
@@ -70,6 +71,16 @@ export default async function AppLayout({
           {einrichtung?.bundesland_code ? (
             <BundeslandBadge code={einrichtung.bundesland_code} />
           ) : null}
+          <Button
+            variant="ghost"
+            size="xs"
+            nativeButton={false}
+            render={<Link href="/einrichtung-auswahl" />}
+            className="gap-1 text-muted-foreground"
+          >
+            <ArrowLeftRight className="size-3.5" />
+            Wechseln
+          </Button>
           {vorname ? (
             <p className="hidden truncate text-sm text-muted-foreground sm:block">
               Aloha, {vorname}

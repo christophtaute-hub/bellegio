@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Building2, ChevronDown } from "lucide-react";
+import { LogOut, Building2, ChevronDown, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +50,10 @@ export function UserMenu({
         <DropdownMenuItem render={<Link href="/einrichtung-auswahl" />}>
           <Building2 />
           Einrichtung wechseln
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/einstellungen/profil" />}>
+          <User />
+          Mein Profil
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => signOut()}>

@@ -43,7 +43,7 @@ export async function setKannRechteVerwalten(userId: string, value: boolean) {
   revalidatePath("/einstellungen");
 }
 
-export async function inviteUser(email: string, fullName: string) {
+export async function inviteUser(email: string, fullName: string, password?: string) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -60,7 +60,7 @@ export async function inviteUser(email: string, fullName: string) {
     !profile ||
     (profile.role !== "traeger_admin" && !profile.kann_rechte_verwalten)
   ) {
-    throw new Error("Keine Berechtigung, Nutzer einzuladen.");
+    throw new Error("Keine Berechtigung, Nutzer anzulegen.");
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -73,17 +73,24 @@ export async function inviteUser(email: string, fullName: string) {
     serviceRoleKey
   );
 
-  const { data: invited, error: inviteError } =
-    await adminClient.auth.admin.inviteUserByEmail(email);
+  // Mit Passwort: Account ist sofort einsatzbereit, kein Einladungs-Mail-
+  // Umweg. Ohne Passwort: klassische Einladung per E-Mail-Link.
+  const { data: created, error: createError } = password
+    ? await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+      })
+    : await adminClient.auth.admin.inviteUserByEmail(email);
 
-  if (inviteError || !invited.user) {
-    throw new Error(inviteError?.message ?? "Einladung fehlgeschlagen.");
+  if (createError || !created.user) {
+    throw new Error(createError?.message ?? "Nutzer konnte nicht angelegt werden.");
   }
 
   const { error: profileError } = await adminClient
     .from("user_profiles")
     .insert({
-      id: invited.user.id,
+      id: created.user.id,
       email,
       full_name: fullName || null,
       role: "mitarbeiter",

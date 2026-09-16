@@ -11,6 +11,7 @@ import {
   Calculator,
   Settings,
   BookOpen,
+  User,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,11 +32,15 @@ const NAV_ITEMS = [
   { href: "/controlling", label: "Controlling", icon: TrendingUp },
   { href: "/szenario", label: "Szenario-Rechner", icon: Calculator },
   { href: "/dokumentation", label: "Dokumentation", icon: BookOpen },
-  { href: "/einstellungen", label: "Einstellungen", icon: Settings },
+  { href: "/einstellungen", label: "Einrichtung", icon: Settings },
+  { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
 ] as const;
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const activeHref = NAV_ITEMS.map((item) => item.href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
 
   return (
     <Sidebar>
@@ -49,7 +54,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV_ITEMS.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = item.href === activeHref;
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton

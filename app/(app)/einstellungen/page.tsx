@@ -98,9 +98,17 @@ export default async function EinstellungenPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-3xl tracking-tight text-primary">
-        Einstellungen
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-heading text-3xl tracking-tight text-primary">
+          Einrichtungs-Einstellungen
+        </h1>
+        <a
+          href="/einstellungen/profil"
+          className="text-sm text-primary underline-offset-2 hover:underline"
+        >
+          Mein Profil →
+        </a>
+      </div>
 
       {einrichtungId && einrichtung ? (
         <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
