@@ -8,6 +8,7 @@ import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { MetricCard } from "@/components/ui/metric-card";
 import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
+import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
 
 const TREND_MONTHS = 6;
 
@@ -68,6 +69,8 @@ export default async function DashboardPage({
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
   const personal = personalErgebnis ? personalKennzahl(personalErgebnis) : null;
+  const modell = personalErgebnis?.modell ?? "bayern";
+  const kinderMitBuchungszeit = kpis.kinderGesamt - kpis.ohneBuchungszeit;
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
@@ -89,6 +92,9 @@ export default async function DashboardPage({
   const trendKinderGesamt = trendData.map((t) => t.kpis.kinderGesamt);
   const trendGewichteteSumme = trendData.map((t) => t.kpis.gewichteteSumme);
   const trendOhneBuchungszeit = trendData.map((t) => t.kpis.ohneBuchungszeit);
+  const trendMitBuchungszeit = trendData.map(
+    (t) => t.kpis.kinderGesamt - t.kpis.ohneBuchungszeit
+  );
   const trendPersonal = trendData.map((t) => t.personal.trendWert);
 
   return (
@@ -111,12 +117,21 @@ export default async function DashboardPage({
           icon={<Users />}
           trend={trendKinderGesamt}
         />
-        <MetricCard
-          label="Gewichtete Buchungsstunden"
-          value={formatGewichtet(kpis.gewichteteSumme)}
-          icon={<Wallet />}
-          trend={trendGewichteteSumme}
-        />
+        {modell === "bayern" ? (
+          <MetricCard
+            label="Gewichtete Buchungsstunden"
+            value={formatGewichtet(kpis.gewichteteSumme)}
+            icon={<Wallet />}
+            trend={trendGewichteteSumme}
+          />
+        ) : (
+          <MetricCard
+            label="Kinder mit Buchungszeit"
+            value={String(kinderMitBuchungszeit)}
+            icon={<Wallet />}
+            trend={trendMitBuchungszeit}
+          />
+        )}
         {personal ? (
           <MetricCard
             label={personal.label}
@@ -138,15 +153,24 @@ export default async function DashboardPage({
       <div className="flex flex-col gap-4 rounded-2xl border bg-secondary/30 p-6">
         <div className="flex flex-col gap-1">
           <h2 className="font-heading text-lg text-primary">
-            Zusammensetzung nach Buchungszeit und Gewichtungsfaktor
+            {modell === "bayern"
+              ? "Zusammensetzung nach Buchungszeit und Gewichtungsfaktor"
+              : "Verteilung nach Buchungszeit"}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Wer wie lange gebucht hat, auf einen Blick — die genauen Zahlen
-            stehen in der Tabelle darunter.
+            {modell === "bayern"
+              ? "Wer wie lange gebucht hat, auf einen Blick — die genauen Zahlen stehen in der Tabelle darunter."
+              : "Wer wie lange gebucht hat, auf einen Blick — Gewichtungsfaktoren gibt es in diesem Bundesland nicht (siehe Dokumentation)."}
           </p>
         </div>
-        <CompositionChart matrix={matrix} />
-        <CompositionTable matrix={matrix} />
+        {modell === "bayern" ? (
+          <>
+            <CompositionChart matrix={matrix} />
+            <CompositionTable matrix={matrix} />
+          </>
+        ) : (
+          <BuchungszeitVerteilung matrix={matrix} />
+        )}
       </div>
     </div>
   );
