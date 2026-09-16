@@ -492,10 +492,11 @@ export default async function DokumentationPage() {
             Leitungsfreistellung (+5/+7/+9 Std.) wurde hier einheitlich auf
             alle drei Gruppenformen angewendet, da unklar blieb, für welche
             Gruppenform(en) genau sie in welcher Höhe gilt. Eine
-            KiBiz-Reform wurde am 16.07.2026 verabschiedet
-            (Kernzeit/Randzeit-Flexibilisierung, temporäre
-            Gruppengrößen-Ausnahmen) — ob sie die Stundentabelle selbst
-            verändert, ist unklar. Fachkraftquote: keine landesweite
+            KiBiz-Reform wurde am 16.07.2026 verabschiedet und tritt für die
+            Buchungszeiten/Personalstunden erst zu Beginn des Kitajahres
+            2027/2028 (Sommer 2027) in Kraft — bis dahin gilt die oben
+            gezeigte Tabelle unverändert weiter (siehe eigener Abschnitt
+            unten für Details zur Reform). Fachkraftquote: keine landesweite
             Prozent-Vorgabe gefunden, nur die qualitative Mindestbesetzung
             (§28 Abs. 1: immer mindestens eine Fachkraft anwesend, ab mehr
             als 60 Kindern eine zweite Fachkraft). Integrationskind/Kinder
@@ -507,12 +508,70 @@ export default async function DokumentationPage() {
           </p>
         </div>
 
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Kommende Änderung: KiBiz-Reform (Sommer 2027)
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Der Landtag NRW hat am 16.07.2026 eine KiBiz-Novelle beschlossen.
+            Die für Bellegios Berechnung relevanten Teile (Buchungszeiten,
+            Personalstunden) treten laut Ministeriumsmitteilung erst zu
+            Beginn des Kitajahres 2027/2028 in Kraft — bis dahin gilt die
+            oben gezeigte Tabelle unverändert.
+          </p>
+          <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground">
+            <li>
+              Die Buchungszeit-Bänder werden von drei (25/35/45 Std./Woche)
+              auf fünf erweitert: 25, 30, 35, 40, 45 Std./Woche in
+              Fünf-Stunden-Schritten.
+            </li>
+            <li>
+              Neues, für Träger freiwilliges Kernzeit-/Randzeit-Modell:
+              Kernzeit mindestens 35 Std./Woche, muss mit Fachkräften besetzt
+              werden; Randzeit höchstens 10 Std./Woche, darf auch mit
+              geringer qualifiziertem Personal (z.B. staatlich geprüfte
+              Kinderpfleger:innen) besetzt werden. Betrifft nicht die
+              Finanzierung der Einrichtung.
+            </li>
+            <li>
+              Überbelegung einer Gruppe bleibt auf max. 2 zusätzliche Kinder
+              begrenzt, mit entsprechend zusätzlichen Personalstunden.
+            </li>
+            <li>
+              Zusätzliche Landesmittel (~250 Mio. € für das Kitajahr
+              2027/2028) u.a. für Sprachförderung, plusKITA und
+              Kita-Helfer-Stellen.
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Noch nicht verfügbar:</strong>{" "}
+            die konkrete neue Personalstunden-Tabelle für die beiden neuen
+            Bänder (30/40 Std.) je Gruppenform ist Stand September 2026 noch
+            nirgends veröffentlicht — auch der offizielle
+            KiBiz-Personalstundenrechner von LVR/LWL zeigt weiterhin nur die
+            aktuelle 3-Bänder-Tabelle. Bellegio wird die Tabelle aktualisieren,
+            sobald sie offiziell vorliegt.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">Quellen</h3>
           <ul className="flex flex-col gap-1 text-sm">
             {NRW_QUELLEN.map((q) => (
               <Quelle key={q.href} {...q} />
             ))}
+            <Quelle
+              label="Chancen NRW — Landtag beschließt KiBiz-Reform (16.07.2026)"
+              href="https://www.mkjfgfi.nrw/meilenstein-fuer-eine-verlaessliche-und-qualitativ-hochwertige-kinderbetreuung-nordrhein-westfalen"
+            />
+            <Quelle
+              label="Kommunen.NRW — Gesetz zur Änderung des KiBiz beschlossen"
+              href="https://kommunen.nrw/themen/jugend-soziales-und-gesundheit/gesetz-zur-aenderung-des-kinderbildungsgesetzes-kibiz-vom-landtag-beschlossen/"
+            />
+            <Quelle
+              label="news4teachers — Kern- und Randzeiten in unterschiedlicher Besetzung"
+              href="https://www.news4teachers.de/2026/07/in-kitas-gelten-kuenftig-kern-und-randzeiten-in-unterschiedlicher-besetzung/"
+            />
           </ul>
         </div>
       </section>
