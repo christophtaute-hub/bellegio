@@ -15,8 +15,8 @@ import {
 const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
   halbtagsgruppe: "Halbtagsgruppe",
   regelgruppe: "Regelgruppe",
-  verlaengerte_oeffnungszeit: "Verlängerte Öffnungszeit",
-  ganztagsgruppe: "Ganztagsgruppe",
+  verlaengerte_oeffnungszeit: "Verlängerte Öffnungszeit (VÖ)",
+  ganztagsgruppe: "Ganztagsgruppe (GT)",
   kinderkrippe: "Kinderkrippe",
 };
 

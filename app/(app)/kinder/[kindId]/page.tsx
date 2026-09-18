@@ -20,7 +20,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, notizen, hat_behinderung"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, notizen, hat_behinderung"
     )
     .eq("id", kindId)
     .single();
@@ -31,7 +31,7 @@ export default async function KindDetailPage({
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code")
+    .select("bundesland_code, standort_gemeinde, auswaertigen_quote_prozent")
     .eq("id", einrichtungId ?? "")
     .single();
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
@@ -51,7 +51,7 @@ export default async function KindDetailPage({
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("gruppe_id, geschlecht")
+      .select("id, gruppe_id, geschlecht, wohnort")
       .eq("einrichtung_id", einrichtungId ?? "")
       .eq("status", "aktiv")
       .is("archived_at", null),
@@ -99,6 +99,20 @@ export default async function KindDetailPage({
     new_data: entry.new_data as Record<string, unknown>,
   }));
 
+  const auswaertigenQuote =
+    bundeslandCode === "bw" &&
+    einrichtung?.standort_gemeinde &&
+    einrichtung?.auswaertigen_quote_prozent !== null &&
+    einrichtung?.auswaertigen_quote_prozent !== undefined
+      ? {
+          standortGemeinde: einrichtung.standort_gemeinde,
+          auswaertigenQuoteProzent: Number(einrichtung.auswaertigen_quote_prozent),
+          bestehendeWohnorte: (aktiveKinder ?? [])
+            .filter((k) => k.id !== kind.id)
+            .map((k) => k.wohnort),
+        }
+      : undefined;
+
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <h1 className="font-heading text-2xl text-primary">
@@ -123,6 +137,7 @@ export default async function KindDetailPage({
           austritt: kind.austritt ?? "",
           vertrag_gueltig_bis: kind.vertrag_gueltig_bis ?? "",
           buchungszeit_band_id: kind.buchungszeit_band_id ?? "",
+          wohnort: kind.wohnort ?? "",
           notizen: kind.notizen ?? "",
           hat_behinderung: kind.hat_behinderung,
           weighting_factor_ids: (kindWeightingFactors ?? []).map(
@@ -140,6 +155,7 @@ export default async function KindDetailPage({
           label: w.label,
           code: w.code,
         }))}
+        auswaertigenQuote={auswaertigenQuote}
       />
       <Aenderungshistorie eintraege={aenderungen} />
     </div>

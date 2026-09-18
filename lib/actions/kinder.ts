@@ -17,6 +17,7 @@ export type KindInput = {
   austritt: string | null;
   vertrag_gueltig_bis: string | null;
   buchungszeit_band_id: string | null;
+  wohnort: string | null;
   notizen: string | null;
   hat_behinderung: boolean;
   weighting_factor_ids: string[];
@@ -55,6 +56,7 @@ export async function createKind(input: KindInput) {
       austritt: input.austritt,
       vertrag_gueltig_bis: input.vertrag_gueltig_bis,
       buchungszeit_band_id: input.buchungszeit_band_id,
+      wohnort: input.wohnort,
       notizen: input.notizen,
       hat_behinderung: input.hat_behinderung,
     })
@@ -89,6 +91,7 @@ export async function updateKind(kindId: string, input: KindInput) {
       austritt: input.austritt,
       vertrag_gueltig_bis: input.vertrag_gueltig_bis,
       buchungszeit_band_id: input.buchungszeit_band_id,
+      wohnort: input.wohnort,
       notizen: input.notizen,
       hat_behinderung: input.hat_behinderung,
     })

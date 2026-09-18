@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import Link from "next/link";
-import { Settings, ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Button } from "@/components/ui/button";
+import { computeVorname } from "@/lib/server/current-user-name";
 
 export default async function AppLayout({
   children,
@@ -51,11 +52,7 @@ export default async function AppLayout({
     redirect("/einrichtung-auswahl");
   }
 
-  const vorname =
-    profile?.full_name?.trim().split(/\s+/)[0] ??
-    profile?.email?.split("@")[0] ??
-    user?.email?.split("@")[0] ??
-    null;
+  const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
 
   return (
     <SidebarProvider>
@@ -87,13 +84,6 @@ export default async function AppLayout({
             </p>
           ) : null}
           <div className="flex-1" />
-          <Link
-            href="/einstellungen"
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-            aria-label="Einstellungen"
-          >
-            <Settings className="size-4" />
-          </Link>
           <UserMenu
             fullName={profile?.full_name ?? user?.email ?? null}
             einrichtungName={einrichtung?.name ?? null}

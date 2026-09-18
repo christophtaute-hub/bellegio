@@ -19,7 +19,7 @@ export default async function EinstellungenPage() {
     ? await supabase
         .from("einrichtungen")
         .select(
-          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel"
+          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel, standort_gemeinde, auswaertigen_quote_prozent"
         )
         .eq("id", einrichtungId)
         .single()
@@ -125,6 +125,8 @@ export default async function EinstellungenPage() {
               address_city: einrichtung.address_city,
               address_zip: einrichtung.address_zip,
               kita_year_start_month: einrichtung.kita_year_start_month,
+              standort_gemeinde: einrichtung.standort_gemeinde,
+              auswaertigen_quote_prozent: einrichtung.auswaertigen_quote_prozent,
             }}
             bundeslandCode={einrichtung.bundesland_code}
             canEdit={canEdit}

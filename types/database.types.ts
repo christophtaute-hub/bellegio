@@ -105,69 +105,6 @@ export type Database = {
           },
         ]
       }
-      einrichtungen: {
-        Row: {
-          address_city: string | null
-          address_street: string | null
-          address_zip: string | null
-          archived_at: string | null
-          bundesland_code: string
-          created_at: string
-          empfohlener_anstellungsschluessel: number
-          id: string
-          kita_year_start_month: number
-          name: string
-          trager_id: string
-          updated_at: string
-          vollzeit_wochenstunden: number
-        }
-        Insert: {
-          address_city?: string | null
-          address_street?: string | null
-          address_zip?: string | null
-          archived_at?: string | null
-          bundesland_code?: string
-          created_at?: string
-          empfohlener_anstellungsschluessel?: number
-          id?: string
-          kita_year_start_month?: number
-          name: string
-          trager_id: string
-          updated_at?: string
-          vollzeit_wochenstunden?: number
-        }
-        Update: {
-          address_city?: string | null
-          address_street?: string | null
-          address_zip?: string | null
-          archived_at?: string | null
-          bundesland_code?: string
-          created_at?: string
-          empfohlener_anstellungsschluessel?: number
-          id?: string
-          kita_year_start_month?: number
-          name?: string
-          trager_id?: string
-          updated_at?: string
-          vollzeit_wochenstunden?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "einrichtungen_bundesland_code_fkey"
-            columns: ["bundesland_code"]
-            isOneToOne: false
-            referencedRelation: "bundeslaender"
-            referencedColumns: ["code"]
-          },
-          {
-            foreignKeyName: "einrichtungen_trager_id_fkey"
-            columns: ["trager_id"]
-            isOneToOne: false
-            referencedRelation: "trager"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       einrichtung_berechtigungen: {
         Row: {
           bereich: string
@@ -209,6 +146,75 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      einrichtungen: {
+        Row: {
+          address_city: string | null
+          address_street: string | null
+          address_zip: string | null
+          archived_at: string | null
+          auswaertigen_quote_prozent: number | null
+          bundesland_code: string
+          created_at: string
+          empfohlener_anstellungsschluessel: number
+          id: string
+          kita_year_start_month: number
+          name: string
+          standort_gemeinde: string | null
+          trager_id: string
+          updated_at: string
+          vollzeit_wochenstunden: number
+        }
+        Insert: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          archived_at?: string | null
+          auswaertigen_quote_prozent?: number | null
+          bundesland_code?: string
+          created_at?: string
+          empfohlener_anstellungsschluessel?: number
+          id?: string
+          kita_year_start_month?: number
+          name: string
+          standort_gemeinde?: string | null
+          trager_id: string
+          updated_at?: string
+          vollzeit_wochenstunden?: number
+        }
+        Update: {
+          address_city?: string | null
+          address_street?: string | null
+          address_zip?: string | null
+          archived_at?: string | null
+          auswaertigen_quote_prozent?: number | null
+          bundesland_code?: string
+          created_at?: string
+          empfohlener_anstellungsschluessel?: number
+          id?: string
+          kita_year_start_month?: number
+          name?: string
+          standort_gemeinde?: string | null
+          trager_id?: string
+          updated_at?: string
+          vollzeit_wochenstunden?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einrichtungen_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "einrichtungen_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: false
+            referencedRelation: "trager"
             referencedColumns: ["id"]
           },
         ]
@@ -334,6 +340,7 @@ export type Database = {
           updated_at: string
           vertrag_gueltig_bis: string | null
           vorname: string
+          wohnort: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -356,6 +363,7 @@ export type Database = {
           updated_at?: string
           vertrag_gueltig_bis?: string | null
           vorname: string
+          wohnort?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -378,6 +386,7 @@ export type Database = {
           updated_at?: string
           vertrag_gueltig_bis?: string | null
           vorname?: string
+          wohnort?: string | null
         }
         Relationships: [
           {

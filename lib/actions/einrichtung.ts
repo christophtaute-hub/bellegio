@@ -65,6 +65,8 @@ export type EinrichtungGrunddatenInput = {
   address_city: string | null;
   address_zip: string | null;
   kita_year_start_month: number;
+  standort_gemeinde: string | null;
+  auswaertigen_quote_prozent: number | null;
 };
 
 export async function updateEinrichtungGrunddaten(
@@ -90,6 +92,8 @@ export async function updateEinrichtungGrunddaten(
       address_city: input.address_city,
       address_zip: input.address_zip,
       kita_year_start_month: input.kita_year_start_month,
+      standort_gemeinde: input.standort_gemeinde,
+      auswaertigen_quote_prozent: input.auswaertigen_quote_prozent,
     })
     .eq("id", einrichtungId);
 

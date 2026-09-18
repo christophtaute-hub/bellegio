@@ -7,6 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "cn";
 import { parseIsoDate } from "@/lib/kita-datum";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
 
@@ -87,7 +88,12 @@ export function ForecastTable({ months }: { months: ForecastMonth[] }) {
             {months.map((m) => (
               <TableCell
                 key={m.month}
-                className="text-right font-semibold tabular-nums"
+                className={cn(
+                  "text-right font-semibold tabular-nums",
+                  m.belegung.differenz >= 0
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-destructive"
+                )}
               >
                 {m.belegung.differenz >= 0 ? "+" : ""}
                 {m.belegung.differenz}
@@ -143,7 +149,12 @@ export function ForecastTable({ months }: { months: ForecastMonth[] }) {
             {months.map((m) => (
               <TableCell
                 key={m.month}
-                className="text-right font-semibold tabular-nums"
+                className={cn(
+                  "text-right font-semibold tabular-nums",
+                  m.personal.mindestschluesselOk
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-destructive"
+                )}
               >
                 {m.personal.anstellungsschluessel !== null
                   ? `1 : ${formatNumber(m.personal.anstellungsschluessel, 2)}`

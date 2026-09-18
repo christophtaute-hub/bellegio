@@ -126,6 +126,41 @@ export function GrunddatenEditor({
             {bundeslandLabel} — nur per Datenbank änderbar
           </p>
         </div>
+        {bundeslandCode === "bw" ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="einrichtung-gemeinde">
+                Standort-Gemeinde (für Auswärtigen-Quote)
+              </Label>
+              <Input
+                id="einrichtung-gemeinde"
+                value={values.standort_gemeinde ?? ""}
+                onChange={(event) =>
+                  setValues({ ...values, standort_gemeinde: event.target.value || null })
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="einrichtung-auswaertigen-quote">
+                Auswärtigen-Quote (%) — leer lassen, wenn keine lokale Satzung gilt
+              </Label>
+              <Input
+                id="einrichtung-auswaertigen-quote"
+                type="number"
+                min={0}
+                max={100}
+                value={values.auswaertigen_quote_prozent ?? ""}
+                onChange={(event) =>
+                  setValues({
+                    ...values,
+                    auswaertigen_quote_prozent:
+                      event.target.value === "" ? null : Number(event.target.value),
+                  })
+                }
+              />
+            </div>
+          </>
+        ) : null}
       </div>
       <div className="flex items-center gap-3">
         <Button type="submit" size="sm" disabled={isSaving} className="self-start">

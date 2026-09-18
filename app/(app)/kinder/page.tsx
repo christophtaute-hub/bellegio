@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
@@ -290,6 +290,11 @@ export default async function KinderPage({
                   <SortableHead spalte="eintritt" label="Eintritt" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
                   <SortableHead spalte="austritt" label="Austritt" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
                   <SortableHead spalte="status" label="Status" aktuelleSpalte={sort} aktuelleRichtung={dir} query={{ q, status, gruppe }} />
+                  {canEditBelegung ? (
+                    <TableHead className="print:hidden">
+                      <span className="sr-only">Bearbeiten</span>
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -367,6 +372,19 @@ export default async function KinderPage({
                           {KIND_STATUS_LABEL[kind.status] ?? kind.status}
                         </Badge>
                       </TableCell>
+                      {canEditBelegung ? (
+                        <TableCell className="print:hidden">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            nativeButton={false}
+                            render={<Link href={`/kinder/${kind.id}`} />}
+                            aria-label={`${kind.vorname} ${kind.nachname} bearbeiten`}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </TableCell>
+                      ) : null}
                     </TableRow>
                   );
                 })}

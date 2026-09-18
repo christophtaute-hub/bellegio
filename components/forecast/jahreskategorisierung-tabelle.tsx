@@ -26,7 +26,7 @@ export function JahreskategorisierungTabelle({
               <TableHead>Wochenstunden</TableHead>
               <TableHead className="text-right">Kinder</TableHead>
               <TableHead className="text-right">
-                davon mit (drohender) Behinderung
+                davon mit I-Status
               </TableHead>
             </TableRow>
           </TableHeader>

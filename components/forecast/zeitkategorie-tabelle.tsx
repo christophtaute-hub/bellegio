@@ -12,6 +12,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { parseIsoDate } from "@/lib/kita-datum";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
 
@@ -33,8 +34,8 @@ function formatMonthLabel(month: string): string {
 const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
   halbtagsgruppe: "Halbtagsgruppe",
   regelgruppe: "Regelgruppe",
-  verlaengerte_oeffnungszeit: "Verlängerte Öffnungszeit",
-  ganztagsgruppe: "Ganztagsgruppe",
+  verlaengerte_oeffnungszeit: "Verlängerte Öffnungszeit (VÖ)",
+  ganztagsgruppe: "Ganztagsgruppe (GT)",
   kinderkrippe: "Kinderkrippe",
 };
 
@@ -162,7 +163,11 @@ export function ZeitkategorieTabelle({ months }: { months: ForecastMonth[] }) {
                         ? (BW_BETRIEBSFORM_LABEL[g.betriebsform] ?? g.betriebsform)
                         : "nicht konfiguriert"}
                     </TableCell>
-                    <TableCell>{g.altersmischung ? "Ja" : "Nein"}</TableCell>
+                    <TableCell>
+                      <Badge variant={g.altersmischung ? "secondary" : "outline"}>
+                        {g.altersmischung ? "Ja" : "Nein"}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
                 ))
               : erster.modell === "nrw"

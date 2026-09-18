@@ -31,6 +31,10 @@ const BW_QUELLEN = [
     label: "KVJS-Rundschreiben 14/2021, Anlage 2 (Ausführungshinweise + Berechnungshilfe)",
     href: "https://www.kvjs.de/fileadmin/dateien/jugend/Arbeitshilfen_Formulare_Rundschreiben_Newsletter_Tagungsunterlagen/Rundschreiben/Rundschreiben_2021/RS_14-2021_Anlage_2_-_Ausfuehrungshinweise_zur_KiTaVO_und_Berechnungshilfe_zum_Personalbedarf_der_Kindertagesbetreuung_in_Baden-Wuerttemberg.pdf",
   },
+  {
+    label: "KVJS: Aktuelle gesetzliche Vorgaben und Empfehlungen (§1a KiTaVO-Verlängerung)",
+    href: "https://www.kvjs.de/jugend/kindertageseinrichtungen/aktuelle-gesetzliche-vorgaben-und-empfehlungen",
+  },
 ];
 
 const NRW_QUELLEN = [
@@ -363,14 +367,35 @@ export default async function DokumentationPage() {
             primärquellenbestätigt. Fachkraftquote: es gibt keine
             Prozent-Vorgabe wie in Bayern — Basis ist faktisch 100 %
             Fachkraft (§7 KiTaG), dessen genauer Wortlaut hier nur über eine
-            Sekundärquelle bestätigt werden konnte. Eine befristete
-            20-%-Ausnahmeregelung (§1a KiTaVO) ist zum 31.08.2025
-            ausgelaufen — vor Verlass auf diese Zahlen prüfen, ob eine
-            Nachfolgeregelung existiert. Integrationskind/Kinder mit
-            Behinderung: §1 Abs. 2 KiTaVO schließt den Mehrbedarf
+            Sekundärquelle bestätigt werden konnte. Die befristete
+            20-%-Ausnahmeregelung (§1a KiTaVO) wurde mehrfach verlängert
+            (zuletzt RS 101/2025, RS 92/2025, KM-Schreiben 18.07.2025) und
+            gilt aktuell bis 31.08.2027 (siehe eigener Abschnitt unten).
+            Integrationskind/Kinder mit I-Status: §1 Abs. 2 KiTaVO schließt
+            den Mehrbedarf
             ausdrücklich vom Mindestpersonalschlüssel aus — es gibt keinen
             Gewichtungsfaktor wie Bayerns 4,5, sondern eine Einzelfallprüfung
             plus separate Eingliederungshilfe (SGB IX/SGB VIII).
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Befristete Ausnahmeregelung §1a KiTaVO (bis 31.08.2027)
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Wegen Fachkräftemangels erlaubt §1a KiTaVO bis 31.08.2027
+            Erleichterungen gegenüber den oben gezeigten Mindestwerten: eine
+            Fachkraft darf durch zwei Zusatzkräfte ersetzt werden, der
+            Personalschlüssel darf um bis zu 20&nbsp;% unterschritten werden,
+            kurzfristig (bis zu acht Wochen) genügt sogar eine einzelne
+            Zusatzkraft als Ersatz, und Gruppen dürfen um bis zu zwei Kinder
+            über die reguläre Höchstgrenze hinaus belegt werden (max. 28 in
+            Halbtags-/Regelgruppen). Diese Regelung wurde seit ihrer
+            ursprünglichen Befristung (31.08.2025) bereits mehrfach
+            verlängert — ab dem 01.09.2027 gelten wieder die oben gezeigten
+            Sollwerte ohne Erleichterung, sofern keine weitere Verlängerung
+            beschlossen wird.
           </p>
         </div>
 
@@ -500,7 +525,7 @@ export default async function DokumentationPage() {
             Prozent-Vorgabe gefunden, nur die qualitative Mindestbesetzung
             (§28 Abs. 1: immer mindestens eine Fachkraft anwesend, ab mehr
             als 60 Kindern eine zweite Fachkraft). Integrationskind/Kinder
-            mit (drohender) Behinderung: §26 Abs. 3 KiBiz verlangt nur
+            mit I-Status: §26 Abs. 3 KiBiz verlangt nur
             qualitativ, den besonderen Bedarf zu berücksichtigen — kein
             Gewichtungsfaktor wie Bayerns 4,5, sondern eine erhöhte
             Kindpauschale (Förderung) und ggf. separate
@@ -593,7 +618,7 @@ export default async function DokumentationPage() {
             unter 15 · 15 bis unter 20 · 20 bis unter 25 · 25 bis unter 30 ·
             30 bis unter 35 · 35 bis unter 40 · 40 bis unter 45 · 45 bis
             unter 50 · 50 bis unter 55 · 55 Std. und mehr, jeweils mit einer
-            Spalte für Kinder mit (drohender) Behinderung.
+            Spalte für Kinder mit I-Status.
           </p>
           <p className="text-sm text-muted-foreground">
             In Bayern wird die wöchentliche Stundenzahl aus der täglichen

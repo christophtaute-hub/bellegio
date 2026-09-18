@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
+import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 
 const SELECT_CLASS =
@@ -30,6 +31,7 @@ const kindFormSchema = z
     austritt: z.string(),
     vertrag_gueltig_bis: z.string(),
     buchungszeit_band_id: z.string(),
+    wohnort: z.string(),
     notizen: z.string(),
     hat_behinderung: z.boolean(),
     weighting_factor_ids: z.array(z.string()),
@@ -52,6 +54,7 @@ export function KindForm({
   gruppenMitKindern,
   bookingTimeBands,
   weightingFactors,
+  auswaertigenQuote,
 }: {
   mode: "create" | "edit";
   kindId?: string;
@@ -60,6 +63,11 @@ export function KindForm({
   gruppenMitKindern: GruppeFuerPassung[];
   bookingTimeBands: KindFormOption[];
   weightingFactors: WeightingFactorOption[];
+  auswaertigenQuote?: {
+    standortGemeinde: string;
+    auswaertigenQuoteProzent: number;
+    bestehendeWohnorte: (string | null)[];
+  };
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -83,6 +91,7 @@ export function KindForm({
       austritt: "",
       vertrag_gueltig_bis: "",
       buchungszeit_band_id: "",
+      wohnort: "",
       notizen: "",
       hat_behinderung: false,
       weighting_factor_ids: [],
@@ -95,6 +104,7 @@ export function KindForm({
   const watchedGeburtsdatum = watch("geburtsdatum");
   const watchedGeschlecht = watch("geschlecht");
   const watchedGruppeId = watch("gruppe_id");
+  const watchedWohnort = watch("wohnort");
   const integrationsfaktorId = weightingFactors.find(
     (f) => f.code === "integrationskinder"
   )?.id;
@@ -113,6 +123,7 @@ export function KindForm({
       austritt: values.austritt || null,
       vertrag_gueltig_bis: values.vertrag_gueltig_bis || null,
       buchungszeit_band_id: values.buchungszeit_band_id || null,
+      wohnort: values.wohnort || null,
       notizen: values.notizen || null,
       hat_behinderung: values.hat_behinderung,
       weighting_factor_ids: values.weighting_factor_ids,
@@ -216,7 +227,19 @@ export function KindForm({
             ))}
           </select>
         </Field>
+        <Field id="wohnort" label="Wohnort">
+          <Input id="wohnort" {...register("wohnort")} />
+        </Field>
       </div>
+
+      {auswaertigenQuote ? (
+        <AuswaertigenHinweis
+          wohnort={watchedWohnort}
+          standortGemeinde={auswaertigenQuote.standortGemeinde}
+          auswaertigenQuoteProzent={auswaertigenQuote.auswaertigenQuoteProzent}
+          bestehendeWohnorte={auswaertigenQuote.bestehendeWohnorte}
+        />
+      ) : null}
 
       {watchedStatus === "nachruecker" ? (
         <GruppenPassungHinweis
@@ -267,8 +290,8 @@ export function KindForm({
             setValue("hat_behinderung", checked === true)
           }
         />
-        Kind mit (drohender) Behinderung — bundeslandunabhängig, z.B. für die
-        jährliche Kinder- und Jugendhilfestatistik
+        Kind mit I-Status — bundeslandunabhängig, z.B. für die jährliche
+        Kinder- und Jugendhilfestatistik
       </label>
 
       <Field id="notizen" label="Notizen">

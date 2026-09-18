@@ -1,6 +1,7 @@
-import { Users, Scale, AlertTriangle, Wallet } from "lucide-react";
+import { Users, Scale, AlertTriangle, Wallet, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { computeVorname } from "@/lib/server/current-user-name";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { getKinderPresenceAtDate, buildCompositionMatrix, buildKpis } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
@@ -59,18 +60,32 @@ export default async function DashboardPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [rows, { data: einrichtung }, personalErgebnis] = einrichtungId
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = user
+    ? await supabase.from("user_profiles").select("full_name, email").eq("id", user.id).single()
+    : { data: null };
+  const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
+
+  const [rows, personalErgebnis, { data: gruppen }] = einrichtungId
     ? await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
-        supabase.from("einrichtungen").select("name").eq("id", einrichtungId).single(),
         getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag),
+        supabase
+          .from("gruppen")
+          .select("sollplatze")
+          .eq("einrichtung_id", einrichtungId)
+          .is("archived_at", null),
       ])
-    : [[], { data: null }, null];
+    : [[], null, { data: null }];
   const matrix = buildCompositionMatrix(rows);
   const kpis = buildKpis(rows);
   const personal = personalErgebnis ? personalKennzahl(personalErgebnis) : null;
   const modell = personalErgebnis?.modell ?? "bayern";
   const kinderMitBuchungszeit = kpis.kinderGesamt - kpis.ohneBuchungszeit;
+  const sollplaetzeSumme = (gruppen ?? []).reduce((sum, g) => sum + Number(g.sollplatze), 0);
+  const freiePlaetze = Math.max(0, sollplaetzeSumme - kpis.kinderGesamt);
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
@@ -101,7 +116,7 @@ export default async function DashboardPage({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-3xl tracking-tight text-primary">
-          {einrichtung?.name ? `Willkommen zurück, ${einrichtung.name}` : "Dashboard"}
+          {vorname ? `Aloha, ${vorname}` : "Dashboard"}
         </h1>
         <p className="text-sm text-muted-foreground">
           Eure Belegung und Personalsituation auf einen Blick.
@@ -116,6 +131,12 @@ export default async function DashboardPage({
           value={String(kpis.kinderGesamt)}
           icon={<Users />}
           trend={trendKinderGesamt}
+        />
+        <MetricCard
+          label="Freie Plätze"
+          value={`${freiePlaetze} / ${sollplaetzeSumme}`}
+          icon={<DoorOpen />}
+          tone={freiePlaetze === 0 ? "warn" : "default"}
         />
         {modell === "bayern" ? (
           <MetricCard
