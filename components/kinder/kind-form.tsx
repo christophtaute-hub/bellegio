@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
+import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
+import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -47,6 +49,7 @@ export function KindForm({
   kindId,
   defaultValues,
   gruppen,
+  gruppenMitKindern,
   bookingTimeBands,
   weightingFactors,
 }: {
@@ -54,6 +57,7 @@ export function KindForm({
   kindId?: string;
   defaultValues?: Partial<KindFormValues>;
   gruppen: KindFormOption[];
+  gruppenMitKindern: GruppeFuerPassung[];
   bookingTimeBands: KindFormOption[];
   weightingFactors: WeightingFactorOption[];
 }) {
@@ -87,6 +91,10 @@ export function KindForm({
   });
 
   const selectedWeightingFactors = watch("weighting_factor_ids");
+  const watchedStatus = watch("status");
+  const watchedGeburtsdatum = watch("geburtsdatum");
+  const watchedGeschlecht = watch("geschlecht");
+  const watchedGruppeId = watch("gruppe_id");
   const integrationsfaktorId = weightingFactors.find(
     (f) => f.code === "integrationskinder"
   )?.id;
@@ -209,6 +217,18 @@ export function KindForm({
           </select>
         </Field>
       </div>
+
+      {watchedStatus === "nachruecker" ? (
+        <GruppenPassungHinweis
+          geburtsdatum={watchedGeburtsdatum}
+          geschlecht={watchedGeschlecht}
+          ausgewaehlteGruppeId={watchedGruppeId}
+          gruppen={gruppenMitKindern}
+          onGruppeWaehlen={(gruppeId) =>
+            setValue("gruppe_id", gruppeId, { shouldValidate: true })
+          }
+        />
+      ) : null}
 
       <Field label="Gewichtung">
         <div className="flex flex-col gap-2">

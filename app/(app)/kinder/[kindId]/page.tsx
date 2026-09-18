@@ -6,6 +6,7 @@ import {
   Aenderungshistorie,
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
+import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 
 export default async function KindDetailPage({
   params,
@@ -37,16 +38,23 @@ export default async function KindDetailPage({
 
   const [
     { data: gruppen },
+    { data: aktiveKinder },
     { data: bookingTimeBands },
     { data: weightingFactors },
     { data: kindWeightingFactors },
   ] = await Promise.all([
     supabase
       .from("gruppen")
-      .select("id, name")
+      .select("id, name, gruppenart, sollplatze")
       .eq("einrichtung_id", einrichtungId ?? "")
       .is("archived_at", null)
       .order("sort_order"),
+    supabase
+      .from("kinder")
+      .select("gruppe_id, geschlecht")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .eq("status", "aktiv")
+      .is("archived_at", null),
     supabase
       .from("booking_time_bands")
       .select("id, label")
@@ -61,6 +69,21 @@ export default async function KindDetailPage({
       .select("weighting_factor_id")
       .eq("kind_id", kindId),
   ]);
+
+  const kinderProGruppe = new Map<string, { geschlecht: string }[]>();
+  for (const k of aktiveKinder ?? []) {
+    if (!k.gruppe_id) continue;
+    const liste = kinderProGruppe.get(k.gruppe_id) ?? [];
+    liste.push({ geschlecht: k.geschlecht });
+    kinderProGruppe.set(k.gruppe_id, liste);
+  }
+  const gruppenMitKindern: GruppeFuerPassung[] = (gruppen ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    gruppenart: g.gruppenart,
+    sollplatze: Number(g.sollplatze),
+    aktiveKinder: kinderProGruppe.get(g.id) ?? [],
+  }));
 
   const { data: auditLog } = await supabase
     .from("kinder_audit_log")
@@ -107,6 +130,7 @@ export default async function KindDetailPage({
           ),
         }}
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
+        gruppenMitKindern={gruppenMitKindern}
         bookingTimeBands={(bookingTimeBands ?? []).map((b) => ({
           id: b.id,
           label: b.label,

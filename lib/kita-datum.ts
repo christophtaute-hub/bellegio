@@ -85,6 +85,18 @@ export function formatDate(value: string | null): string {
   return `${tag}.${monat}.${jahr}`;
 }
 
+/** Alter in Jahren als Dezimalzahl, z.B. 2.7 — Grundlage für
+ * calculateAgeDecimal (Anzeige) und die Gruppen-Passungs-Einschätzung. */
+export function calculateAgeYears(
+  geburtsdatum: string,
+  today = new Date()
+): number {
+  const birth = parseIsoDate(geburtsdatum);
+  const ageInYears =
+    (today.getTime() - birth.getTime()) / (365.25 * 86_400_000);
+  return Math.max(0, ageInYears);
+}
+
 /** Alter mit einer Nachkommastelle, z.B. "2,7 Jahre". Nur für die Anzeige —
  * die BayKiBiG-Altersschwellen-Logik (Platzwert-Berechnung) läuft komplett
  * in SQL und nutzt diese Funktion nicht. */
@@ -92,10 +104,7 @@ export function calculateAgeDecimal(
   geburtsdatum: string,
   today = new Date()
 ): string {
-  const birth = parseIsoDate(geburtsdatum);
-  const ageInYears =
-    (today.getTime() - birth.getTime()) / (365.25 * 86_400_000);
-  return Math.max(0, ageInYears).toLocaleString("de-DE", {
+  return calculateAgeYears(geburtsdatum, today).toLocaleString("de-DE", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   });

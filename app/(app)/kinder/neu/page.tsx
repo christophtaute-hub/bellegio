@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KindForm } from "@/components/kinder/kind-form";
+import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 
 export default async function KindNeuPage() {
   const einrichtungId = await getActiveEinrichtungId();
@@ -15,24 +16,49 @@ export default async function KindNeuPage() {
     : { data: null };
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
 
-  const [{ data: gruppen }, { data: bookingTimeBands }, { data: weightingFactors }] =
-    await Promise.all([
-      supabase
-        .from("gruppen")
-        .select("id, name")
-        .eq("einrichtung_id", einrichtungId ?? "")
-        .is("archived_at", null)
-        .order("sort_order"),
-      supabase
-        .from("booking_time_bands")
-        .select("id, label")
-        .eq("bundesland_code", bundeslandCode)
-        .order("sort_order"),
-      supabase
-        .from("weighting_factors")
-        .select("id, label, code")
-        .eq("bundesland_code", bundeslandCode),
-    ]);
+  const [
+    { data: gruppen },
+    { data: aktiveKinder },
+    { data: bookingTimeBands },
+    { data: weightingFactors },
+  ] = await Promise.all([
+    supabase
+      .from("gruppen")
+      .select("id, name, gruppenart, sollplatze")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .is("archived_at", null)
+      .order("sort_order"),
+    supabase
+      .from("kinder")
+      .select("gruppe_id, geschlecht")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .eq("status", "aktiv")
+      .is("archived_at", null),
+    supabase
+      .from("booking_time_bands")
+      .select("id, label")
+      .eq("bundesland_code", bundeslandCode)
+      .order("sort_order"),
+    supabase
+      .from("weighting_factors")
+      .select("id, label, code")
+      .eq("bundesland_code", bundeslandCode),
+  ]);
+
+  const kinderProGruppe = new Map<string, { geschlecht: string }[]>();
+  for (const kind of aktiveKinder ?? []) {
+    if (!kind.gruppe_id) continue;
+    const liste = kinderProGruppe.get(kind.gruppe_id) ?? [];
+    liste.push({ geschlecht: kind.geschlecht });
+    kinderProGruppe.set(kind.gruppe_id, liste);
+  }
+  const gruppenMitKindern: GruppeFuerPassung[] = (gruppen ?? []).map((g) => ({
+    id: g.id,
+    name: g.name,
+    gruppenart: g.gruppenart,
+    sollplatze: Number(g.sollplatze),
+    aktiveKinder: kinderProGruppe.get(g.id) ?? [],
+  }));
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
@@ -40,6 +66,7 @@ export default async function KindNeuPage() {
       <KindForm
         mode="create"
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
+        gruppenMitKindern={gruppenMitKindern}
         bookingTimeBands={(bookingTimeBands ?? []).map((b) => ({
           id: b.id,
           label: b.label,
