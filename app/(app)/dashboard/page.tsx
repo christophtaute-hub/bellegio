@@ -1,4 +1,4 @@
-import { Users, Scale, AlertTriangle, Wallet, DoorOpen } from "lucide-react";
+import { Users, Scale, Wallet, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { computeVorname } from "@/lib/server/current-user-name";
@@ -11,7 +11,9 @@ import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
 
-const TREND_MONTHS = 6;
+// Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
+// der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
+const TREND_MONTHS = 4;
 
 function formatGewichtet(value: number): string {
   return value.toLocaleString("de-DE", {
@@ -88,7 +90,7 @@ export default async function DashboardPage({
   const freiePlaetze = Math.max(0, sollplaetzeSumme - kpis.kinderGesamt);
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
-    toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i - (TREND_MONTHS - 1)))
+    toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i))
   );
   const trendData = einrichtungId
     ? await Promise.all(
@@ -106,7 +108,6 @@ export default async function DashboardPage({
     : [];
   const trendKinderGesamt = trendData.map((t) => t.kpis.kinderGesamt);
   const trendGewichteteSumme = trendData.map((t) => t.kpis.gewichteteSumme);
-  const trendOhneBuchungszeit = trendData.map((t) => t.kpis.ohneBuchungszeit);
   const trendMitBuchungszeit = trendData.map(
     (t) => t.kpis.kinderGesamt - t.kpis.ohneBuchungszeit
   );
@@ -162,13 +163,6 @@ export default async function DashboardPage({
             trend={trendPersonal}
           />
         ) : null}
-        <MetricCard
-          label="Ohne Buchungszeit"
-          value={String(kpis.ohneBuchungszeit)}
-          icon={<AlertTriangle />}
-          tone={kpis.ohneBuchungszeit > 0 ? "warn" : "default"}
-          trend={trendOhneBuchungszeit}
-        />
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl border bg-secondary/30 p-6">

@@ -40,28 +40,28 @@ export function MetricCard({
   const delta = hatDelta ? letzter! - erster! : 0;
 
   return (
-    <Card className={cn("min-w-0 gap-4 border-0 bg-secondary/60 py-7 shadow-none", className)}>
-      <CardContent className="flex flex-col gap-4 px-7">
-        <div className="flex items-center gap-3">
+    <Card className={cn("min-w-0 gap-2.5 border-0 bg-secondary/60 py-4 shadow-none", className)}>
+      <CardContent className="flex flex-col gap-2.5 px-4">
+        <div className="flex items-center gap-2">
           {icon ? (
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground [&_svg]:size-6">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground [&_svg]:size-4">
               {icon}
             </div>
           ) : null}
-          <p className="truncate text-sm text-muted-foreground">{label}</p>
+          <p className="text-xs leading-tight text-muted-foreground">{label}</p>
         </div>
 
         <div className="flex items-end justify-between gap-3">
           <p
             className={cn(
-              "text-4xl font-semibold tabular-nums",
+              "text-xl leading-tight font-semibold tabular-nums whitespace-nowrap",
               tone === "warn" ? "text-destructive" : "text-primary"
             )}
           >
             {value}
           </p>
           {chartData.length > 1 ? (
-            <div className="h-14 w-20 shrink-0">
+            <div className="h-9 w-14 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={chartData} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
                   <defs>
