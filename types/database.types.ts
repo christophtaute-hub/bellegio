@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      betreiber_einstellungen: {
+        Row: {
+          anschrift: string
+          bankname: string | null
+          bic: string | null
+          firmenname: string
+          fusszeile: string | null
+          iban: string | null
+          id: boolean
+          rechnungsnummer_praefix: string
+          steuernummer: string | null
+          updated_at: string
+          ust_hinweis: string | null
+          ust_id: string | null
+          ust_satz: number
+          zahlungsziel_tage: number
+        }
+        Insert: {
+          anschrift?: string
+          bankname?: string | null
+          bic?: string | null
+          firmenname?: string
+          fusszeile?: string | null
+          iban?: string | null
+          id?: boolean
+          rechnungsnummer_praefix?: string
+          steuernummer?: string | null
+          updated_at?: string
+          ust_hinweis?: string | null
+          ust_id?: string | null
+          ust_satz?: number
+          zahlungsziel_tage?: number
+        }
+        Update: {
+          anschrift?: string
+          bankname?: string | null
+          bic?: string | null
+          firmenname?: string
+          fusszeile?: string | null
+          iban?: string | null
+          id?: boolean
+          rechnungsnummer_praefix?: string
+          steuernummer?: string | null
+          updated_at?: string
+          ust_hinweis?: string | null
+          ust_id?: string | null
+          ust_satz?: number
+          zahlungsziel_tage?: number
+        }
+        Relationships: []
+      }
       booking_time_bands: {
         Row: {
           bundesland_code: string
@@ -499,6 +550,21 @@ export type Database = {
           },
         ]
       }
+      platform_operators: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platzwert_rules: {
         Row: {
           age_matches_expected: boolean
@@ -528,6 +594,162 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      rechnungen: {
+        Row: {
+          absender: Json | null
+          bezahlt_am: string | null
+          created_at: string
+          created_by: string | null
+          empfaenger: Json | null
+          faellig_am: string | null
+          id: string
+          leistungszeitraum_bis: string
+          leistungszeitraum_von: string
+          notiz: string | null
+          nummer: string | null
+          rechnungsdatum: string | null
+          status: string
+          storno_von: string | null
+          summe_brutto: number
+          summe_netto: number
+          summe_ust: number
+          trager_id: string
+          ust_satz: number
+          versendet_am: string | null
+        }
+        Insert: {
+          absender?: Json | null
+          bezahlt_am?: string | null
+          created_at?: string
+          created_by?: string | null
+          empfaenger?: Json | null
+          faellig_am?: string | null
+          id?: string
+          leistungszeitraum_bis: string
+          leistungszeitraum_von: string
+          notiz?: string | null
+          nummer?: string | null
+          rechnungsdatum?: string | null
+          status?: string
+          storno_von?: string | null
+          summe_brutto?: number
+          summe_netto?: number
+          summe_ust?: number
+          trager_id: string
+          ust_satz?: number
+          versendet_am?: string | null
+        }
+        Update: {
+          absender?: Json | null
+          bezahlt_am?: string | null
+          created_at?: string
+          created_by?: string | null
+          empfaenger?: Json | null
+          faellig_am?: string | null
+          id?: string
+          leistungszeitraum_bis?: string
+          leistungszeitraum_von?: string
+          notiz?: string | null
+          nummer?: string | null
+          rechnungsdatum?: string | null
+          status?: string
+          storno_von?: string | null
+          summe_brutto?: number
+          summe_netto?: number
+          summe_ust?: number
+          trager_id?: string
+          ust_satz?: number
+          versendet_am?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rechnungen_storno_von_fkey"
+            columns: ["storno_von"]
+            isOneToOne: false
+            referencedRelation: "rechnungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rechnungen_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: false
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rechnungsnummern: {
+        Row: {
+          jahr: number
+          letzte: number
+        }
+        Insert: {
+          jahr: number
+          letzte?: number
+        }
+        Update: {
+          jahr?: number
+          letzte?: number
+        }
+        Relationships: []
+      }
+      rechnungspositionen: {
+        Row: {
+          beschreibung: string
+          einheit: string
+          einrichtung_id: string | null
+          einrichtung_name: string | null
+          einzelpreis_netto: number
+          id: string
+          kinderzahl_snapshot: number | null
+          menge: number
+          pos: number
+          rechnung_id: string
+          summe_netto: number | null
+        }
+        Insert: {
+          beschreibung: string
+          einheit?: string
+          einrichtung_id?: string | null
+          einrichtung_name?: string | null
+          einzelpreis_netto?: number
+          id?: string
+          kinderzahl_snapshot?: number | null
+          menge?: number
+          pos: number
+          rechnung_id: string
+          summe_netto?: number | null
+        }
+        Update: {
+          beschreibung?: string
+          einheit?: string
+          einrichtung_id?: string | null
+          einrichtung_name?: string | null
+          einzelpreis_netto?: number
+          id?: string
+          kinderzahl_snapshot?: number | null
+          menge?: number
+          pos?: number
+          rechnung_id?: string
+          summe_netto?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rechnungspositionen_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rechnungspositionen_rechnung_id_fkey"
+            columns: ["rechnung_id"]
+            isOneToOne: false
+            referencedRelation: "rechnungen"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -765,6 +987,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trager_abrechnung: {
+        Row: {
+          preis_grundgebuehr_pro_einrichtung: number | null
+          preis_pro_kind: number | null
+          rechnungs_email: string | null
+          rechnungsanschrift: string | null
+          rechnungsname: string | null
+          trager_id: string
+          updated_at: string
+          ust_id: string | null
+        }
+        Insert: {
+          preis_grundgebuehr_pro_einrichtung?: number | null
+          preis_pro_kind?: number | null
+          rechnungs_email?: string | null
+          rechnungsanschrift?: string | null
+          rechnungsname?: string | null
+          trager_id: string
+          updated_at?: string
+          ust_id?: string | null
+        }
+        Update: {
+          preis_grundgebuehr_pro_einrichtung?: number | null
+          preis_pro_kind?: number | null
+          rechnungs_email?: string | null
+          rechnungsanschrift?: string | null
+          rechnungsname?: string | null
+          trager_id?: string
+          updated_at?: string
+          ust_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trager_abrechnung_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: true
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_einrichtungen: {
         Row: {
           created_at: string
@@ -936,6 +1199,24 @@ export type Database = {
           weighting_factor_value_fachkraftquote: number
         }[]
       }
+      operator_kennzahlen: {
+        Args: { p_stichtag: string }
+        Returns: {
+          aktive_kinder: number
+          bundesland_code: string
+          einrichtung_id: string
+          einrichtung_name: string
+          gruppen: number
+          trager_id: string
+          trager_name: string
+        }[]
+      }
+      rechnung_freigeben: { Args: { p_id: string }; Returns: string }
+      rechnung_positionen_setzen: {
+        Args: { p_id: string; p_positionen: Json }
+        Returns: undefined
+      }
+      rechnung_stornieren: { Args: { p_id: string }; Returns: string }
       team_presence_at_date: {
         Args: { p_einrichtung_id: string; p_stichtag: string }
         Returns: {

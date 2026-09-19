@@ -29,6 +29,23 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
   return (profile?.role as UserRole) ?? null;
 }
 
+/** Betreiber (Bellegio-Team): eigene Rolle neben user_profiles.role, gesteuert
+ * über platform_operators — bewusst nicht Teil der Kunden-Rollen. */
+export async function isPlatformOperator(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { data } = await supabase
+    .from("platform_operators")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return Boolean(data);
+}
+
 /**
  * Effektiver Zugriff des aktuellen Nutzers auf einen Bereich einer
  * Einrichtung. traeger_admin/einrichtungsleitung haben immer "bearbeiten";

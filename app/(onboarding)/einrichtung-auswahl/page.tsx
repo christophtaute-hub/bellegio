@@ -1,4 +1,5 @@
-import { Building2, Users, DoorOpen } from "lucide-react";
+import Link from "next/link";
+import { Building2, Users, DoorOpen, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { setActiveEinrichtung } from "@/lib/actions/einrichtung";
 import { signOut } from "@/lib/actions/auth";
@@ -6,6 +7,7 @@ import { toIsoDateString } from "@/lib/kita-datum";
 import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { AmpelBadge } from "@/components/team/ampel-badge";
+import { isPlatformOperator } from "@/lib/server/current-user-role";
 import {
   Card,
   CardHeader,
@@ -45,11 +47,24 @@ async function ladeEinrichtungsKennzahlen(
 export default async function EinrichtungAuswahlPage() {
   const supabase = await createClient();
   const stichtag = toIsoDateString(new Date());
-  const { data: einrichtungen } = await supabase
-    .from("einrichtungen")
-    .select("id, name, address_city")
-    .is("archived_at", null)
-    .order("name");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profil } = user
+    ? await supabase.from("user_profiles").select("trager_id").eq("id", user.id).single()
+    : { data: null };
+  const istBetreiber = await isPlatformOperator();
+
+  // Der Betreiber darf per RLS alle Einrichtungen sehen — hier zeigen wir trotzdem
+  // nur die des eigenen Trägers, alles andere gehört in die Betreiber-Zentrale.
+  const { data: einrichtungen } = profil
+    ? await supabase
+        .from("einrichtungen")
+        .select("id, name, address_city")
+        .eq("trager_id", profil.trager_id)
+        .is("archived_at", null)
+        .order("name")
+    : { data: [] };
 
   const kennzahlenListe = einrichtungen
     ? await Promise.all(
@@ -124,11 +139,19 @@ export default async function EinrichtungAuswahlPage() {
         </p>
       )}
 
-      <form action={signOut}>
-        <Button type="submit" variant="secondary" size="sm">
-          Abmelden
-        </Button>
-      </form>
+      <div className="flex items-center gap-2">
+        {istBetreiber ? (
+          <Button nativeButton={false} render={<Link href="/admin" />} variant="outline" size="sm">
+            <Shield className="size-3.5" />
+            Betreiber-Zentrale
+          </Button>
+        ) : null}
+        <form action={signOut}>
+          <Button type="submit" variant="secondary" size="sm">
+            Abmelden
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

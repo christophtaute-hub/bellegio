@@ -12,6 +12,7 @@ import {
   Settings,
   BookOpen,
   User,
+  Receipt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,9 +37,14 @@ const NAV_ITEMS = [
   { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
 ] as const;
 
-export function AppSidebar() {
+const KOSTEN_ITEM = { href: "/kosten", label: "Kosten", icon: Receipt } as const;
+
+export function AppSidebar({ zeigeKosten = false }: { zeigeKosten?: boolean }) {
   const pathname = usePathname();
-  const activeHref = NAV_ITEMS.map((item) => item.href)
+  const navItems = zeigeKosten
+    ? [...NAV_ITEMS.slice(0, 7), KOSTEN_ITEM, ...NAV_ITEMS.slice(7)]
+    : NAV_ITEMS;
+  const activeHref = navItems.map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
     .sort((a, b) => b.length - a.length)[0];
 
@@ -53,7 +59,7 @@ export function AppSidebar() {
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
-              {NAV_ITEMS.map((item) => {
+              {navItems.map((item) => {
                 const isActive = item.href === activeHref;
                 return (
                   <SidebarMenuItem key={item.href}>

@@ -10,6 +10,7 @@ import { UserMenu } from "@/components/layout/user-menu";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Button } from "@/components/ui/button";
 import { computeVorname } from "@/lib/server/current-user-name";
+import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
 
 export default async function AppLayout({
   children,
@@ -53,10 +54,11 @@ export default async function AppLayout({
   }
 
   const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
+  const [rolle, istBetreiber] = await Promise.all([getCurrentUserRole(), isPlatformOperator()]);
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar zeigeKosten={rolle === "traeger_admin"} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
@@ -87,6 +89,7 @@ export default async function AppLayout({
           <UserMenu
             fullName={profile?.full_name ?? user?.email ?? null}
             einrichtungName={einrichtung?.name ?? null}
+            istBetreiber={istBetreiber}
           />
         </header>
         <div className="flex min-w-0 flex-1 flex-col gap-6 p-6 md:gap-8 md:p-8">

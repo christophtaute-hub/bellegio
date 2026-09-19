@@ -55,6 +55,7 @@ export async function updateSession(request: NextRequest) {
     user &&
     !hasActiveEinrichtung &&
     pathname !== "/einrichtung-auswahl" &&
+    !pathname.startsWith("/admin") &&
     !isPublicPath
   ) {
     const url = request.nextUrl.clone();

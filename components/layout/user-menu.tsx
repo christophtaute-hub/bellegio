@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Building2, ChevronDown, User } from "lucide-react";
+import { LogOut, Building2, ChevronDown, User, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +18,11 @@ import { signOut } from "@/lib/actions/auth";
 export function UserMenu({
   fullName,
   einrichtungName,
+  istBetreiber = false,
 }: {
   fullName: string | null;
   einrichtungName: string | null;
+  istBetreiber?: boolean;
 }) {
   const initials = (fullName ?? "?").trim().slice(0, 2).toUpperCase();
 
@@ -55,6 +57,12 @@ export function UserMenu({
           <User />
           Mein Profil
         </DropdownMenuItem>
+        {istBetreiber ? (
+          <DropdownMenuItem render={<Link href="/admin" />}>
+            <Shield />
+            Betreiber-Zentrale
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => signOut()}>
           <LogOut />
