@@ -35,6 +35,57 @@ function formatMonthLabel(month: string): string {
   });
 }
 
+function personalRows(months: ForecastMonth[]): { label: string; values: (string | number)[] }[] {
+  const modell = months[0]?.personal.modell;
+  const runde = (wert: number, stellen: number) => Number(wert.toFixed(stellen));
+
+  if (modell === "bw") {
+    const d = (m: ForecastMonth) => {
+      if (m.personal.modell !== "bw") throw new Error("BW-Modell erwartet");
+      return m.personal.daten;
+    };
+    return [
+      { label: "Ist-VZÄ", values: months.map((m) => runde(d(m).istVzaeGesamt, 2)) },
+      { label: "Soll-VZÄ", values: months.map((m) => runde(d(m).sollVzaeGesamt, 2)) },
+      { label: "Differenz VZÄ", values: months.map((m) => runde(d(m).istVzaeGesamt - d(m).sollVzaeGesamt, 2)) },
+      { label: "Personalschlüssel (KiTaVO)", values: months.map((m) => AMPEL_TEXT[d(m).ampel]) },
+    ];
+  }
+
+  if (modell === "nrw") {
+    const d = (m: ForecastMonth) => {
+      if (m.personal.modell !== "nrw") throw new Error("NRW-Modell erwartet");
+      return m.personal.daten;
+    };
+    return [
+      { label: "Ist-FK (Std.)", values: months.map((m) => runde(d(m).istFk, 1)) },
+      { label: "Soll-FK (Std.)", values: months.map((m) => runde(d(m).sollFachkraftStundenGesamt, 1)) },
+      { label: "Ist-EK (Std.)", values: months.map((m) => runde(d(m).istEk, 1)) },
+      { label: "Soll-EK (Std.)", values: months.map((m) => runde(d(m).sollErgaenzungskraftStundenGesamt, 1)) },
+      { label: "Personalstunden (KiBiz)", values: months.map((m) => AMPEL_TEXT[d(m).ampel]) },
+    ];
+  }
+
+  const d = (m: ForecastMonth) => {
+    if (m.personal.modell !== "bayern") throw new Error("Bayern-Modell erwartet");
+    return m.personal.daten;
+  };
+  return [
+    { label: "Gewichtete Kinderzahl", values: months.map((m) => runde(d(m).gewichteteKinderzahl, 1)) },
+    { label: "Ist-VZÄ", values: months.map((m) => runde(d(m).vzaeIst, 2)) },
+    { label: "Soll-VZÄ", values: months.map((m) => runde(d(m).vzaeSoll, 2)) },
+    { label: "Soll-Fachkraft-VZÄ", values: months.map((m) => runde(d(m).vzaeSollFachkraft, 2)) },
+    { label: "Ist-FK (Std.)", values: months.map((m) => runde(d(m).istFk, 1)) },
+    { label: "Ist-EK (Std.)", values: months.map((m) => runde(d(m).istEk, 1)) },
+    { label: "Anstellungsschlüssel (1:X)", values: months.map((m) => d(m).anstellungsschluessel ?? "") },
+    { label: "Mindestschlüssel 1:11,0", values: months.map((m) => (d(m).mindestschluesselOk ? "Ja" : "Nein")) },
+    { label: "Eigene Zielgröße (nicht gesetzlich)", values: months.map((m) => (d(m).empfohlenerSchluesselOk ? "Ja" : "Nein")) },
+    { label: "Qualifikationsschlüssel", values: months.map((m) => (d(m).qualifikationsschluesselOk ? "Ja" : "Nein")) },
+  ];
+}
+
+const AMPEL_TEXT = { gruen: "Erfüllt", gelb: "Knapp", rot: "Nicht erfüllt" } as const;
+
 function buildRows(months: ForecastMonth[]) {
   const metricRows: { label: string; values: (string | number)[] }[] = [
     {
@@ -50,40 +101,7 @@ function buildRows(months: ForecastMonth[]) {
       values: months.map((m) => m.belegung.plaetzeNachBetriebserlaubnis),
     },
     { label: "Differenz (+/-)", values: months.map((m) => m.belegung.differenz) },
-    {
-      label: "Gewichtete Kinderzahl",
-      values: months.map((m) => Number(m.personal.gewichteteKinderzahl.toFixed(1))),
-    },
-    {
-      label: "Ist-VZÄ",
-      values: months.map((m) => Number(m.personal.vzaeIst.toFixed(2))),
-    },
-    {
-      label: "Soll-VZÄ",
-      values: months.map((m) => Number(m.personal.vzaeSoll.toFixed(2))),
-    },
-    {
-      label: "Soll-Fachkraft-VZÄ",
-      values: months.map((m) => Number(m.personal.vzaeSollFachkraft.toFixed(2))),
-    },
-    { label: "Ist-FK (Std.)", values: months.map((m) => Number(m.personal.istFk.toFixed(1))) },
-    { label: "Ist-EK (Std.)", values: months.map((m) => Number(m.personal.istEk.toFixed(1))) },
-    {
-      label: "Anstellungsschlüssel (1:X)",
-      values: months.map((m) => m.personal.anstellungsschluessel ?? ""),
-    },
-    {
-      label: "Mindestschlüssel 1:11,0",
-      values: months.map((m) => (m.personal.mindestschluesselOk ? "Ja" : "Nein")),
-    },
-    {
-      label: "Eigene Zielgröße (nicht gesetzlich)",
-      values: months.map((m) => (m.personal.empfohlenerSchluesselOk ? "Ja" : "Nein")),
-    },
-    {
-      label: "Qualifikationsschlüssel",
-      values: months.map((m) => (m.personal.qualifikationsschluesselOk ? "Ja" : "Nein")),
-    },
+    ...personalRows(months),
   ];
 
   return metricRows.map((row) => ({

@@ -10,12 +10,12 @@ import {
   type BelegungKennzahlen,
   type CompositionMatrix,
 } from "@/lib/dashboard/presence";
+import { getTeamPresenceForMonth } from "@/lib/team/anstellungsschluessel";
 import {
-  getTeamPresenceForMonth,
-  getStaffingRules,
-  buildPersonalplanung,
-  type Personalplanung,
-} from "@/lib/team/anstellungsschluessel";
+  ladePersonalplanungKontext,
+  berechnePersonalplanung,
+  type PersonalplanungErgebnis,
+} from "@/lib/team/personalplanung";
 
 export type ZeitkategorieMonat =
   | { modell: "bayern"; matrix: CompositionMatrix }
@@ -32,7 +32,8 @@ export type ForecastMonth = {
   month: string;
   kpis: KpiSummary;
   belegung: BelegungKennzahlen;
-  personal: Personalplanung;
+  /** Bundesland-abhängig: Bayern (Anstellungsschlüssel), BW (VZÄ-Soll), NRW (Fachkraft-/Ergänzungskraft-Stunden). */
+  personal: PersonalplanungErgebnis;
   zeitkategorie: ZeitkategorieMonat;
 };
 
@@ -47,7 +48,7 @@ export async function buildForecastMonths(
   startMonth: string,
   monthCount: number
 ): Promise<ForecastMonth[]> {
-  const [{ data: gruppen }, { data: einrichtung }] = await Promise.all([
+  const [{ data: gruppen }, { data: einrichtung }, personalKontext] = await Promise.all([
     supabase
       .from("gruppen")
       .select("sollplatze")
@@ -55,20 +56,17 @@ export async function buildForecastMonths(
       .is("archived_at", null),
     supabase
       .from("einrichtungen")
-      .select("empfohlener_anstellungsschluessel, vollzeit_wochenstunden, bundesland_code")
+      .select("bundesland_code")
       .eq("id", einrichtungId)
       .single(),
+    ladePersonalplanungKontext(supabase, einrichtungId),
   ]);
 
   const gruppenSollplatzeSumme = (gruppen ?? []).reduce(
     (sum, g) => sum + Number(g.sollplatze),
     0
   );
-  const empfohlenerSchluesselWert =
-    einrichtung?.empfohlener_anstellungsschluessel ?? 10.0;
-  const vollzeitWochenstunden = einrichtung?.vollzeit_wochenstunden ?? 39;
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
-  const staffingRules = await getStaffingRules(supabase, bundeslandCode);
 
   // BW/NRW: die Gruppen-Konfiguration (Betriebsform/Gruppenform) wird nicht
   // historisiert — für jeden Monat im Zeitraum wird daher die aktuelle
@@ -104,14 +102,10 @@ export async function buildForecastMonths(
 
       const kpis = buildKpis(kinderRows);
       const belegung = buildBelegungKennzahlen(kinderRows, gruppenSollplatzeSumme);
-      const personal = buildPersonalplanung(
-        teamRows,
-        kpis.gewichteteKinderzahl,
-        kpis.gewichteteKinderzahlFachkraftquote,
-        vollzeitWochenstunden,
-        empfohlenerSchluesselWert,
-        staffingRules
-      );
+      const personal = berechnePersonalplanung(personalKontext, teamRows, {
+        gewichteteKinderzahl: kpis.gewichteteKinderzahl,
+        gewichteteKinderzahlFachkraftquote: kpis.gewichteteKinderzahlFachkraftquote,
+      });
 
       const zeitkategorie: ZeitkategorieMonat =
         bundeslandCode === "bw"
