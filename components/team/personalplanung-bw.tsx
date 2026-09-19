@@ -37,7 +37,7 @@ export function PersonalplanungBW({
 
       <StichtagPicker basePath={basePath} stichtag={stichtag} />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
           label="Ist-VZÄ gesamt"
           value={formatNumber(daten.istVzaeGesamt)}

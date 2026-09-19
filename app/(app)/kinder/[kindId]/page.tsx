@@ -7,6 +7,10 @@ import {
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
+import { DruckButton } from "@/components/shared/druck-button";
+import { DruckKopf } from "@/components/shared/druck-kopf";
+import { GESCHLECHT_LABEL, KIND_STATUS_LABEL } from "@/lib/constants";
+import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 
 export default async function KindDetailPage({
   params,
@@ -31,7 +35,7 @@ export default async function KindDetailPage({
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code, standort_gemeinde, auswaertigen_quote_prozent")
+    .select("name, bundesland_code, standort_gemeinde, auswaertigen_quote_prozent")
     .eq("id", einrichtungId ?? "")
     .single();
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
@@ -113,11 +117,40 @@ export default async function KindDetailPage({
         }
       : undefined;
 
+  const gewichtungsLabels = (weightingFactors ?? [])
+    .filter((w) => (kindWeightingFactors ?? []).some((k) => k.weighting_factor_id === w.id))
+    .map((w) => w.label);
+
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <h1 className="font-heading text-2xl text-primary">
-        {kind.vorname} {kind.nachname}
-      </h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="font-heading text-2xl text-primary">
+          {kind.vorname} {kind.nachname}
+        </h1>
+        <DruckButton />
+      </div>
+      <DruckKopf
+        titel="Änderungsverlauf — Kind"
+        untertitel={`${einrichtung?.name ?? ""} · Stand ${formatDate(toIsoDateString(new Date()))}`}
+        felder={[
+          { label: "Name", wert: `${kind.vorname} ${kind.nachname}` },
+          { label: "Geburtsdatum", wert: formatDate(kind.geburtsdatum) },
+          { label: "Geschlecht", wert: GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht },
+          { label: "Status", wert: KIND_STATUS_LABEL[kind.status] ?? kind.status },
+          { label: "Gruppe", wert: (gruppen ?? []).find((g) => g.id === kind.gruppe_id)?.name ?? "" },
+          { label: "Eintritt", wert: formatDate(kind.eintritt) },
+          { label: "Austritt", wert: formatDate(kind.austritt) },
+          {
+            label: "Buchungszeit",
+            wert: (bookingTimeBands ?? []).find((b) => b.id === kind.buchungszeit_band_id)?.label ?? "",
+          },
+          { label: "Gewichtung", wert: gewichtungsLabels.join(", ") },
+          { label: "I-Status", wert: kind.hat_behinderung ? "Ja" : "Nein" },
+          { label: "Wohnort", wert: kind.wohnort ?? "" },
+          { label: "Notizen", wert: kind.notizen ?? "" },
+        ]}
+      />
+      <div className="print:hidden">
       <KindForm
         mode="edit"
         kindId={kind.id}
@@ -157,6 +190,7 @@ export default async function KindDetailPage({
         }))}
         auswaertigenQuote={auswaertigenQuote}
       />
+      </div>
       <Aenderungshistorie eintraege={aenderungen} />
     </div>
   );

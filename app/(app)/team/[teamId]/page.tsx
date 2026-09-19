@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { canWritePersonal } from "@/lib/server/current-user-role";
 import { TeamForm } from "@/components/team/team-form";
+import { DruckButton } from "@/components/shared/druck-button";
+import { DruckKopf } from "@/components/shared/druck-kopf";
+import { TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
+import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { AusfallzeitenListe } from "@/components/team/ausfallzeiten-liste";
 import {
   Aenderungshistorie,
@@ -30,7 +34,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal, { data: auditLog }] =
+  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal, { data: auditLog }, { data: einrichtung }] =
     await Promise.all([
       supabase
         .from("gruppen")
@@ -49,6 +53,7 @@ export default async function TeamDetailPage({
         .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
         .eq("team_id", teamId)
         .order("changed_at", { ascending: false }),
+      supabase.from("einrichtungen").select("name").eq("id", einrichtungId ?? "").single(),
     ]);
 
   const aenderungen: AenderungsEintrag[] = (auditLog ?? []).map((entry) => ({
@@ -61,9 +66,27 @@ export default async function TeamDetailPage({
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
-      <h1 className="font-heading text-2xl text-primary">
-        {mitglied.vorname} {mitglied.nachname}
-      </h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h1 className="font-heading text-2xl text-primary">
+          {mitglied.vorname} {mitglied.nachname}
+        </h1>
+        <DruckButton />
+      </div>
+      <DruckKopf
+        titel="Änderungsverlauf — Personal"
+        untertitel={`${einrichtung?.name ?? ""} · Stand ${formatDate(toIsoDateString(new Date()))}`}
+        felder={[
+          { label: "Name", wert: `${mitglied.vorname ?? ""} ${mitglied.nachname ?? ""}`.trim() },
+          { label: "Rolle", wert: mitglied.rolle ?? "" },
+          { label: "Kategorie", wert: TEAM_ROLE_CATEGORY_LABEL[mitglied.role_category] ?? mitglied.role_category },
+          { label: "Gruppe", wert: (gruppen ?? []).find((g) => g.id === mitglied.gruppe_id)?.name ?? "" },
+          { label: "Wochenstunden", wert: mitglied.wochenstunden !== null ? String(mitglied.wochenstunden) : "" },
+          { label: "Status", wert: mitglied.status },
+          { label: "Eintritt", wert: formatDate(mitglied.eintritt) },
+          { label: "Austritt", wert: formatDate(mitglied.austritt) },
+        ]}
+      />
+      <div className="flex flex-col gap-6 print:hidden">
       <TeamForm
         mode="edit"
         teamId={mitglied.id}
@@ -93,6 +116,7 @@ export default async function TeamDetailPage({
         ausfallzeiten={ausfallzeiten ?? []}
         canEdit={canEditPersonal}
       />
+      </div>
       <Aenderungshistorie eintraege={aenderungen} />
     </div>
   );

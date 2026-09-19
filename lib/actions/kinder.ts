@@ -23,6 +23,18 @@ export type KindInput = {
   weighting_factor_ids: string[];
 };
 
+const GESCHLECHT_WERTE = ["maennlich", "weiblich", "divers", "keine_angabe"];
+
+// Gleiche Regeln wie im Formular — gelten auch, wenn die Action ohne Browser aufgerufen wird.
+function validateKindInput(input: KindInput) {
+  if (!GESCHLECHT_WERTE.includes(input.geschlecht)) {
+    throw new Error("Bitte ein Geschlecht auswählen.");
+  }
+  if (input.status === "nachruecker" && !input.eintritt) {
+    throw new Error("Nachrücker brauchen ein geplantes Eintrittsdatum.");
+  }
+}
+
 async function syncWeightingFactors(kindId: string, weightingFactorIds: string[]) {
   const supabase = await createClient();
   await supabase.from("kind_weighting_factors").delete().eq("kind_id", kindId);
@@ -37,6 +49,7 @@ async function syncWeightingFactors(kindId: string, weightingFactorIds: string[]
 }
 
 export async function createKind(input: KindInput) {
+  validateKindInput(input);
   const supabase = await createClient();
   const einrichtungId = await getActiveEinrichtungId();
   if (!einrichtungId) throw new Error("Keine aktive Einrichtung ausgewählt.");
@@ -75,6 +88,7 @@ export async function createKind(input: KindInput) {
 }
 
 export async function updateKind(kindId: string, input: KindInput) {
+  validateKindInput(input);
   const supabase = await createClient();
 
   const { error } = await supabase

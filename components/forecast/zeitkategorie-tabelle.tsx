@@ -40,9 +40,10 @@ const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
 };
 
 /** Zeigt je Monat, wie viele Kinder in welcher Zeitkategorie waren — in
- * Bayern pro Kind (Buchungszeit × Gewichtungsfaktor), in Baden-Württemberg
- * und NRW gibt es kein Pro-Kind-Buchungszeit-Konzept, daher stattdessen die
- * Gruppen-Konfiguration (Betriebsform bzw. Gruppenform/Buchungszeit-Band). */
+ * Bayern pro Kind (Buchungszeit × Gewichtungsfaktor). Für Baden-Württemberg
+ * und NRW zeigt diese Tabelle noch die Gruppen-Konfiguration (Betriebsform
+ * bzw. Gruppenform/Buchungszeit-Band), obwohl dort inzwischen ebenfalls
+ * Pro-Kind-Bänder erfasst werden (siehe Kalenderjahr-Kategorisierung). */
 export function ZeitkategorieTabelle({ months }: { months: ForecastMonth[] }) {
   if (months.length === 0) return null;
   const erster = months[0].zeitkategorie;

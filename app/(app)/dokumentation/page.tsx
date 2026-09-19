@@ -605,20 +605,25 @@ export default async function DokumentationPage() {
       {/* Jahreskategorisierung */}
       <section className="flex flex-col gap-6">
         <h2 className="font-heading text-2xl text-primary">
-          Jährliche Kategorisierung (Kinder- und Jugendhilfestatistik)
+          Kategorisierung nach Kalenderjahr (Kinder- und Jugendhilfestatistik)
         </h2>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">Bänder</h3>
           <p className="text-sm text-muted-foreground">
-            Controlling ordnet einmal jährlich (Stichtag 1. März, analog zum
+            Controlling ordnet für jeden Monat des gewählten Kalenderjahres
+            (Stichtag jeweils der Erste des Monats; der 1. März entspricht dem
             amtlichen Erhebungsstichtag der Kinder- und
             Jugendhilfestatistik) jedes aktive Kind nach vertraglich
             vereinbarter wöchentlicher Betreuungszeit einem Band zu: 10 bis
             unter 15 · 15 bis unter 20 · 20 bis unter 25 · 25 bis unter 30 ·
             30 bis unter 35 · 35 bis unter 40 · 40 bis unter 45 · 45 bis
             unter 50 · 50 bis unter 55 · 55 Std. und mehr, jeweils mit einer
-            Spalte für Kinder mit I-Status.
+            Zeile für Kinder mit I-Status. Die Übersicht ist in allen drei
+            Bundesländern identisch aufgebaut. Bänder ohne Kinder im
+            gewählten Jahr werden ausgeblendet; die I-Status-Zeile eines
+            Bandes erscheint, sobald dort im Jahr ein Kind mit I-Status
+            war.
           </p>
           <p className="text-sm text-muted-foreground">
             In Bayern wird die wöchentliche Stundenzahl aus der täglichen
@@ -631,6 +636,11 @@ export default async function DokumentationPage() {
             einem Kind eine eigene Buchungszeit hinterlegt, wird diese
             verwendet; nur wenn sie fehlt, wird ersatzweise die Öffnungszeit
             bzw. Buchungszeit-Stunden der zugeordneten Gruppe herangezogen.
+            Randfälle: Bayerns Band &bdquo;1-2h&ldquo; (5 bis 10 Std./Woche) wird dem
+            untersten Band &bdquo;10 bis unter 15&ldquo; zugeschlagen; NRWs Bänder 25/35/45
+            gelten als exakte Wochenstunden (25 bis unter 30, 35 bis unter 40,
+            45 bis unter 50). Die Bänder 50 bis unter 55 und 55+ füllen sich
+            mit den aktuell angebotenen Buchungszeiten nicht.
           </p>
         </div>
 

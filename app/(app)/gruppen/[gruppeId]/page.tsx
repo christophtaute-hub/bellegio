@@ -105,6 +105,18 @@ export default async function GruppeDetailPage({
   const belegtRounded = Math.round(belegtRaw);
   const freiRounded = sollplatzeRounded - belegtRounded;
 
+  const geschlechtAnzahl = (geschlecht: string) =>
+    (aktiveKinder ?? []).filter((k) => k.geschlecht === geschlecht).length;
+  const verteilung = [
+    { kuerzel: "w", anzahl: geschlechtAnzahl("weiblich") },
+    { kuerzel: "m", anzahl: geschlechtAnzahl("maennlich") },
+    { kuerzel: "d", anzahl: geschlechtAnzahl("divers") },
+  ]
+    .filter((eintrag) => eintrag.anzahl > 0)
+    .map((eintrag) => `${eintrag.anzahl} ${eintrag.kuerzel}`)
+    .join(" · ");
+  const ohneAngabe = geschlechtAnzahl("keine_angabe");
+
   const hinweise: HinweisEintrag[] = (aktiveKinder ?? []).flatMap((kind) => {
     const eintraege: HinweisEintrag[] = [];
     if (austrittWarnung(kind.austritt, kitaYearStartMonth) === "rot" && kind.austritt) {
@@ -138,7 +150,7 @@ export default async function GruppeDetailPage({
         <p className="text-sm text-muted-foreground">Belegungsmanagement</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Sollplätze" value={String(sollplatzeRounded)} />
         <StatTile label="Belegt" value={String(belegtRounded)} />
         <StatTile
@@ -149,6 +161,10 @@ export default async function GruppeDetailPage({
         <StatTile
           label="Nachrücker/geplant"
           value={String(nachrueckerKinder?.length ?? 0)}
+        />
+        <StatTile
+          label={ohneAngabe > 0 ? `Geschlecht (${ohneAngabe} ohne Angabe)` : "Geschlecht (aktive Kinder)"}
+          value={verteilung || "–"}
         />
       </div>
 

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Scale } from "lucide-react";
+import { Clock, Scale, VenusAndMars } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,6 +21,12 @@ import {
   formatDate,
 } from "@/lib/kita-datum";
 import { cn } from "cn";
+
+const GESCHLECHT_KUERZEL: Record<string, string> = {
+  maennlich: "m",
+  weiblich: "w",
+  divers: "d",
+};
 
 export type KinderTableRow = {
   id: string;
@@ -80,6 +86,9 @@ export function KinderTable({
               <TableHead>Platz</TableHead>
               <TableHead>Name</TableHead>
               <TableHead className="text-center">
+                <SpaltenIcon icon={VenusAndMars} label="Geschlecht (m/w/d)" />
+              </TableHead>
+              <TableHead className="text-center">
                 <SpaltenIcon icon={Clock} label="Buchungszeit" />
               </TableHead>
               <TableHead className="text-center">
@@ -138,6 +147,11 @@ export function KinderTable({
                         </div>
                       </TooltipContent>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span title={GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}>
+                      {GESCHLECHT_KUERZEL[kind.geschlecht] ?? "–"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-center">
                     {kind.booking_time_bands?.label ?? "–"}

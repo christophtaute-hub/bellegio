@@ -97,17 +97,64 @@ export function buildJahreskategorisierung(
   }));
 }
 
+type BandSpanne = { min_hours: number; max_hours: number | null };
+
+type KindKategorisierungRoh = {
+  hat_behinderung: boolean;
+  eintritt: string | null;
+  austritt: string | null;
+  booking_time_bands: BandSpanne | null;
+  gruppen: {
+    bw_oeffnungszeit_stunden: number | null;
+    nrw_buchungszeit_stunden: number | null;
+  } | null;
+};
+
+/** Wochenstunden eines Kindes für die Bandzuordnung — in allen drei
+ * Bundesländern zuerst aus der pro Kind erfassten Buchungszeit (Bayern:
+ * täglich ×5, BW/NRW: bereits wöchentlich); nur wenn dort nichts hinterlegt
+ * ist, dient die Gruppen-Konfiguration als Näherung (BW: Öffnungszeit ×5,
+ * NRW: Buchungszeit-Stunden). null = nicht zuordenbar. */
+export function wochenstundenFuerKind(
+  kind: Pick<KindKategorisierungRoh, "booking_time_bands" | "gruppen">,
+  bundeslandCode: string
+): number | null {
+  const band = kind.booking_time_bands;
+  if (bundeslandCode === "by") {
+    return band ? wochenstundenAusBuchungszeitBand(band) : null;
+  }
+  if (band) return wochenstundenAusWoechentlichemBand(band);
+  const gruppe = kind.gruppen;
+  if (bundeslandCode === "bw" && gruppe?.bw_oeffnungszeit_stunden) {
+    return gruppe.bw_oeffnungszeit_stunden * 5;
+  }
+  if (bundeslandCode === "nrw" && gruppe?.nrw_buchungszeit_stunden) {
+    return gruppe.nrw_buchungszeit_stunden;
+  }
+  return null;
+}
+
+export type KategorisierungsMonat = {
+  /** Erster Tag des Monats (YYYY-MM-01) — zugleich der Stichtag der Zählung. */
+  monat: string;
+  baender: JahreskategorisierungBand[];
+  nichtZugeordnet: number;
+};
+
 /**
- * Amtlicher Erhebungsstichtag der Kinder- und Jugendhilfestatistik ist der
- * 1. März — als Stichtag für die Jahreskategorisierung übernommen.
+ * Kalenderjahr-Übersicht Januar bis Dezember: für jeden Monat (Stichtag =
+ * 1. des Monats, wie in der Forecast-Tabelle) die Kinder je Wochenstunden-Band
+ * inklusive der Kinder mit I-Status. Zwei Abfragen insgesamt; die zwölf
+ * Stichtage werden im Speicher ausgezählt.
+ *
+ * Der amtliche Erhebungsstichtag der Kinder- und Jugendhilfestatistik ist der
+ * 1. März — er steckt als Märzspalte in dieser Übersicht.
  */
-export async function getJahreskategorisierung(
+export async function getKalenderjahrKategorisierung(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
   jahr: number
-): Promise<{ stichtag: string; baender: JahreskategorisierungBand[]; nichtZugeordnet: number }> {
-  const stichtag = `${jahr}-03-01`;
-
+): Promise<KategorisierungsMonat[]> {
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
     .select("bundesland_code")
@@ -115,69 +162,41 @@ export async function getJahreskategorisierung(
     .single();
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
 
-  let query = supabase
+  const { data } = await supabase
     .from("kinder")
     .select(
-      "hat_behinderung, booking_time_bands(min_hours, max_hours), gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
+      "hat_behinderung, eintritt, austritt, booking_time_bands(min_hours, max_hours), gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
     )
     .eq("einrichtung_id", einrichtungId)
     .is("archived_at", null)
     .neq("status", "nachruecker")
     .not("eintritt", "is", null)
-    .lte("eintritt", stichtag);
-  query = query.or(`austritt.is.null,austritt.gt.${stichtag}`);
+    .lte("eintritt", `${jahr}-12-01`)
+    .or(`austritt.is.null,austritt.gt.${jahr}-01-01`);
 
-  const { data } = await query;
+  const kinder = (data ?? []).map((kind) => ({
+    kind,
+    wochenstunden: wochenstundenFuerKind(kind, bundeslandCode),
+  }));
 
-  const eintraege: JahreskategorisierungEintrag[] = [];
-  let nichtZugeordnet = 0;
+  return Array.from({ length: 12 }, (_, i) => {
+    const monat = `${jahr}-${String(i + 1).padStart(2, "0")}-01`;
+    const eintraege: JahreskategorisierungEintrag[] = [];
+    let nichtZugeordnet = 0;
 
-  for (const kind of data ?? []) {
-    let wochenstunden: number | null = null;
-    if (bundeslandCode === "by") {
-      const band = (kind as { booking_time_bands: { min_hours: number; max_hours: number | null } | null })
-        .booking_time_bands;
-      if (band) wochenstunden = wochenstundenAusBuchungszeitBand(band);
-    } else {
-      // Echte, pro Kind erfasste Buchungszeit hat Vorrang, falls gepflegt
-      // (bestätigt durch reale Personalbelegungslisten aus NRW/BW) — die
-      // Gruppen-Öffnungszeit dient nur noch als Näherung für Kinder ohne
-      // eigenen Wert.
-      const band = (
-        kind as { booking_time_bands: { min_hours: number; max_hours: number | null } | null }
-      ).booking_time_bands;
-      if (band) {
-        wochenstunden = wochenstundenAusWoechentlichemBand(band);
-      } else {
-        const gruppe = (
-          kind as {
-            gruppen: {
-              bw_oeffnungszeit_stunden: number | null;
-              nrw_buchungszeit_stunden: number | null;
-            } | null;
-          }
-        ).gruppen;
-        if (bundeslandCode === "bw" && gruppe?.bw_oeffnungszeit_stunden) {
-          wochenstunden = gruppe.bw_oeffnungszeit_stunden * 5;
-        } else if (bundeslandCode === "nrw" && gruppe?.nrw_buchungszeit_stunden) {
-          wochenstunden = gruppe.nrw_buchungszeit_stunden;
-        }
+    for (const { kind, wochenstunden } of kinder) {
+      const istAnwesend =
+        kind.eintritt !== null &&
+        kind.eintritt <= monat &&
+        (kind.austritt === null || kind.austritt > monat);
+      if (!istAnwesend) continue;
+      if (wochenstunden === null) {
+        nichtZugeordnet += 1;
+        continue;
       }
+      eintraege.push({ wochenstunden, hatBehinderung: kind.hat_behinderung });
     }
 
-    if (wochenstunden === null) {
-      nichtZugeordnet += 1;
-      continue;
-    }
-    eintraege.push({
-      wochenstunden,
-      hatBehinderung: (kind as { hat_behinderung: boolean }).hat_behinderung,
-    });
-  }
-
-  return {
-    stichtag,
-    baender: buildJahreskategorisierung(eintraege),
-    nichtZugeordnet,
-  };
+    return { monat, baender: buildJahreskategorisierung(eintraege), nichtZugeordnet };
+  });
 }

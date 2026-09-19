@@ -23,7 +23,7 @@ const kindFormSchema = z
     vorname: z.string().min(1, "Pflichtfeld"),
     nachname: z.string().min(1, "Pflichtfeld"),
     geburtsdatum: z.string().min(1, "Pflichtfeld"),
-    geschlecht: z.enum(["maennlich", "weiblich", "divers", "keine_angabe"]),
+    geschlecht: z.enum(["", "maennlich", "weiblich", "divers", "keine_angabe"]),
     status: z.enum(["aktiv", "nachruecker", "geplant"]),
     gruppe_id: z.string(),
     platznummer: z.string(),
@@ -36,9 +36,17 @@ const kindFormSchema = z
     hat_behinderung: z.boolean(),
     weighting_factor_ids: z.array(z.string()),
   })
+  .refine((data) => data.geschlecht !== "", {
+    message: "Bitte ein Geschlecht auswählen.",
+    path: ["geschlecht"],
+  })
   .refine((data) => data.status !== "aktiv" || data.gruppe_id !== "", {
     message: "Aktive Kinder benötigen eine Gruppe.",
     path: ["gruppe_id"],
+  })
+  .refine((data) => data.status !== "nachruecker" || data.eintritt !== "", {
+    message: "Nachrücker brauchen ein geplantes Eintrittsdatum.",
+    path: ["eintritt"],
   });
 
 type KindFormValues = z.infer<typeof kindFormSchema>;
@@ -83,7 +91,7 @@ export function KindForm({
       vorname: "",
       nachname: "",
       geburtsdatum: "",
-      geschlecht: "keine_angabe",
+      geschlecht: "",
       status: "geplant",
       gruppe_id: "",
       platznummer: "",
@@ -115,7 +123,7 @@ export function KindForm({
       vorname: values.vorname,
       nachname: values.nachname,
       geburtsdatum: values.geburtsdatum,
-      geschlecht: values.geschlecht,
+      geschlecht: values.geschlecht as KindInput["geschlecht"],
       status: values.status,
       gruppe_id: values.gruppe_id || null,
       platznummer: values.platznummer || null,
@@ -160,12 +168,13 @@ export function KindForm({
         >
           <Input id="geburtsdatum" type="date" {...register("geburtsdatum")} />
         </Field>
-        <Field id="geschlecht" label="Geschlecht">
+        <Field id="geschlecht" label="Geschlecht" error={errors.geschlecht?.message}>
           <select
             id="geschlecht"
             className={SELECT_CLASS}
             {...register("geschlecht")}
           >
+            <option value="">Bitte wählen</option>
             {Object.entries(GESCHLECHT_LABEL).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -197,7 +206,7 @@ export function KindForm({
         <Field id="platznummer" label="Platznummer">
           <Input id="platznummer" {...register("platznummer")} />
         </Field>
-        <Field id="eintritt" label="Eintritt">
+        <Field id="eintritt" label="Eintritt" error={errors.eintritt?.message}>
           <Input id="eintritt" type="date" {...register("eintritt")} />
         </Field>
         <Field id="austritt" label="Austritt">

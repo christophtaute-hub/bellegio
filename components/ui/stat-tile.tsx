@@ -16,18 +16,18 @@ export function StatTile({
   className?: string;
 }) {
   return (
-    <Card className={cn("min-w-0 border-0 bg-secondary/60 py-6 shadow-none", className)}>
-      <CardContent className="flex items-center gap-4 px-6">
+    <Card className={cn("min-w-0 border-0 bg-secondary/60 py-3 shadow-none", className)}>
+      <CardContent className="flex items-center gap-3 px-4">
         {Icon ? (
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-            <Icon className="size-5" />
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Icon className="size-4" />
           </div>
         ) : null}
         <div className="min-w-0">
-          <p className="truncate text-sm text-muted-foreground">{label}</p>
+          <p className="text-xs leading-tight text-muted-foreground">{label}</p>
           <p
             className={cn(
-              "text-3xl font-semibold tabular-nums",
+              "text-xl leading-tight font-semibold tabular-nums whitespace-nowrap",
               tone === "warn" ? "text-destructive" : "text-primary"
             )}
           >

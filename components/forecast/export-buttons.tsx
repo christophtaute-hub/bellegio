@@ -3,6 +3,29 @@
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
+import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
+
+const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
+  const rows: Record<string, string | number>[] = [];
+  monate[0].baender.forEach((band, bandIndex) => {
+    const kinder = monate.map((m) => m.baender[bandIndex].anzahlKinder);
+    const iStatus = monate.map((m) => m.baender[bandIndex].davonMitBehinderung);
+    if (!kinder.some((n) => n > 0)) return;
+    rows.push({
+      Wochenstunden: band.label,
+      Art: "Kinder",
+      ...Object.fromEntries(MONATSNAMEN.map((name, i) => [name, kinder[i]])),
+    });
+    rows.push({
+      Wochenstunden: band.label,
+      Art: "davon I-Status",
+      ...Object.fromEntries(MONATSNAMEN.map((name, i) => [name, iStatus[i]])),
+    });
+  });
+  return rows;
+}
 
 function formatMonthLabel(month: string): string {
   return new Date(`${month}T00:00:00Z`).toLocaleDateString("de-DE", {
@@ -71,7 +94,13 @@ function buildRows(months: ForecastMonth[]) {
   }));
 }
 
-export function ExportButtons({ months }: { months: ForecastMonth[] }) {
+export function ExportButtons({
+  months,
+  kategorisierung,
+}: {
+  months: ForecastMonth[];
+  kategorisierung?: { jahr: number; monate: KategorisierungsMonat[] };
+}) {
   return (
     <div className="flex gap-2 print:hidden">
       <Button
@@ -82,6 +111,13 @@ export function ExportButtons({ months }: { months: ForecastMonth[] }) {
           const sheet = XLSX.utils.json_to_sheet(buildRows(months));
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, sheet, "Controlling");
+          if (kategorisierung) {
+            XLSX.utils.book_append_sheet(
+              workbook,
+              XLSX.utils.json_to_sheet(buildKategorisierungRows(kategorisierung.monate)),
+              `Kategorisierung ${kategorisierung.jahr}`
+            );
+          }
           XLSX.writeFile(workbook, "bellegio-controlling.xlsx");
         }}
       >

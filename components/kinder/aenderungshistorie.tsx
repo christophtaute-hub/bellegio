@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 
 export type AenderungsEintrag = {
@@ -21,7 +22,7 @@ function formatTimestamp(value: string): string {
 function RawDataRow({ eintrag }: { eintrag: AenderungsEintrag }) {
   const [expanded, setExpanded] = useState(false);
   return (
-    <li className="rounded-lg border p-3 text-sm">
+    <li className="rounded-lg border p-3 text-sm break-inside-avoid">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span>
           <span className="font-medium">
@@ -36,13 +37,19 @@ function RawDataRow({ eintrag }: { eintrag: AenderungsEintrag }) {
           type="button"
           variant="ghost"
           size="sm"
+          className="print:hidden"
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? "Details ausblenden" : "Details anzeigen"}
         </Button>
       </div>
-      {expanded ? (
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {/* Im Ausdruck immer aufgeklappt, damit der Verlauf vollständig ist. */}
+      <div
+        className={cn(
+          "mt-2 grid-cols-1 gap-3 sm:grid-cols-2",
+          expanded ? "grid" : "hidden print:grid"
+        )}
+      >
           {eintrag.old_data ? (
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">
@@ -62,7 +69,6 @@ function RawDataRow({ eintrag }: { eintrag: AenderungsEintrag }) {
             </pre>
           </div>
         </div>
-      ) : null}
     </li>
   );
 }
