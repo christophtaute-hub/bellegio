@@ -13,14 +13,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bellegio",
-  description: "Verwaltungs- und Controllingsoftware für Kindertagesstätten",
+  title: "Bellegio — Kita-Controlling für Bayern, Baden-Württemberg und NRW",
+  description:
+    "Belegung, Personalschlüssel und Meldewesen für Kindertagesstätten — mit dem passenden Rechenweg für Bayern, Baden-Württemberg und Nordrhein-Westfalen.",
+  openGraph: {
+    title: "Bellegio — Jedes Kind im Blick. Jede Fachkraft am richtigen Platz.",
+    description:
+      "Belegung, Personalschlüssel und Meldewesen für Kindertagesstätten in Bayern, Baden-Württemberg und Nordrhein-Westfalen.",
+    locale: "de_DE",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="de"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

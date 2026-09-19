@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/admin/einnahmen", label: "Einnahmen" },
   { href: "/admin/rechnungen", label: "Rechnungen" },
   { href: "/admin/kunden", label: "Kunden & Preise" },
+  { href: "/admin/anfragen", label: "Demo-Anfragen" },
   { href: "/admin/einstellungen", label: "Betreiberdaten" },
 ] as const;
 

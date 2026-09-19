@@ -156,6 +156,39 @@ export type Database = {
           },
         ]
       }
+      demo_anfragen: {
+        Row: {
+          bundesland: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          nachricht: string | null
+          organisation: string
+          status: string
+        }
+        Insert: {
+          bundesland?: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          nachricht?: string | null
+          organisation: string
+          status?: string
+        }
+        Update: {
+          bundesland?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          nachricht?: string | null
+          organisation?: string
+          status?: string
+        }
+        Relationships: []
+      }
       einrichtung_berechtigungen: {
         Row: {
           bereich: string

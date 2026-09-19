@@ -71,7 +71,24 @@ export default function DatenschutzPage() {
 
       <section className="flex flex-col gap-2 text-sm">
         <h2 className="font-heading text-lg text-primary">
-          5. Betroffenenrechte
+          5. Kontaktformular (Demo-Anfrage)
+        </h2>
+        <p>
+          Über das Formular auf der Startseite können Sie eine Demo
+          anfragen. Dabei speichern wir Ihren Namen, Ihre Einrichtung bzw.
+          Ihren Träger, das Bundesland, Ihre E-Mail-Adresse und Ihre
+          optionale Nachricht in unserer Datenbank (Supabase, Standort
+          Frankfurt am Main), ausschließlich um Ihre Anfrage zu beantworten
+          und Sie zur Demo zu kontaktieren. Rechtsgrundlage ist Art. 6
+          Abs. 1 lit. b bzw. lit. f DSGVO. Eine Weitergabe an Dritte
+          erfolgt nicht. [Speicherdauer festlegen, z. B. Löschung nach
+          Abschluss der Anfrage.]
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-2 text-sm">
+        <h2 className="font-heading text-lg text-primary">
+          6. Betroffenenrechte
         </h2>
         <p>
           Betroffene Personen haben das Recht auf Auskunft, Berichtigung,
