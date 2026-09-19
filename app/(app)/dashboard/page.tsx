@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Users, Scale, Wallet, DoorOpen } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
@@ -10,6 +11,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
+import { SchluesselRadar, SchluesselRadarSkeleton } from "@/components/dashboard/schluessel-radar";
 
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
 // der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
@@ -164,6 +166,12 @@ export default async function DashboardPage({
           />
         ) : null}
       </div>
+
+      {einrichtungId ? (
+        <Suspense fallback={<SchluesselRadarSkeleton />}>
+          <SchluesselRadar einrichtungId={einrichtungId} />
+        </Suspense>
+      ) : null}
 
       <div className="flex flex-col gap-4 rounded-2xl border bg-secondary/30 p-6">
         <div className="flex flex-col gap-1">

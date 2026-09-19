@@ -1199,6 +1199,14 @@ export type Database = {
       }
     }
     Functions: {
+      audit_zusammenfassung: {
+        Args: { p_bis: string; p_einrichtung_id: string; p_von: string }
+        Returns: {
+          anzahl: number
+          bereich: string
+          monat: string
+        }[]
+      }
       kind_max_weighting_factor: {
         Args: { p_kind_id: string }
         Returns: {

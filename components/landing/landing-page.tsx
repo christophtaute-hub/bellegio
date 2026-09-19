@@ -41,7 +41,7 @@ export function LandingPage() {
           titel="Der Personalschlüssel ist kein Bauchgefühl."
           text="Bellegio rechnet aus, ob dein Personal reicht — heute und in den kommenden Monaten. So siehst du Engpässe, bevor sie zum Problem werden."
           punkte={[
-            "Ampel für den aktuellen Stand, Zeitverlauf für die nächsten Monate",
+            "Schlüssel-Radar: Ampel für die nächsten 18 Monate und der Monat, in dem es eng wird",
             "Austritte, Teilzeit und Ausfallzeiten fließen direkt in die Rechnung ein",
             "Im Szenario-Rechner spielst du Änderungen durch, ohne echte Daten anzufassen",
             "Jede Änderung am Personal wird protokolliert",
@@ -81,7 +81,7 @@ export function LandingPage() {
           punkte={[
             "Forecast der Belegung und des Personalschlüssels für bis zu 24 Monate",
             "Freie Plätze je Gruppe auf einen Blick",
-            "Bald: Belegungs-Vorschau mit automatischem Nachrücker-Vorschlag",
+            "Belegungs-Vorschau mit Vorschlag, welches Nachrücker-Kind in den frei werdenden Platz passt",
           ]}
           mockups={[<BelegungMockup key="belegung" />]}
         />
@@ -95,7 +95,7 @@ export function LandingPage() {
           punkte={[
             "Kategorisierung nach Kalenderjahr von Januar bis Dezember",
             "Der 1. März als amtlicher Erhebungsstichtag ist markiert",
-            "Bald: Prüfungsmappe für Aufsicht, Jugendamt und Träger",
+            "Prüfungsmappe für Aufsicht, Jugendamt und Träger — als PDF und Excel",
           ]}
           mockups={[<KategorisierungMockup key="kat" />, <MappeMockup key="mappe" />]}
         />

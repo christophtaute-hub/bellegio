@@ -7,7 +7,7 @@ import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisier
 
 const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
-function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
+export function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
   const rows: Record<string, string | number>[] = [];
   monate[0].baender.forEach((band, bandIndex) => {
     const kinder = monate.map((m) => m.baender[bandIndex].anzahlKinder);
@@ -86,7 +86,7 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
 
 const AMPEL_TEXT = { gruen: "Erfüllt", gelb: "Knapp", rot: "Nicht erfüllt" } as const;
 
-function buildRows(months: ForecastMonth[]) {
+export function buildRows(months: ForecastMonth[]) {
   const metricRows: { label: string; values: (string | number)[] }[] = [
     {
       label: "Belegte Plätze ohne I-Kind",

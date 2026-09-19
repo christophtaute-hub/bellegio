@@ -11,7 +11,8 @@ import { ExportButtons } from "@/components/forecast/export-buttons";
 import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
 import { KalenderjahrKategorisierungTabelle } from "@/components/forecast/kalenderjahr-kategorisierung-tabelle";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 const DEFAULT_MONTH_COUNT = 12;
 const MAX_MONTH_COUNT = 24;
@@ -122,10 +123,15 @@ export default async function ControllingPage({
           Controlling
         </h1>
         {months.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/controlling/mappe" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Prüfungsmappe
+            </Link>
           <ExportButtons
             months={months}
             kategorisierung={kategorisierung ? { jahr: kategorisierungJahr, monate: kategorisierung } : undefined}
           />
+          </div>
         ) : null}
       </div>
       <p className="max-w-2xl text-sm text-muted-foreground">
