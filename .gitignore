@@ -44,3 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Interne Testzugänge mit Passwörtern — nie committen
+/testzugaenge.local.md
