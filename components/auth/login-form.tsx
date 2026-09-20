@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,12 @@ export function LoginForm() {
       <Button type="submit" disabled={isPending} className="mt-2">
         {isPending ? "Anmelden…" : "Anmelden"}
       </Button>
+      <Link
+        href="/passwort-vergessen"
+        className="text-center text-sm text-muted-foreground hover:text-foreground"
+      >
+        Passwort vergessen?
+      </Link>
     </form>
   );
 }

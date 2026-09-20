@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { pruefePasswort } from "@/lib/passwort";
 
 export function SetPasswordForm() {
   const router = useRouter();
@@ -29,8 +30,9 @@ export function SetPasswordForm() {
     event.preventDefault();
     setError(null);
 
-    if (password.length < 8) {
-      setError("Das Passwort muss mindestens 8 Zeichen lang sein.");
+    const passwortFehler = pruefePasswort(password);
+    if (passwortFehler) {
+      setError(passwortFehler);
       return;
     }
     if (password !== passwordRepeat) {
@@ -62,8 +64,9 @@ export function SetPasswordForm() {
   if (status === "invalid") {
     return (
       <p className="text-sm text-destructive">
-        Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen
-        Einladungs- bzw. Zurücksetzen-Link an.
+        Dieser Link ist ungültig oder abgelaufen. Bitte fordere über
+        „Passwort vergessen“ einen neuen Link an, oder bitte deine
+        Administratorin bzw. deinen Administrator um eine neue Einladung.
       </p>
     );
   }

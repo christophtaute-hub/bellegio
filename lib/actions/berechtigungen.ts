@@ -3,6 +3,7 @@
 import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { pruefePasswort } from "@/lib/passwort";
 import type { Bereich, Zugriff } from "@/lib/server/current-user-role";
 import type { Database } from "@/types/database.types";
 
@@ -61,6 +62,11 @@ export async function inviteUser(email: string, fullName: string, password?: str
     (profile.role !== "traeger_admin" && !profile.kann_rechte_verwalten)
   ) {
     throw new Error("Keine Berechtigung, Nutzer anzulegen.");
+  }
+
+  if (password) {
+    const passwortFehler = pruefePasswort(password);
+    if (passwortFehler) throw new Error(passwortFehler);
   }
 
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

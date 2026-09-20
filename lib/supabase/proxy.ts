@@ -2,7 +2,14 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 
-const PUBLIC_PATHS = ["/", "/login", "/impressum", "/datenschutz", "/passwort-setzen"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/impressum",
+  "/datenschutz",
+  "/passwort-setzen",
+  "/passwort-vergessen",
+];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

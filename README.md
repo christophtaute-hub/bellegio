@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bellegio
 
-## Getting Started
+Kita-Controlling für Bayern, Baden-Württemberg und Nordrhein-Westfalen: Belegung, Personalschlüssel (je Bundesland im eigenen Rechenmodell), Forecast, Meldewesen-Auswertungen und eine Betreiber-Zentrale für Rechnungen.
 
-First, run the development server:
+Stack: Next.js 16 (App Router) · Supabase (Postgres, Auth, RLS) · Tailwind · Vitest.
+Hinweis für Entwicklung: Diese Next.js-Version weicht von älteren ab (z.B. `retry` statt `reset` in `error.tsx`, `proxy.ts` statt `middleware.ts`). Vor Änderungen die Doku unter `node_modules/next/dist/docs/` lesen (siehe `AGENTS.md`).
+
+## Lokal starten
 
 ```bash
+npm install
+cp .env.example .env.local   # Supabase-Werte eintragen
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Prüfungen vor jedem Push (laufen auch in der CI):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx tsc --noEmit && npm run lint && npm test && npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Umgebungsvariablen
 
-## Learn More
+| Variable | Wo | Zweck |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Server + Browser | Supabase-Projekt-URL (auch in der CSP erlaubt) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Server + Browser | öffentlicher Schlüssel, Zugriff nur über RLS |
+| `SUPABASE_SERVICE_ROLE_KEY` | nur Server | Nutzer anlegen/einladen und Skripte. Nie im Client-Bundle, nie in öffentliche Logs |
 
-To learn more about Next.js, take a look at the following resources:
+## Datenbank
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Alle Änderungen liegen als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname). Hilfsfunktionen für Rechte liegen im nicht öffentlich exponierten Schema `app`. Nach jeder Migration den Security-Advisor prüfen; neue `SECURITY DEFINER`-Funktionen in `public` sind per RPC aufrufbar und brauchen ein explizites `REVOKE EXECUTE`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Tests für die reine Rechenlogik: `npm test` (Ordner `tests/`). Sie decken die drei Personalmodelle, die Kategorisierung, den Schlüssel-Radar, die Belegungs-Vorschau und die Passwortregeln ab. Neue Rechenregeln bekommen zuerst einen handgerechneten Testfall.
 
-## Deploy on Vercel
+## Produktivbetrieb (Checkliste)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Eigenes Supabase-Projekt für Produktion (Frankfurt, Pro-Plan für Backups/PITR); das bisherige Projekt bleibt Test/Demo. Alle Migrationen einspielen. **Keine Testkonten in Produktion.**
+- Supabase Auth → URL-Konfiguration: Site URL auf die Produktiv-Domain setzen und `https://<domain>/passwort-setzen` als Redirect-URL erlauben (sonst funktionieren „Passwort vergessen“ und Einladungen nicht).
+- Supabase Auth → SMTP: eigenen Mailanbieter eintragen und die deutschen Vorlagen (Einladung, Passwort zurücksetzen) hinterlegen. Der Standardversand ist stark begrenzt.
+- Supabase Auth → Passwörter: „Leaked password protection“ einschalten (Pro-Plan). Die Mindestlänge (10 Zeichen) erzwingt die App in `lib/passwort.ts`.
+- Betreiber eintragen: `insert into platform_operators (user_id) values ('<auth-user-id>')`.
+- Betreiberdaten unter `/admin/einstellungen` und Preise unter `/admin/kunden` pflegen; Demo-Rechnungen entfernen (SQL im Kopf von `scripts/seed-milestone18-betreiber.ts`).
+- Hosting mit HTTPS und den drei Umgebungsvariablen oben. Die Security-Header (CSP, HSTS, X-Frame-Options …) setzt `next.config.ts`; bei neuen externen Diensten die CSP dort erweitern.
+- Impressum und Datenschutz (`app/impressum`, `app/datenschutz`) enthalten noch Platzhalter und müssen vor dem Livegang mit den echten Angaben ersetzt werden.

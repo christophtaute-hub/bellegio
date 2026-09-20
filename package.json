@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "import:excel": "tsx --env-file=.env.local scripts/import-excel.ts"
+    "import:excel": "tsx --env-file=.env.local scripts/import-excel.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -40,6 +41,8 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
     "typescript": "^5",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

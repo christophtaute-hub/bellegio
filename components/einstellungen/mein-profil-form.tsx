@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateEigenenNamen } from "@/lib/actions/profil";
 import { createClient } from "@/lib/supabase/client";
+import { pruefePasswort } from "@/lib/passwort";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,8 +74,9 @@ export function MeinProfilForm({
           setPasswordError(null);
           setPasswordErfolg(null);
 
-          if (password.length < 6) {
-            setPasswordError("Das Passwort muss mindestens 6 Zeichen lang sein.");
+          const passwortFehler = pruefePasswort(password);
+          if (passwortFehler) {
+            setPasswordError(passwortFehler);
             return;
           }
           if (password !== passwordRepeat) {
