@@ -61,7 +61,7 @@ export async function updateSession(request: NextRequest) {
   if (
     user &&
     !hasActiveEinrichtung &&
-    pathname !== "/einrichtung-auswahl" &&
+    !pathname.startsWith("/einrichtung-auswahl") &&
     !pathname.startsWith("/admin") &&
     !isPublicPath
   ) {

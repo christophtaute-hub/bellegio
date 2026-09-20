@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Users, DoorOpen, Shield } from "lucide-react";
+import { Building2, Users, DoorOpen, Shield, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { setActiveEinrichtung } from "@/lib/actions/einrichtung";
 import { signOut } from "@/lib/actions/auth";
@@ -7,7 +7,7 @@ import { toIsoDateString } from "@/lib/kita-datum";
 import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { AmpelBadge } from "@/components/team/ampel-badge";
-import { isPlatformOperator } from "@/lib/server/current-user-role";
+import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
 import {
   Card,
   CardHeader,
@@ -54,6 +54,7 @@ export default async function EinrichtungAuswahlPage() {
     ? await supabase.from("user_profiles").select("trager_id").eq("id", user.id).single()
     : { data: null };
   const istBetreiber = await isPlatformOperator();
+  const istTraegerAdmin = (await getCurrentUserRole()) === "traeger_admin";
 
   // Der Betreiber darf per RLS alle Einrichtungen sehen — hier zeigen wir trotzdem
   // nur die des eigenen Trägers, alles andere gehört in die Betreiber-Zentrale.
@@ -134,12 +135,19 @@ export default async function EinrichtungAuswahlPage() {
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Dir ist noch keine Einrichtung zugeordnet. Bitte wende dich an
-          deinen Träger-Administrator.
+          {istTraegerAdmin
+            ? "In deinem Träger ist noch keine Einrichtung angelegt."
+            : "Dir ist noch keine Einrichtung zugeordnet. Bitte wende dich an deinen Träger-Administrator."}
         </p>
       )}
 
       <div className="flex items-center gap-2">
+        {istTraegerAdmin ? (
+          <Button nativeButton={false} render={<Link href="/einrichtung-auswahl/neu" />} variant="outline" size="sm">
+            <Plus className="size-3.5" />
+            Neue Einrichtung
+          </Button>
+        ) : null}
         {istBetreiber ? (
           <Button nativeButton={false} render={<Link href="/admin" />} variant="outline" size="sm">
             <Shield className="size-3.5" />

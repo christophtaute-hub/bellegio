@@ -33,6 +33,10 @@ function validateKindInput(input: KindInput) {
   if (input.status === "nachruecker" && !input.eintritt) {
     throw new Error("Nachrücker brauchen ein geplantes Eintrittsdatum.");
   }
+  // Ohne Eintritt zählt ein aktives Kind in keiner Belegungs- oder Personalberechnung.
+  if (input.status === "aktiv" && !input.eintritt) {
+    throw new Error("Aktive Kinder brauchen ein Eintrittsdatum.");
+  }
 }
 
 async function syncWeightingFactors(kindId: string, weightingFactorIds: string[]) {

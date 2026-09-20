@@ -1,8 +1,11 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { toIsoDateString } from "@/lib/kita-datum";
 import type { OperatorKennzahl } from "@/lib/admin/abrechnung";
 import { TragerAbrechnungForm } from "@/components/admin/trager-abrechnung-form";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function KundenPage() {
   const supabase = await createClient();
@@ -21,11 +24,17 @@ export default async function KundenPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">Kunden &amp; Preise</h1>
-        <p className="text-sm text-muted-foreground">
-          Rechnungsdaten und optionale Preise je Träger. Ohne Preise entstehen Rechnungen aus freien Positionen.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-3xl tracking-tight text-primary">Kunden &amp; Preise</h1>
+          <p className="text-sm text-muted-foreground">
+            Rechnungsdaten und optionale Preise je Träger. Ohne Preise entstehen Rechnungen aus freien Positionen.
+          </p>
+        </div>
+        <Link href="/admin/kunden/neu" className={buttonVariants({ size: "sm" })}>
+          <Plus className="size-3.5" />
+          Neuen Kunden anlegen
+        </Link>
       </div>
 
       {Array.from(traeger.entries()).map(([id, t]) => {

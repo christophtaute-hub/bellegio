@@ -217,9 +217,14 @@ export default async function KinderPage({
         <div className="flex items-center gap-2">
           <KinderExportButtons rows={exportRows} />
           {canEditBelegung ? (
-            <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
-              Kind anlegen
-            </Button>
+            <>
+              <Button nativeButton={false} render={<Link href="/kinder/import" />} variant="secondary">
+                Aus Excel importieren
+              </Button>
+              <Button nativeButton={false} render={<Link href="/kinder/neu" />}>
+                Kind anlegen
+              </Button>
+            </>
           ) : null}
         </div>
       </div>

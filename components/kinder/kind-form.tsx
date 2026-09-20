@@ -44,6 +44,10 @@ const kindFormSchema = z
     message: "Aktive Kinder benötigen eine Gruppe.",
     path: ["gruppe_id"],
   })
+  .refine((data) => data.status !== "aktiv" || data.eintritt !== "", {
+    message: "Aktive Kinder brauchen ein Eintrittsdatum.",
+    path: ["eintritt"],
+  })
   .refine((data) => data.status !== "nachruecker" || data.eintritt !== "", {
     message: "Nachrücker brauchen ein geplantes Eintrittsdatum.",
     path: ["eintritt"],

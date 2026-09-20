@@ -12,6 +12,7 @@ import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
 import { SchluesselRadar, SchluesselRadarSkeleton } from "@/components/dashboard/schluessel-radar";
+import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
 
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
 // der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
@@ -125,6 +126,12 @@ export default async function DashboardPage({
           Eure Belegung und Personalsituation auf einen Blick.
         </p>
       </div>
+
+      {einrichtungId ? (
+        <Suspense fallback={null}>
+          <ErsteSchritte einrichtungId={einrichtungId} />
+        </Suspense>
+      ) : null}
 
       <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
 

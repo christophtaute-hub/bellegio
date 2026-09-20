@@ -85,9 +85,14 @@ export default async function TeamPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Team</h1>
         {canEditPersonal ? (
-          <Button nativeButton={false} render={<Link href="/team/neu" />}>
-            Personal anlegen
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button nativeButton={false} render={<Link href="/team/import" />} variant="secondary">
+              Aus Excel importieren
+            </Button>
+            <Button nativeButton={false} render={<Link href="/team/neu" />}>
+              Personal anlegen
+            </Button>
+          </div>
         ) : null}
       </div>
 

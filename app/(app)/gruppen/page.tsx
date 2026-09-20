@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,7 @@ export default async function GruppenPage() {
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, { data: platzwerte }, { data: nachruecker }] =
+  const [{ data: gruppen }, { data: platzwerte }, { data: nachruecker }, darfBearbeiten] =
     await Promise.all([
       supabase
         .from("gruppen")
@@ -54,6 +55,7 @@ export default async function GruppenPage() {
         .eq("einrichtung_id", einrichtungId ?? "")
         .eq("status", "nachruecker")
         .is("archived_at", null),
+      einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
     ]);
 
   const belegteByGruppe = new Map<string, number>();
@@ -78,10 +80,18 @@ export default async function GruppenPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Gruppen</h1>
-        <Link href="/gruppen/vorschau" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-          Belegungs-Vorschau
-          <ArrowRight className="size-3.5" />
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/gruppen/vorschau" className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            Belegungs-Vorschau
+            <ArrowRight className="size-3.5" />
+          </Link>
+          {darfBearbeiten ? (
+            <Link href="/gruppen/neu" className={buttonVariants({ size: "sm" })}>
+              <Plus className="size-3.5" />
+              Gruppe anlegen
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {gruppen && gruppen.length > 0 ? (
@@ -128,9 +138,18 @@ export default async function GruppenPage() {
           })}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Noch keine Gruppen angelegt.
-        </p>
+        <div className="flex flex-col items-start gap-3 rounded-2xl border bg-secondary/30 p-6">
+          <p className="text-sm text-muted-foreground">
+            Noch keine Gruppen angelegt. Lege zuerst die Gruppen der Einrichtung an — danach kannst du Kinder und
+            Personal zuordnen.
+          </p>
+          {darfBearbeiten ? (
+            <Link href="/gruppen/neu" className={buttonVariants({ size: "sm" })}>
+              <Plus className="size-3.5" />
+              Erste Gruppe anlegen
+            </Link>
+          ) : null}
+        </div>
       )}
     </div>
   );

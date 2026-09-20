@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
+import { istBundeslandCode } from "@/lib/admin/neuer-kunde";
 
 export async function setActiveEinrichtung(einrichtungId: string) {
   const supabase = await createClient();
@@ -127,4 +128,72 @@ export async function updateEmpfohlenerAnstellungsschluessel(
   revalidatePath("/dashboard");
   revalidatePath("/controlling");
   revalidatePath("/szenario");
+}
+
+export type EinrichtungErgebnis = { ok: true; id: string } | { ok: false; error: string };
+
+export type NeueEinrichtungInput = {
+  name: string;
+  bundeslandCode: string;
+  ort: string | null;
+  vollzeitWochenstunden: number;
+};
+
+/** Legt eine weitere Einrichtung im eigenen Träger an. RLS lässt das nur Träger-Admins zu. */
+export async function legeEinrichtungAn(input: NeueEinrichtungInput): Promise<EinrichtungErgebnis> {
+  if (!input.name.trim()) return { ok: false, error: "Bitte einen Namen angeben." };
+  if (!istBundeslandCode(input.bundeslandCode)) return { ok: false, error: "Bitte ein Bundesland auswählen." };
+  if (!(input.vollzeitWochenstunden > 0 && input.vollzeitWochenstunden <= 60)) {
+    return { ok: false, error: "Bitte eine gültige Vollzeit-Wochenstundenzahl (1–60) angeben." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profil } = user
+    ? await supabase.from("user_profiles").select("trager_id, role").eq("id", user.id).single()
+    : { data: null };
+  if (!profil || profil.role !== "traeger_admin") {
+    return { ok: false, error: "Nur die Träger-Administration kann Einrichtungen anlegen." };
+  }
+
+  // Die ID wird hier erzeugt und der Insert läuft ohne RETURNING: Die SELECT-Regel
+  // (app.user_has_einrichtung_access) sieht die neue Zeile im selben Statement noch nicht,
+  // ein `.select()` würde den Insert deshalb an der RLS scheitern lassen.
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("einrichtungen").insert({
+    id,
+    trager_id: profil.trager_id,
+    name: input.name.trim(),
+    address_city: input.ort?.trim() || null,
+    bundesland_code: input.bundeslandCode,
+    vollzeit_wochenstunden: input.vollzeitWochenstunden,
+  });
+  if (error) return { ok: false, error: "Die Einrichtung konnte nicht angelegt werden." };
+
+  revalidatePath("/einrichtung-auswahl");
+  revalidatePath("/einstellungen");
+  return { ok: true, id };
+}
+
+/** Archiviert eine Einrichtung (Daten bleiben erhalten). Die gerade aktive Einrichtung lässt sich nicht archivieren. */
+export async function archiviereEinrichtung(einrichtungId: string): Promise<EinrichtungErgebnis> {
+  const cookieStore = await cookies();
+  if (cookieStore.get(ACTIVE_EINRICHTUNG_COOKIE)?.value === einrichtungId) {
+    return { ok: false, error: "Die aktuell geöffnete Einrichtung kann nicht archiviert werden. Wechsle zuerst in eine andere." };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("einrichtungen")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", einrichtungId)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "Die Einrichtung konnte nicht archiviert werden." };
+
+  revalidatePath("/einrichtung-auswahl");
+  revalidatePath("/einstellungen");
+  return { ok: true, id: data.id };
 }

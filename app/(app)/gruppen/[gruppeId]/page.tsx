@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { canWriteBelegung } from "@/lib/server/current-user-role";
+import { buttonVariants } from "@/components/ui/button";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -65,6 +69,7 @@ export default async function GruppeDetailPage({
   }
 
   const kitaYearStartMonth = gruppe.einrichtungen?.kita_year_start_month ?? 9;
+  const darfBearbeiten = einrichtungId ? await canWriteBelegung(supabase, einrichtungId) : false;
 
   const [{ data: aktiveKinder }, { data: nachrueckerKinder }, { data: platzwerte }] =
     await Promise.all([
@@ -146,6 +151,15 @@ export default async function GruppeDetailPage({
           <Badge variant="secondary">
             {GRUPPENART_LABEL[gruppe.gruppenart] ?? gruppe.gruppenart}
           </Badge>
+          {darfBearbeiten ? (
+            <Link
+              href={`/gruppen/${gruppeId}/bearbeiten`}
+              className={buttonVariants({ variant: "ghost", size: "sm", className: "print:hidden" })}
+            >
+              <Pencil className="size-3.5" />
+              Gruppe bearbeiten
+            </Link>
+          ) : null}
         </div>
         <p className="text-sm text-muted-foreground">Belegungsmanagement</p>
       </div>

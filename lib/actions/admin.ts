@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Json } from "@/types/database.types";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { pruefeNeuenKunden, type NeuerKundeInput } from "@/lib/admin/neuer-kunde";
 import { isPlatformOperator } from "@/lib/server/current-user-role";
 import {
   berechneRechnungsvorschlag,
@@ -190,4 +192,100 @@ export async function loescheRechnungsEntwurf(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin/rechnungen");
   redirect("/admin/rechnungen");
+}
+
+export type KundeAnlegenErgebnis = { ok: true; tragerId: string } | { ok: false; error: string };
+
+/** Legt einen neuen Kunden komplett an: Träger, erste Einrichtung, Träger-Administration
+ * (Einladung per E-Mail oder sofort nutzbares Passwort) und Rechnungsdaten. Bei einem
+ * Fehler mittendrin wird alles bisher Angelegte wieder entfernt. */
+export async function legeKundenAn(input: NeuerKundeInput): Promise<KundeAnlegenErgebnis> {
+  try {
+    await betreiberClient();
+  } catch {
+    return { ok: false, error: "Nur für den Betreiber." };
+  }
+  const fehler = pruefeNeuenKunden(input);
+  if (fehler) return { ok: false, error: fehler };
+
+  const admin = createServiceRoleClient();
+  const email = input.adminEmail.trim().toLowerCase();
+  let tragerId: string | null = null;
+  let einrichtungId: string | null = null;
+  let userId: string | null = null;
+
+  const aufraeumen = async () => {
+    if (userId) {
+      await admin.from("user_profiles").delete().eq("id", userId);
+      await admin.auth.admin.deleteUser(userId);
+    }
+    if (einrichtungId) await admin.from("einrichtungen").delete().eq("id", einrichtungId);
+    if (tragerId) {
+      await admin.from("trager_abrechnung").delete().eq("trager_id", tragerId);
+      await admin.from("trager").delete().eq("id", tragerId);
+    }
+  };
+
+  try {
+    const { data: trager, error: tragerError } = await admin
+      .from("trager")
+      .insert({ name: input.traegerName.trim() })
+      .select("id")
+      .single();
+    if (tragerError || !trager) throw new Error(tragerError?.message ?? "Träger konnte nicht angelegt werden.");
+    tragerId = trager.id;
+
+    const { data: einrichtung, error: einrichtungError } = await admin
+      .from("einrichtungen")
+      .insert({
+        trager_id: trager.id,
+        name: input.einrichtungName.trim(),
+        address_city: input.ort?.trim() || null,
+        bundesland_code: input.bundeslandCode,
+        vollzeit_wochenstunden: input.vollzeitWochenstunden,
+      })
+      .select("id")
+      .single();
+    if (einrichtungError || !einrichtung) {
+      throw new Error(einrichtungError?.message ?? "Einrichtung konnte nicht angelegt werden.");
+    }
+    einrichtungId = einrichtung.id;
+
+    const { data: created, error: userError } = input.adminPasswort
+      ? await admin.auth.admin.createUser({ email, password: input.adminPasswort, email_confirm: true })
+      : await admin.auth.admin.inviteUserByEmail(email);
+    if (userError || !created.user) {
+      throw new Error(userError?.message ?? "Der Administrator-Zugang konnte nicht angelegt werden.");
+    }
+    userId = created.user.id;
+
+    const { error: profilError } = await admin.from("user_profiles").insert({
+      id: created.user.id,
+      email,
+      full_name: input.adminName.trim(),
+      role: "traeger_admin",
+      trager_id: trager.id,
+      kann_rechte_verwalten: true,
+    });
+    if (profilError) throw new Error(profilError.message);
+
+    const { error: abrechnungError } = await admin.from("trager_abrechnung").upsert({
+      trager_id: trager.id,
+      rechnungsname: input.traegerName.trim(),
+      rechnungsanschrift: input.rechnungsanschrift?.trim() || null,
+      rechnungs_email: input.rechnungsEmail?.trim() || email,
+    });
+    if (abrechnungError) throw new Error(abrechnungError.message);
+  } catch (err) {
+    await aufraeumen();
+    const meldung = err instanceof Error ? err.message : "Kunde konnte nicht angelegt werden.";
+    if (/already been registered|already exists/i.test(meldung)) {
+      return { ok: false, error: "Diese E-Mail-Adresse ist bereits vergeben." };
+    }
+    return { ok: false, error: meldung };
+  }
+
+  revalidatePath("/admin/kunden");
+  revalidatePath("/admin");
+  return { ok: true, tragerId: tragerId! };
 }

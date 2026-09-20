@@ -1,11 +1,10 @@
 "use server";
 
-import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { pruefePasswort } from "@/lib/passwort";
 import type { Bereich, Zugriff } from "@/lib/server/current-user-role";
-import type { Database } from "@/types/database.types";
 
 export async function setEinrichtungBerechtigung(
   userId: string,
@@ -69,15 +68,7 @@ export async function inviteUser(email: string, fullName: string, password?: str
     if (passwortFehler) throw new Error(passwortFehler);
   }
 
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY ist nicht konfiguriert.");
-  }
-
-  const adminClient = createServiceRoleClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey
-  );
+  const adminClient = createServiceRoleClient();
 
   // Mit Passwort: Account ist sofort einsatzbereit, kein Einladungs-Mail-
   // Umweg. Ohne Passwort: klassische Einladung per E-Mail-Link.

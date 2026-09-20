@@ -33,6 +33,18 @@ Alle Änderungen liegen als Migrationen in `supabase/migrations/` (Reihenfolge =
 
 Tests für die reine Rechenlogik: `npm test` (Ordner `tests/`). Sie decken die drei Personalmodelle, die Kategorisierung, den Schlüssel-Radar, die Belegungs-Vorschau und die Passwortregeln ab. Neue Rechenregeln bekommen zuerst einen handgerechneten Testfall.
 
+## Neuen Kunden aufsetzen
+
+Ohne Skript oder SQL:
+
+1. Als Betreiber unter `/admin/kunden/neu` Träger, erste Einrichtung (Bundesland ist danach fix) und die Träger-Administration anlegen — per Einladungs-Mail oder mit Start-Passwort.
+2. Die Träger-Administration legt weitere Einrichtungen (`/einrichtung-auswahl/neu`, Einstellungen) und Gruppen (`/gruppen/neu`) selbst an und lädt Kolleginnen und Kollegen unter Einstellungen → Nutzer & Rechte ein.
+3. Kinder und Personal kommen einzeln oder per Excel/CSV-Import (`/kinder/import`, `/team/import`) hinein. Der Import prüft zuerst und schreibt erst nach Bestätigung; Regeln stehen in `lib/import/`.
+
+Server Actions geben erwartbare Fehler als Ergebnisobjekt (`{ ok: false, error }`) zurück statt sie zu werfen — in Produktion blendet Next.js Fehlertexte geworfener Fehler aus.
+
+Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunktion sieht die neue Zeile im selben Statement nicht): ID vorab erzeugen und ohne `RETURNING` einfügen, siehe `legeEinrichtungAn`.
+
 ## Produktivbetrieb (Checkliste)
 
 - Eigenes Supabase-Projekt für Produktion (Frankfurt, Pro-Plan für Backups/PITR); das bisherige Projekt bleibt Test/Demo. Alle Migrationen einspielen. **Keine Testkonten in Produktion.**
