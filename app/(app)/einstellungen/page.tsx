@@ -122,12 +122,19 @@ export default async function EinstellungenPage() {
         <h1 className="font-heading text-3xl tracking-tight text-primary">
           Einrichtungs-Einstellungen
         </h1>
-        <a
-          href="/einstellungen/profil"
-          className="text-sm text-primary underline-offset-2 hover:underline"
-        >
-          Mein Profil →
-        </a>
+        <div className="flex items-center gap-4">
+          {istTraegerAdmin ? (
+            <a href="/einstellungen/datenschutz" className="text-sm text-primary underline-offset-2 hover:underline">
+              Datenschutz →
+            </a>
+          ) : null}
+          <a
+            href="/einstellungen/profil"
+            className="text-sm text-primary underline-offset-2 hover:underline"
+          >
+            Mein Profil →
+          </a>
+        </div>
       </div>
 
       {einrichtungId && einrichtung ? (

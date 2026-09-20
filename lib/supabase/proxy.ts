@@ -7,6 +7,10 @@ const PUBLIC_PATHS = [
   "/login",
   "/impressum",
   "/datenschutz",
+  "/agb",
+  "/avv",
+  "/tom",
+  "/unterauftragnehmer",
   "/passwort-setzen",
   "/passwort-vergessen",
 ];
@@ -63,6 +67,7 @@ export async function updateSession(request: NextRequest) {
     !hasActiveEinrichtung &&
     !pathname.startsWith("/einrichtung-auswahl") &&
     pathname !== "/mfa" &&
+    pathname !== "/zustimmung" &&
     !pathname.startsWith("/admin") &&
     !isPublicPath
   ) {

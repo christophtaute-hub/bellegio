@@ -327,3 +327,85 @@ export async function speichereListenpreise(input: ListenpreiseInput): Promise<L
   revalidatePath("/admin/kunden");
   return { ok: true };
 }
+
+export type BetreiberOeffentlichInput = {
+  firmenname: string | null;
+  anschrift: string | null;
+  email: string | null;
+  telefon: string | null;
+  vertretungsberechtigt: string | null;
+  registergericht: string | null;
+  registernummer: string | null;
+  ust_id: string | null;
+  inhaltlich_verantwortlich: string | null;
+  datenschutz_email: string | null;
+  aufsichtsbehoerde: string | null;
+  aufbewahrung_anfragen_monate: number;
+  rechtstexte_geprueft: boolean;
+};
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function speichereBetreiberOeffentlich(input: BetreiberOeffentlichInput): Promise<ListenpreiseErgebnis> {
+  let supabase;
+  try {
+    supabase = await betreiberClient();
+  } catch {
+    return { ok: false, error: "Nur für den Betreiber." };
+  }
+  for (const [wert, name] of [
+    [input.email, "E-Mail-Adresse"],
+    [input.datenschutz_email, "Datenschutz-E-Mail-Adresse"],
+  ] as const) {
+    if (wert && !EMAIL.test(wert.trim())) return { ok: false, error: `${name}: bitte eine gültige Adresse angeben.` };
+  }
+  if (!Number.isInteger(input.aufbewahrung_anfragen_monate) || input.aufbewahrung_anfragen_monate < 1 || input.aufbewahrung_anfragen_monate > 60) {
+    return { ok: false, error: "Aufbewahrung von Anfragen: bitte 1 bis 60 Monate angeben." };
+  }
+  const leerNull = (v: string | null) => (v && v.trim() !== "" ? v.trim() : null);
+  const { data, error } = await supabase
+    .from("betreiber_oeffentlich")
+    .update({
+      firmenname: leerNull(input.firmenname),
+      anschrift: leerNull(input.anschrift),
+      email: leerNull(input.email),
+      telefon: leerNull(input.telefon),
+      vertretungsberechtigt: leerNull(input.vertretungsberechtigt),
+      registergericht: leerNull(input.registergericht),
+      registernummer: leerNull(input.registernummer),
+      ust_id: leerNull(input.ust_id),
+      inhaltlich_verantwortlich: leerNull(input.inhaltlich_verantwortlich),
+      datenschutz_email: leerNull(input.datenschutz_email),
+      aufsichtsbehoerde: leerNull(input.aufsichtsbehoerde),
+      aufbewahrung_anfragen_monate: input.aufbewahrung_anfragen_monate,
+      rechtstexte_geprueft: input.rechtstexte_geprueft,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "Die Angaben konnten nicht gespeichert werden." };
+
+  for (const pfad of ["/impressum", "/datenschutz", "/agb", "/avv", "/tom", "/unterauftragnehmer", "/admin/einstellungen", "/admin"]) revalidatePath(pfad);
+  return { ok: true };
+}
+
+export type AnfragenLoeschErgebnis = { ok: true; geloescht: number } | { ok: false; error: string };
+
+/** Löscht Demo-Anfragen, die älter sind als die in der Datenschutzerklärung zugesagte Aufbewahrungsdauer. */
+export async function loescheAlteAnfragen(): Promise<AnfragenLoeschErgebnis> {
+  let supabase;
+  try {
+    supabase = await betreiberClient();
+  } catch {
+    return { ok: false, error: "Nur für den Betreiber." };
+  }
+  const { data: einstellungen } = await supabase.from("betreiber_oeffentlich").select("aufbewahrung_anfragen_monate").eq("id", true).single();
+  const monate = einstellungen?.aufbewahrung_anfragen_monate ?? 6;
+  const grenze = new Date();
+  grenze.setUTCMonth(grenze.getUTCMonth() - monate);
+  const { data, error } = await supabase.from("demo_anfragen").delete().lt("created_at", grenze.toISOString()).select("id");
+  if (error) return { ok: false, error: "Die Anfragen konnten nicht gelöscht werden." };
+  revalidatePath("/admin/anfragen");
+  return { ok: true, geloescht: data?.length ?? 0 };
+}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { PLANUNGSHILFE_HINWEIS, RECHENWERTE_STAND } from "@/lib/constants";
 
 const BUNDESLAND_LABEL: Record<string, string> = {
   by: "Bayern",
@@ -115,6 +116,9 @@ export default async function DokumentationPage() {
           eurem Jugendamt abgleichen könnt.
         </p>
         {einrichtungId ? <AktuelleEinrichtungBadge bundesland={bundeslandCode} /> : null}
+        <p className="rounded-xl border bg-secondary/40 p-3 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Stand der Rechenwerte: {RECHENWERTE_STAND}.</span> {PLANUNGSHILFE_HINWEIS}
+        </p>
       </div>
 
       <section className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">

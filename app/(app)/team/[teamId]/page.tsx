@@ -1,7 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { canWritePersonal } from "@/lib/server/current-user-role";
+import Link from "next/link";
+import { FileText } from "lucide-react";
+import { canWritePersonal, getCurrentUserRole } from "@/lib/server/current-user-role";
+import { DatenschutzAktionen } from "@/components/datenschutz/datenschutz-aktionen";
+import { istAnonymisiert, istEntfernbar } from "@/lib/datenschutz/loeschfrist";
+import { buttonVariants } from "@/components/ui/button";
 import { TeamForm } from "@/components/team/team-form";
 import { DruckButton } from "@/components/shared/druck-button";
 import { DruckKopf } from "@/components/shared/druck-kopf";
@@ -56,6 +61,9 @@ export default async function TeamDetailPage({
       supabase.from("einrichtungen").select("name").eq("id", einrichtungId ?? "").single(),
     ]);
 
+  const rolle = await getCurrentUserRole();
+  const heuteIso = toIsoDateString(new Date());
+
   const aenderungen: AenderungsEintrag[] = (auditLog ?? []).map((entry) => ({
     id: entry.id,
     changed_at: entry.changed_at,
@@ -70,7 +78,15 @@ export default async function TeamDetailPage({
         <h1 className="font-heading text-2xl text-primary">
           {mitglied.vorname} {mitglied.nachname}
         </h1>
-        <DruckButton />
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {canEditPersonal ? (
+            <Link href={`/team/${mitglied.id}/auskunft`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              <FileText className="size-3.5" />
+              Auskunft (Art. 15 DSGVO)
+            </Link>
+          ) : null}
+          <DruckButton />
+        </div>
       </div>
       <DruckKopf
         titel="Änderungsverlauf — Personal"
@@ -118,6 +134,16 @@ export default async function TeamDetailPage({
       />
       </div>
       <Aenderungshistorie eintraege={aenderungen} />
+      {rolle === "traeger_admin" ? (
+        <DatenschutzAktionen
+          art="team"
+          id={mitglied.id}
+          name={`${mitglied.vorname ?? ""} ${mitglied.nachname ?? ""}`.trim()}
+          entfernbar={istEntfernbar(mitglied.status, mitglied.austritt, heuteIso)}
+          bereitsAnonym={istAnonymisiert("team", mitglied.vorname, mitglied.nachname)}
+          zurueckHref="/team"
+        />
+      ) : null}
     </div>
   );
 }

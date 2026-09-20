@@ -1,53 +1,61 @@
-import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { ladeBetreiberOeffentlich } from "@/lib/rechtstexte/betreiber";
+import { Abschnitt, Angabe, RechtstextSeite } from "@/components/legal/bausteine";
 
-export default function ImpressumPage() {
+export default async function ImpressumPage() {
+  const b = await ladeBetreiberOeffentlich(await createClient());
+  const hatRegister = Boolean(b.registergericht || b.registernummer);
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16">
-      <Link href="/" className="text-sm text-primary hover:underline">
-        ← Zurück zur Startseite
-      </Link>
-      <h1 className="font-heading text-3xl tracking-tight text-primary">Impressum</h1>
-
-      <p className="rounded-xl border border-dashed border-accent bg-accent/10 p-4 text-sm text-muted-foreground">
-        Platzhalter – bitte mit den echten Angaben des Trägers ersetzen,
-        bevor die Seite öffentlich beworben wird.
-      </p>
-
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          Angaben gemäß § 5 TMG
-        </h2>
+    <RechtstextSeite titel="Impressum" entwurf={!b.rechtstexte_geprueft}>
+      <Abschnitt titel="Angaben gemäß § 5 DDG">
         <p>
-          [Name des Trägers]
+          <Angabe wert={b.firmenname} name="Firmenname" />
           <br />
-          [Straße und Hausnummer]
-          <br />
-          [PLZ und Ort]
+          <span className="whitespace-pre-line">
+            <Angabe wert={b.anschrift} name="Anschrift" />
+          </span>
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          Vertreten durch
-        </h2>
-        <p>[Name der vertretungsberechtigten Person(en)]</p>
-      </section>
+      {b.vertretungsberechtigt ? (
+        <Abschnitt titel="Vertreten durch">
+          <p>{b.vertretungsberechtigt}</p>
+        </Abschnitt>
+      ) : null}
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">Kontakt</h2>
+      <Abschnitt titel="Kontakt">
         <p>
-          Telefon: [Telefonnummer]
-          <br />
-          E-Mail: [E-Mail-Adresse]
+          E-Mail: <Angabe wert={b.email} name="E-Mail-Adresse" />
+          {b.telefon ? (
+            <>
+              <br />
+              Telefon: {b.telefon}
+            </>
+          ) : null}
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
-        </h2>
-        <p>[Name, Anschrift wie oben]</p>
-      </section>
-    </div>
+      {hatRegister ? (
+        <Abschnitt titel="Registereintrag">
+          <p>
+            {b.registergericht ? <>Registergericht: {b.registergericht}<br /></> : null}
+            {b.registernummer ? <>Registernummer: {b.registernummer}</> : null}
+          </p>
+        </Abschnitt>
+      ) : null}
+
+      {b.ust_id ? (
+        <Abschnitt titel="Umsatzsteuer-Identifikationsnummer">
+          <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: {b.ust_id}</p>
+        </Abschnitt>
+      ) : null}
+
+      {b.inhaltlich_verantwortlich ? (
+        <Abschnitt titel="Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV">
+          <p className="whitespace-pre-line">{b.inhaltlich_verantwortlich}</p>
+        </Abschnitt>
+      ) : null}
+    </RechtstextSeite>
   );
 }

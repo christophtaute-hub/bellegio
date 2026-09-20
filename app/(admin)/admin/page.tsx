@@ -18,6 +18,7 @@ import {
   formatMonat,
 } from "@/lib/admin/einnahmen";
 import { MetricCard } from "@/components/ui/metric-card";
+import { fehlendeAngaben, ladeBetreiberOeffentlich } from "@/lib/rechtstexte/betreiber";
 import { Badge } from "@/components/ui/badge";
 import { EinnahmenChart } from "@/components/admin/einnahmen-chart";
 import { UmsatzKarte } from "@/components/admin/umsatz-karte";
@@ -47,6 +48,7 @@ export default async function AbrechnungPage({
   const jahrParam = Number(sp.jahr);
   const jahr = Number.isInteger(jahrParam) && jahrParam >= 2024 && jahrParam <= aktuellesJahr ? jahrParam : aktuellesJahr;
 
+  const oeffentlich = await ladeBetreiberOeffentlich(supabase);
   const [rechnungen, { data: kennzahlen }, { data: einstellungen }] = await Promise.all([
     ladeRechnungenFuerKopf(supabase),
     supabase.rpc("operator_kennzahlen", { p_stichtag: heute }),
@@ -92,6 +94,17 @@ export default async function AbrechnungPage({
             Betreiberdaten
           </Link>{" "}
           (Firmenname, Anschrift, Bankverbindung).
+        </div>
+      ) : null}
+
+      {fehlendeAngaben(oeffentlich).length > 0 || !oeffentlich.rechtstexte_geprueft ? (
+        <div className="rounded-xl border border-accent bg-accent/10 p-4 text-sm">
+          Vor dem Livegang: Impressum, Datenschutz, AGB und AVV sind noch nicht fertig
+          {fehlendeAngaben(oeffentlich).length > 0 ? ` (es fehlen ${fehlendeAngaben(oeffentlich).join(", ")})` : ""}. Trage die Angaben unter{" "}
+          <Link href="/admin/einstellungen" className="text-primary underline underline-offset-2">
+            Betreiberdaten
+          </Link>{" "}
+          ein und gib die Texte nach der juristischen Prüfung frei.
         </div>
       ) : null}
 

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { canWriteBelegung, getCurrentUserRole } from "@/lib/server/current-user-role";
+import { DatenschutzAktionen } from "@/components/datenschutz/datenschutz-aktionen";
+import { istAnonymisiert, istEntfernbar } from "@/lib/datenschutz/loeschfrist";
+import { buttonVariants } from "@/components/ui/button";
 import { KindForm } from "@/components/kinder/kind-form";
 import {
   Aenderungshistorie,
@@ -117,6 +123,12 @@ export default async function KindDetailPage({
         }
       : undefined;
 
+  const heuteIso = toIsoDateString(new Date());
+  const [rolle, darfAuskunft] = await Promise.all([
+    getCurrentUserRole(),
+    einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
+  ]);
+
   const gewichtungsLabels = (weightingFactors ?? [])
     .filter((w) => (kindWeightingFactors ?? []).some((k) => k.weighting_factor_id === w.id))
     .map((w) => w.label);
@@ -127,7 +139,15 @@ export default async function KindDetailPage({
         <h1 className="font-heading text-2xl text-primary">
           {kind.vorname} {kind.nachname}
         </h1>
-        <DruckButton />
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {darfAuskunft ? (
+            <Link href={`/kinder/${kind.id}/auskunft`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+              <FileText className="size-3.5" />
+              Auskunft (Art. 15 DSGVO)
+            </Link>
+          ) : null}
+          <DruckButton />
+        </div>
       </div>
       <DruckKopf
         titel="Änderungsverlauf — Kind"
@@ -192,6 +212,16 @@ export default async function KindDetailPage({
       />
       </div>
       <Aenderungshistorie eintraege={aenderungen} />
+      {rolle === "traeger_admin" ? (
+        <DatenschutzAktionen
+          art="kind"
+          id={kind.id}
+          name={`${kind.vorname} ${kind.nachname}`}
+          entfernbar={istEntfernbar(kind.status, kind.austritt, heuteIso)}
+          bereitsAnonym={istAnonymisiert("kind", kind.vorname, kind.nachname)}
+          zurueckHref="/kinder"
+        />
+      ) : null}
     </div>
   );
 }

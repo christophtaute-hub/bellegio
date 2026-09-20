@@ -1,102 +1,87 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { ANGABEN_STAND, ladeBetreiberOeffentlich } from "@/lib/rechtstexte/betreiber";
+import { Abschnitt, Angabe, Platzhalter, RechtstextSeite } from "@/components/legal/bausteine";
 
-export default function DatenschutzPage() {
+export default async function DatenschutzPage() {
+  const b = await ladeBetreiberOeffentlich(await createClient());
+  const kontakt = b.datenschutz_email || b.email;
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16">
-      <Link href="/" className="text-sm text-primary hover:underline">
-        ← Zurück zur Startseite
-      </Link>
-      <h1 className="font-heading text-3xl tracking-tight text-primary">
-        Datenschutzerklärung
-      </h1>
-
-      <p className="rounded-xl border border-dashed border-accent bg-accent/10 p-4 text-sm text-muted-foreground">
-        Platzhalter – bitte mit den echten Angaben des Trägers ersetzen,
-        bevor die Seite öffentlich beworben wird. Diese Erklärung ersetzt
-        keine Rechtsberatung.
-      </p>
-
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          1. Verantwortliche Stelle
-        </h2>
+    <RechtstextSeite titel="Datenschutzerklärung" stand={ANGABEN_STAND} entwurf={!b.rechtstexte_geprueft}>
+      <Abschnitt titel="1. Verantwortlicher">
         <p>
-          [Name des Trägers]
+          <Angabe wert={b.firmenname} name="Firmenname" />
           <br />
-          [Straße und Hausnummer]
+          <span className="whitespace-pre-line">
+            <Angabe wert={b.anschrift} name="Anschrift" />
+          </span>
           <br />
-          [PLZ und Ort]
-          <br />
-          E-Mail: [E-Mail-Adresse]
+          E-Mail: <Angabe wert={kontakt} name="E-Mail-Adresse" />
         </p>
-      </section>
-
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          2. Hosting und Auftragsverarbeitung
-        </h2>
         <p>
-          Diese Anwendung wird bei Hostinger gehostet. Die Speicherung der
-          Daten (Datenbank und Authentifizierung) erfolgt über Supabase mit
-          Serverstandort Frankfurt am Main, Deutschland. Mit beiden
-          Anbietern besteht bzw. wird ein Auftragsverarbeitungsvertrag
-          gemäß Art. 28 DSGVO abgeschlossen.
+          Diese Erklärung gilt für die Website und für die Datenverarbeitung, die Bellegio für eigene Zwecke vornimmt (Website, Kundenkonten, Abrechnung). Für
+          die Kita-Daten, die Träger in der Anwendung erfassen (Kinder, Personal), ist der jeweilige Träger verantwortlich; Bellegio verarbeitet sie als
+          Auftragsverarbeiter nach Art. 28 DSGVO auf Grundlage des <Link href="/avv" className="text-primary underline">Auftragsverarbeitungsvertrags</Link>.
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">3. Cookies</h2>
+      <Abschnitt titel="2. Hosting und Auftragsverarbeiter">
         <p>
-          Diese Anwendung verwendet ausschließlich technisch notwendige
-          Cookies zur Anmeldung (Sitzungs-Cookie) und zur Speicherung der
-          zuletzt gewählten Einrichtung. Diese Cookies werden auf Grundlage
-          von Art. 6 Abs. 1 lit. f DSGVO gesetzt und sind für den Betrieb
-          der Anwendung erforderlich. Ein Einwilligungsbanner ist daher
-          nicht erforderlich.
+          Datenbank und Anmeldung laufen bei Supabase in einem Rechenzentrum in Frankfurt am Main. Für die Auslieferung der Website und für den
+          E-Mail-Versand setzen wir Dienstleister ein, die in der{" "}
+          <Link href="/unterauftragnehmer" className="text-primary underline">Liste der Unterauftragnehmer</Link> aufgeführt sind. Mit allen Dienstleistern
+          besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO bzw. wird vor dem Einsatz abgeschlossen.
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          4. Verarbeitete Daten
-        </h2>
+      <Abschnitt titel="3. Server-Protokolle">
         <p>
-          Im Rahmen der Nutzung werden personenbezogene Daten von
-          Mitarbeitenden und Kindern der jeweiligen Einrichtung
-          verarbeitet (u. a. Name, Geburtsdatum, Geschlecht, Buchungs- und
-          Beschäftigungsdaten), soweit dies für die Kita-Verwaltung und
-          -Controlling erforderlich ist.
+          Beim Aufruf der Website verarbeitet der Hosting-Dienstleister technisch notwendige Verbindungsdaten (u. a. IP-Adresse, Zeitpunkt, aufgerufene Adresse,
+          Browser). Das dient der Sicherheit und dem stabilen Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Die Speicherdauer richtet sich nach dem eingesetzten
+          Dienstleister <Platzhalter>Speicherdauer der Server-Protokolle nach Wahl des Hosters eintragen</Platzhalter>.
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          5. Kontaktformular (Demo-Anfrage)
-        </h2>
+      <Abschnitt titel="4. Cookies">
         <p>
-          Über das Formular auf der Startseite können Sie eine Demo
-          anfragen. Dabei speichern wir Ihren Namen, Ihre Einrichtung bzw.
-          Ihren Träger, das Bundesland, Ihre E-Mail-Adresse und Ihre
-          optionale Nachricht in unserer Datenbank (Supabase, Standort
-          Frankfurt am Main), ausschließlich um Ihre Anfrage zu beantworten
-          und Sie zur Demo zu kontaktieren. Rechtsgrundlage ist Art. 6
-          Abs. 1 lit. b bzw. lit. f DSGVO. Eine Weitergabe an Dritte
-          erfolgt nicht. [Speicherdauer festlegen, z. B. Löschung nach
-          Abschluss der Anfrage.]
+          Wir setzen ausschließlich technisch notwendige Cookies: ein Anmelde-Cookie und ein Cookie, das die zuletzt gewählte Einrichtung merkt. Rechtsgrundlage
+          ist Art. 6 Abs. 1 lit. f DSGVO bzw. § 25 Abs. 2 Nr. 2 TDDDG. Wir verwenden keine Werbe- oder Analyse-Cookies und binden keine Dienste Dritter (etwa
+          Schriftarten-Server oder Karten) von außen ein; ein Einwilligungsbanner ist deshalb nicht erforderlich.
         </p>
-      </section>
+      </Abschnitt>
 
-      <section className="flex flex-col gap-2 text-sm">
-        <h2 className="font-heading text-lg text-primary">
-          6. Betroffenenrechte
-        </h2>
+      <Abschnitt titel="5. Kundenkonto und Anmeldung">
         <p>
-          Betroffene Personen haben das Recht auf Auskunft, Berichtigung,
-          Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit
-          und Widerspruch. Anfragen richten Sie bitte an die oben genannte
-          verantwortliche Stelle.
+          Für Nutzerkonten verarbeiten wir Name, E-Mail-Adresse, Rolle und Berechtigungen sowie technische Anmeldedaten (Passwort als Prüfwert, optional den
+          zweiten Faktor). Zweck ist die Bereitstellung der Anwendung (Art. 6 Abs. 1 lit. b DSGVO). Konten werden gelöscht, wenn der Vertrag endet.
         </p>
-      </section>
-    </div>
+      </Abschnitt>
+
+      <Abschnitt titel="6. Abrechnung">
+        <p>
+          Für Rechnungen verarbeiten wir Firmen- und Kontaktdaten der Kunden, Rechnungspositionen und Zahlungsstatus. Rechtsgrundlage sind Art. 6 Abs. 1 lit. b und
+          lit. c DSGVO. Wir bewahren Rechnungen entsprechend den handels- und steuerrechtlichen Aufbewahrungsfristen auf.
+        </p>
+      </Abschnitt>
+
+      <Abschnitt titel="7. Kontaktformular (Demo-Anfrage)">
+        <p>
+          Über das Formular auf der Startseite können Sie eine Demo anfragen. Wir speichern Ihren Namen, Ihre Einrichtung bzw. Ihren Träger, das Bundesland, Ihre
+          E-Mail-Adresse und Ihre optionale Nachricht, um Ihre Anfrage zu beantworten (Art. 6 Abs. 1 lit. b bzw. lit. f DSGVO). Wir geben die Angaben nicht an
+          Dritte weiter. Anfragen löschen wir spätestens {b.aufbewahrung_anfragen_monate} Monate nach Abschluss der Kommunikation, sofern keine Geschäftsbeziehung
+          entsteht.
+        </p>
+      </Abschnitt>
+
+      <Abschnitt titel="8. Ihre Rechte">
+        <p>
+          Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15–21 DSGVO)
+          sowie das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Zuständig ist{" "}
+          <Angabe wert={b.aufsichtsbehoerde} name="Zuständige Aufsichtsbehörde" />. Anfragen richten Sie bitte an die oben genannte Adresse. Wenn Ihre Daten in einer
+          Kita-Anwendung verarbeitet werden, wenden Sie sich zunächst an den Träger der Einrichtung.
+        </p>
+      </Abschnitt>
+    </RechtstextSeite>
   );
 }

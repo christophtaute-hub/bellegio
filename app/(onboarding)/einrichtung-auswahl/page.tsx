@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { Building2, Users, DoorOpen, Shield, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { setActiveEinrichtung } from "@/lib/actions/einrichtung";
@@ -45,6 +47,7 @@ async function ladeEinrichtungsKennzahlen(
 }
 
 export default async function EinrichtungAuswahlPage() {
+  if (await zustimmungOffen()) redirect("/zustimmung");
   const supabase = await createClient();
   const stichtag = toIsoDateString(new Date());
   const {

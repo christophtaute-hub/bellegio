@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AnfrageStatusButton } from "@/components/admin/anfrage-status-button";
 import { Badge } from "@/components/ui/badge";
+import { AlteAnfragenLoeschen } from "@/components/admin/alte-anfragen-loeschen";
 
 const BUNDESLAND: Record<string, string> = {
   by: "Bayern",
@@ -11,6 +12,7 @@ const BUNDESLAND: Record<string, string> = {
 
 export default async function AnfragenPage() {
   const supabase = await createClient();
+  const { data: aufbewahrung } = await supabase.from("betreiber_oeffentlich").select("aufbewahrung_anfragen_monate").eq("id", true).single();
   const { data: anfragen } = await supabase
     .from("demo_anfragen")
     .select("*")
@@ -23,6 +25,7 @@ export default async function AnfragenPage() {
         <h1 className="font-heading text-3xl tracking-tight text-primary">Demo-Anfragen</h1>
         <p className="text-sm text-muted-foreground">Eingänge des Kontaktformulars auf der Landingpage.</p>
       </div>
+      <AlteAnfragenLoeschen monate={aufbewahrung?.aufbewahrung_anfragen_monate ?? 6} />
 
       {anfragen && anfragen.length > 0 ? (
         <ul className="flex flex-col gap-3">

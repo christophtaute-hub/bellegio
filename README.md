@@ -45,6 +45,13 @@ Server Actions geben erwartbare Fehler als Ergebnisobjekt (`{ ok: false, error }
 
 Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunktion sieht die neue Zeile im selben Statement nicht): ID vorab erzeugen und ohne `RETURNING` einfügen, siehe `legeEinrichtungAn`.
 
+## Datenschutz und Rechtstexte
+
+- Löschen/Anonymisieren für ausgetretene Kinder und ausgeschiedenes Personal laufen über die Datenbankfunktionen `kind_datenschutz` und `team_datenschutz` (Definer-Funktion im Schema `app`, Wrapper in `public`; nur Träger-Administration, protokolliert in `loeschprotokoll`). Das Änderungsprotokoll enthält komplette Datensätze und wird dabei mit bereinigt. Tests: `supabase/tests/datenschutz_loeschen.sql`, `supabase/tests/rechtstexte_zugriff.sql`.
+- Auskunft nach Art. 15 DSGVO: `/kinder/[id]/auskunft`, `/team/[id]/auskunft` (Druck und Excel).
+- Impressum, Datenschutz, AGB, AVV, TOM und Unterauftragnehmer sind Entwürfe. Die Angaben des Betreibers pflegt `/admin/einstellungen`; fehlende Pflichtangaben erscheinen auf den Seiten als sichtbare Lücke. Erst wenn dort „Rechtstexte geprüft und freigegeben“ gesetzt ist, verschwindet der Entwurfshinweis und Träger-Administratoren müssen AGB und AVV bestätigen (Versionen in `lib/rechtstexte/version.ts` — bei inhaltlicher Änderung erhöhen).
+- Die Texte sind Entwürfe und ersetzen keine Rechtsberatung. Vor dem Livegang von einer Fachperson prüfen lassen.
+
 ## Produktivbetrieb (Checkliste)
 
 - Eigenes Supabase-Projekt für Produktion (Frankfurt, Pro-Plan für Backups/PITR); das bisherige Projekt bleibt Test/Demo. Alle Migrationen einspielen. **Keine Testkonten in Produktion.**

@@ -7,15 +7,17 @@ import { TragerAbrechnungForm } from "@/components/admin/trager-abrechnung-form"
 import { Badge } from "@/components/ui/badge";
 import { ListenpreiseForm } from "@/components/admin/listenpreise-form";
 import { ladeListenpreise } from "@/lib/preise";
+import { DOKUMENTE } from "@/lib/rechtstexte/version";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function KundenPage() {
   const supabase = await createClient();
   const heute = toIsoDateString(new Date());
-  const [{ data: kennzahlen }, { data: abrechnungen }, listenpreise] = await Promise.all([
+  const [{ data: kennzahlen }, { data: abrechnungen }, listenpreise, { data: zustimmungen }] = await Promise.all([
     supabase.rpc("operator_kennzahlen", { p_stichtag: heute }),
     supabase.from("trager_abrechnung").select("*"),
     ladeListenpreise(supabase),
+    supabase.from("vertragszustimmungen").select("trager_id, dokument, version, zugestimmt_am"),
   ]);
 
   const traeger = new Map<string, { name: string; einrichtungen: OperatorKennzahl[] }>();
@@ -63,6 +65,14 @@ export default async function KundenPage() {
                 {t.einrichtungen.length} Einrichtungen · {kinder} aktive Kinder
               </Badge>
             </div>
+            <p className="text-xs text-muted-foreground">
+              {DOKUMENTE.map((d) => {
+                const z = (zustimmungen ?? [])
+                  .filter((x) => x.trager_id === id && x.dokument === d.key && x.version === d.version)
+                  .sort((a, b) => a.zugestimmt_am.localeCompare(b.zugestimmt_am))[0];
+                return `${d.key.toUpperCase()}: ${z ? `zugestimmt am ${new Date(z.zugestimmt_am).toLocaleDateString("de-DE")} (Version ${d.version})` : "noch nicht zugestimmt"}`;
+              }).join(" · ")}
+            </p>
             {t.einrichtungen.length > 0 ? (
               <p className="text-sm text-muted-foreground">
                 {t.einrichtungen.map((e) => `${e.einrichtung_name} (${e.aktive_kinder ?? 0})`).join(" · ")}

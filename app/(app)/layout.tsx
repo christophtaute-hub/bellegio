@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Button } from "@/components/ui/button";
+import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
 
@@ -52,6 +53,8 @@ export default async function AppLayout({
   if (activeEinrichtungId && !einrichtung) {
     redirect("/einrichtung-auswahl");
   }
+
+  if (await zustimmungOffen()) redirect("/zustimmung");
 
   const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
   const [rolle, istBetreiber] = await Promise.all([getCurrentUserRole(), isPlatformOperator()]);

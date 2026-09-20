@@ -65,6 +65,60 @@ export type Database = {
         }
         Relationships: []
       }
+      betreiber_oeffentlich: {
+        Row: {
+          anschrift: string | null
+          aufbewahrung_anfragen_monate: number
+          aufsichtsbehoerde: string | null
+          datenschutz_email: string | null
+          email: string | null
+          firmenname: string | null
+          id: boolean
+          inhaltlich_verantwortlich: string | null
+          registergericht: string | null
+          registernummer: string | null
+          rechtstexte_geprueft: boolean
+          telefon: string | null
+          updated_at: string
+          ust_id: string | null
+          vertretungsberechtigt: string | null
+        }
+        Insert: {
+          anschrift?: string | null
+          aufbewahrung_anfragen_monate?: number
+          aufsichtsbehoerde?: string | null
+          datenschutz_email?: string | null
+          email?: string | null
+          firmenname?: string | null
+          id?: boolean
+          inhaltlich_verantwortlich?: string | null
+          registergericht?: string | null
+          registernummer?: string | null
+          rechtstexte_geprueft?: boolean
+          telefon?: string | null
+          updated_at?: string
+          ust_id?: string | null
+          vertretungsberechtigt?: string | null
+        }
+        Update: {
+          anschrift?: string | null
+          aufbewahrung_anfragen_monate?: number
+          aufsichtsbehoerde?: string | null
+          datenschutz_email?: string | null
+          email?: string | null
+          firmenname?: string | null
+          id?: boolean
+          inhaltlich_verantwortlich?: string | null
+          registergericht?: string | null
+          registernummer?: string | null
+          rechtstexte_geprueft?: boolean
+          telefon?: string | null
+          updated_at?: string
+          ust_id?: string | null
+          vertretungsberechtigt?: string | null
+        }
+        Relationships: []
+      }
       booking_time_bands: {
         Row: {
           bundesland_code: string
@@ -246,6 +300,7 @@ export type Database = {
           empfohlener_anstellungsschluessel: number
           id: string
           kita_year_start_month: number
+          loeschfrist_monate: number | null
           name: string
           standort_gemeinde: string | null
           trager_id: string
@@ -263,6 +318,7 @@ export type Database = {
           empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
+          loeschfrist_monate?: number | null
           name: string
           standort_gemeinde?: string | null
           trager_id: string
@@ -280,6 +336,7 @@ export type Database = {
           empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
+          loeschfrist_monate?: number | null
           name?: string
           standort_gemeinde?: string | null
           trager_id?: string
@@ -566,6 +623,39 @@ export type Database = {
           id?: boolean
           preis_pro_kind?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      loeschprotokoll: {
+        Row: {
+          aktion: string
+          art: string
+          durch: string | null
+          einrichtung_id: string | null
+          id: string
+          objekt_id: string
+          trager_id: string
+          zeitpunkt: string
+        }
+        Insert: {
+          aktion: string
+          art: string
+          durch?: string | null
+          einrichtung_id?: string | null
+          id?: string
+          objekt_id: string
+          trager_id: string
+          zeitpunkt?: string
+        }
+        Update: {
+          aktion?: string
+          art?: string
+          durch?: string | null
+          einrichtung_id?: string | null
+          id?: string
+          objekt_id?: string
+          trager_id?: string
+          zeitpunkt?: string
         }
         Relationships: []
       }
@@ -1162,6 +1252,33 @@ export type Database = {
           },
         ]
       }
+      vertragszustimmungen: {
+        Row: {
+          dokument: string
+          id: string
+          trager_id: string
+          user_id: string
+          version: string
+          zugestimmt_am: string
+        }
+        Insert: {
+          dokument: string
+          id?: string
+          trager_id: string
+          user_id: string
+          version: string
+          zugestimmt_am?: string
+        }
+        Update: {
+          dokument?: string
+          id?: string
+          trager_id?: string
+          user_id?: string
+          version?: string
+          zugestimmt_am?: string
+        }
+        Relationships: []
+      }
       weighting_factors: {
         Row: {
           bundesland_code: string
@@ -1276,12 +1393,20 @@ export type Database = {
           trager_name: string
         }[]
       }
+      kind_datenschutz: {
+        Args: { p_aktion: string; p_kind_id: string }
+        Returns: undefined
+      }
       rechnung_freigeben: { Args: { p_id: string }; Returns: string }
       rechnung_positionen_setzen: {
         Args: { p_id: string; p_positionen: Json }
         Returns: undefined
       }
       rechnung_stornieren: { Args: { p_id: string }; Returns: string }
+      team_datenschutz: {
+        Args: { p_aktion: string; p_team_id: string }
+        Returns: undefined
+      }
       team_presence_at_date: {
         Args: { p_einrichtung_id: string; p_stichtag: string }
         Returns: {

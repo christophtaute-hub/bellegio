@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { PLANUNGSHILFE_HINWEIS, RECHENWERTE_STAND } from "@/lib/constants";
 import { canViewControlling } from "@/lib/server/current-user-role";
 import { addMonthsUtc, formatDate, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
@@ -203,6 +204,9 @@ export default async function PruefungsmappePage({
 
       <p className="text-xs text-muted-foreground">
         Formatspezifische Exporte für die Landesportale folgen, sobald die jeweiligen Formate geklärt sind.
+      </p>
+      <p className="border-t pt-3 text-xs text-muted-foreground">
+        Stand der Rechenwerte: {RECHENWERTE_STAND}. {PLANUNGSHILFE_HINWEIS}
       </p>
     </div>
   );
