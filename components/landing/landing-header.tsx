@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/#team", label: "Personal" },
   { href: "/#bundeslaender", label: "Bundesländer" },
   { href: "/#einblicke", label: "Einblicke" },
+  { href: "/#preise", label: "Preise" },
 ];
 
 export function LandingHeader() {

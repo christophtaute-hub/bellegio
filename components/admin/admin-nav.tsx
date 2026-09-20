@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "cn";
 
 const LINKS = [
-  { href: "/admin", label: "Übersicht" },
+  { href: "/admin", label: "Abrechnung" },
   { href: "/admin/einnahmen", label: "Einnahmen" },
   { href: "/admin/rechnungen", label: "Rechnungen" },
   { href: "/admin/kunden", label: "Kunden & Preise" },

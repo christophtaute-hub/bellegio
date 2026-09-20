@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import { LandingPage } from "@/components/landing/landing-page";
+import { ladeListenpreise } from "@/lib/preise";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -18,5 +19,5 @@ export default async function Home() {
     redirect(hasActiveEinrichtung ? "/dashboard" : "/einrichtung-auswahl");
   }
 
-  return <LandingPage />;
+  return <LandingPage preise={await ladeListenpreise(supabase)} />;
 }

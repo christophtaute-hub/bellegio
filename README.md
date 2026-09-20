@@ -31,7 +31,7 @@ npx tsc --noEmit && npm run lint && npm test && npm run build
 
 Alle Änderungen liegen als Migrationen in `supabase/migrations/` (Reihenfolge = Dateiname). Hilfsfunktionen für Rechte liegen im nicht öffentlich exponierten Schema `app`. Nach jeder Migration den Security-Advisor prüfen; neue `SECURITY DEFINER`-Funktionen in `public` sind per RPC aufrufbar und brauchen ein explizites `REVOKE EXECUTE`.
 
-Tests für die reine Rechenlogik: `npm test` (Ordner `tests/`). Sie decken die drei Personalmodelle, die Kategorisierung, den Schlüssel-Radar, die Belegungs-Vorschau und die Passwortregeln ab. Neue Rechenregeln bekommen zuerst einen handgerechneten Testfall.
+Tests für die reine Rechenlogik: `npm test` (Ordner `tests/`). Sie decken die drei Personalmodelle, die Kategorisierung, den Personal-Ausblick, die Belegungs-Vorschau und die Passwortregeln ab. Neue Rechenregeln bekommen zuerst einen handgerechneten Testfall.
 
 ## Neuen Kunden aufsetzen
 
@@ -51,7 +51,8 @@ Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunk
 - Supabase Auth → URL-Konfiguration: Site URL auf die Produktiv-Domain setzen und `https://<domain>/passwort-setzen` als Redirect-URL erlauben (sonst funktionieren „Passwort vergessen“ und Einladungen nicht).
 - Supabase Auth → SMTP: eigenen Mailanbieter eintragen und die deutschen Vorlagen (Einladung, Passwort zurücksetzen) hinterlegen. Der Standardversand ist stark begrenzt.
 - Supabase Auth → Passwörter: „Leaked password protection“ einschalten (Pro-Plan). Die Mindestlänge (10 Zeichen) erzwingt die App in `lib/passwort.ts`.
-- Betreiber eintragen: `insert into platform_operators (user_id) values ('<auth-user-id>')`.
+- Betreiber eintragen: `insert into platform_operators (user_id) values ('<auth-user-id>')`. Es darf genau einen Eintrag geben (Christoph) — kein Testkonto. `supabase/tests/betreiber_zugriff.sql` prüft, dass sonst niemand Umsatz, Rechnungen oder Betreiberdaten sieht (Erwartung am Ende: `operatoren=1`).
+- Für den Betreiber Zwei-Faktor (Authenticator-App) unter „Mein Profil“ einschalten; danach sperrt `/admin` ohne bestätigten Code.
 - Betreiberdaten unter `/admin/einstellungen` und Preise unter `/admin/kunden` pflegen; Demo-Rechnungen entfernen (SQL im Kopf von `scripts/seed-milestone18-betreiber.ts`).
 - Hosting mit HTTPS und den drei Umgebungsvariablen oben. Die Security-Header (CSP, HSTS, X-Frame-Options …) setzt `next.config.ts`; bei neuen externen Diensten die CSP dort erweitern.
 - Impressum und Datenschutz (`app/impressum`, `app/datenschutz`) enthalten noch Platzhalter und müssen vor dem Livegang mit den echten Angaben ersetzt werden.

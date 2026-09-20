@@ -37,12 +37,14 @@ const NAV_ITEMS = [
   { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
 ] as const;
 
-const KOSTEN_ITEM = { href: "/kosten", label: "Kosten", icon: Receipt } as const;
+/** Wer welche „Abrechnung“ sieht, entscheidet der Aufrufer: der Betreiber landet in seiner Einnahmen-Übersicht,
+ * Träger-Administratoren sehen ihre eigenen Rechnungen, alle anderen bekommen keinen Menüpunkt. */
+export type AbrechnungZiel = "/admin" | "/abrechnung" | null;
 
-export function AppSidebar({ zeigeKosten = false }: { zeigeKosten?: boolean }) {
+export function AppSidebar({ abrechnung = null }: { abrechnung?: AbrechnungZiel }) {
   const pathname = usePathname();
-  const navItems = zeigeKosten
-    ? [...NAV_ITEMS.slice(0, 7), KOSTEN_ITEM, ...NAV_ITEMS.slice(7)]
+  const navItems = abrechnung
+    ? [...NAV_ITEMS.slice(0, 7), { href: abrechnung, label: "Abrechnung", icon: Receipt }, ...NAV_ITEMS.slice(7)]
     : NAV_ITEMS;
   const activeHref = navItems.map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))

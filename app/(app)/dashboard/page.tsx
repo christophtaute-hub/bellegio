@@ -11,7 +11,7 @@ import { MetricCard } from "@/components/ui/metric-card";
 import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
-import { SchluesselRadar, SchluesselRadarSkeleton } from "@/components/dashboard/schluessel-radar";
+import { PersonalAusblick, PersonalAusblickSkeleton } from "@/components/dashboard/personal-ausblick";
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
 
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
@@ -175,8 +175,8 @@ export default async function DashboardPage({
       </div>
 
       {einrichtungId ? (
-        <Suspense fallback={<SchluesselRadarSkeleton />}>
-          <SchluesselRadar einrichtungId={einrichtungId} />
+        <Suspense fallback={<PersonalAusblickSkeleton />}>
+          <PersonalAusblick einrichtungId={einrichtungId} />
         </Suspense>
       ) : null}
 

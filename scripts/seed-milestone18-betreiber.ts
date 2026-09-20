@@ -1,8 +1,7 @@
 /**
  * Milestone 18: Testdaten für die Betreiber-Zentrale.
  *
- * - Test-Betreiber betreiber@bellegio.test (Passwort test1234) — Christoph ist
- *   bereits per SQL als Betreiber eingetragen.
+ * - Kein Test-Betreiber: Christoph ist per SQL als einziger Betreiber eingetragen.
  * - Platzhalter-Betreiberdaten ("Testdaten"), falls noch nichts hinterlegt ist
  *   — bitte in /admin/einstellungen durch die echten Angaben ersetzen.
  * - Testpreise für den Testkunden "Villa Kunterbunt" (49,00 € je Einrichtung,
@@ -25,7 +24,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database.types";
 
-const TEST_PASSWORD = "test1234";
 const GRUNDGEBUEHR = 49;
 const PREIS_PRO_KIND = 1.5;
 const UST_SATZ = 19;
@@ -46,45 +44,8 @@ async function main() {
   }
   const supabase = createClient<Database>(supabaseUrl, serviceRoleKey);
 
-  // 1. Test-Betreiber
-  const { data: testTrager, error: testTragerError } = await supabase
-    .from("trager")
-    .select("id")
-    .eq("name", "Bellegio Test")
-    .single();
-  if (testTragerError || !testTrager) throw new Error("Träger 'Bellegio Test' nicht gefunden.");
-
-  let betreiberId: string;
-  const { data: vorhandenesProfil } = await supabase
-    .from("user_profiles")
-    .select("id")
-    .eq("email", "betreiber@bellegio.test")
-    .maybeSingle();
-  if (vorhandenesProfil) {
-    betreiberId = vorhandenesProfil.id;
-  } else {
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: "betreiber@bellegio.test",
-      password: TEST_PASSWORD,
-      email_confirm: true,
-    });
-    if (error || !data.user) throw new Error(error?.message ?? "createUser fehlgeschlagen");
-    betreiberId = data.user.id;
-    const { error: profilError } = await supabase.from("user_profiles").insert({
-      id: betreiberId,
-      email: "betreiber@bellegio.test",
-      full_name: "Test-Betreiber",
-      role: "mitarbeiter",
-      trager_id: testTrager.id,
-      kann_rechte_verwalten: false,
-    });
-    if (profilError) throw new Error(profilError.message);
-    console.log("Test-Betreiber betreiber@bellegio.test angelegt.");
-  }
-  const { error: operatorError } = await supabase
-    .from("platform_operators")
-    .upsert({ user_id: betreiberId }, { onConflict: "user_id" });
-  if (operatorError) throw new Error(operatorError.message);
+  // Bewusst KEIN Test-Betreiber: Betreiber ist ausschließlich Christoph (Eintrag in platform_operators
+  // per SQL). Ein Testkonto mit einfachem Passwort würde die Einnahmen für Dritte öffnen.
 
   // 2. Platzhalter-Betreiberdaten
   const { data: einstellungen } = await supabase.from("betreiber_einstellungen").select("*").eq("id", true).single();
@@ -244,7 +205,7 @@ async function main() {
     console.log(`  ${status === "entwurf" ? "Entwurf" : nummer} (${status}) angelegt.`);
   }
 
-  console.log("\nFertig. Login Test-Betreiber: betreiber@bellegio.test / test1234");
+  console.log("\nFertig. Die Einnahmen sieht nur der Betreiber (Christoph) unter „Abrechnung“.");
 }
 
 main().catch((error) => {

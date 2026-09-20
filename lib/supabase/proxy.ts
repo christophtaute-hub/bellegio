@@ -62,6 +62,7 @@ export async function updateSession(request: NextRequest) {
     user &&
     !hasActiveEinrichtung &&
     !pathname.startsWith("/einrichtung-auswahl") &&
+    pathname !== "/mfa" &&
     !pathname.startsWith("/admin") &&
     !isPublicPath
   ) {

@@ -15,12 +15,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default async function KostenPage() {
+export default async function AbrechnungKundenPage() {
   const rolle = await getCurrentUserRole();
   if (rolle !== "traeger_admin") {
     return (
       <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">Kosten</h1>
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Abrechnung</h1>
         <p className="text-sm text-muted-foreground">
           Diese Übersicht steht nur dem Träger-Administrator zur Verfügung.
         </p>
@@ -58,7 +58,7 @@ export default async function KostenPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">Kosten</h1>
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Abrechnung</h1>
         <p className="text-sm text-muted-foreground">
           Was Bellegio in {monatsName} voraussichtlich kostet, und deine bisherigen Rechnungen.
         </p>
@@ -100,7 +100,7 @@ export default async function KostenPage() {
               {rechnungen.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/kosten/${r.id}`} className="underline-offset-2 hover:underline">
+                    <Link href={`/abrechnung/${r.id}`} className="underline-offset-2 hover:underline">
                       {r.nummer}
                     </Link>
                   </TableCell>

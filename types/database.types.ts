@@ -545,6 +545,30 @@ export type Database = {
           },
         ]
       }
+      listenpreise: {
+        Row: {
+          grundgebuehr_pro_einrichtung: number | null
+          hinweis: string | null
+          id: boolean
+          preis_pro_kind: number | null
+          updated_at: string
+        }
+        Insert: {
+          grundgebuehr_pro_einrichtung?: number | null
+          hinweis?: string | null
+          id?: boolean
+          preis_pro_kind?: number | null
+          updated_at?: string
+        }
+        Update: {
+          grundgebuehr_pro_einrichtung?: number | null
+          hinweis?: string | null
+          id?: boolean
+          preis_pro_kind?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nrw_personalstunden: {
         Row: {
           buchungszeit_stunden: number

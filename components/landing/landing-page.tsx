@@ -3,6 +3,8 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { StorySection } from "@/components/landing/story-section";
 import { BundeslandSwitcher } from "@/components/landing/bundesland-switcher";
 import { EinblickeSection } from "@/components/landing/einblicke-section";
+import { PreiseSection } from "@/components/landing/preise-section";
+import type { Listenpreise } from "@/lib/preise";
 import { VertrauenSection } from "@/components/landing/vertrauen-section";
 import { CtaSection } from "@/components/landing/cta-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
@@ -10,9 +12,9 @@ import { Reveal } from "@/components/landing/reveal";
 import { KindMockup } from "@/components/landing/mockups/kind-mockup";
 import { TeamMockup } from "@/components/landing/mockups/team-mockup";
 import { KategorisierungMockup } from "@/components/landing/mockups/kategorisierung-mockup";
-import { RadarMockup, BelegungMockup, MappeMockup } from "@/components/landing/mockups/vorschau-mockups";
+import { AusblickMockup, BelegungMockup, MappeMockup } from "@/components/landing/mockups/vorschau-mockups";
 
-export function LandingPage() {
+export function LandingPage({ preise }: { preise: Listenpreise }) {
   return (
     <div className="flex min-h-screen flex-col">
       <LandingHeader />
@@ -41,12 +43,12 @@ export function LandingPage() {
           titel="Der Personalschlüssel ist kein Bauchgefühl."
           text="Bellegio rechnet aus, ob dein Personal reicht — heute und in den kommenden Monaten. So siehst du Engpässe, bevor sie zum Problem werden."
           punkte={[
-            "Schlüssel-Radar: Ampel für die nächsten 18 Monate und der Monat, in dem es eng wird",
+            "Personal-Ausblick: ein Satz sagt dir, ab wann dein Personal nicht mehr reicht — mit Verlauf für die nächsten 18 Monate",
             "Austritte, Teilzeit und Ausfallzeiten fließen direkt in die Rechnung ein",
             "Im Szenario-Rechner spielst du Änderungen durch, ohne echte Daten anzufassen",
             "Jede Änderung am Personal wird protokolliert",
           ]}
-          mockups={[<TeamMockup key="team" />, <RadarMockup key="radar" />]}
+          mockups={[<TeamMockup key="team" />, <AusblickMockup key="ausblick" />]}
         />
 
         <section id="bundeslaender" className="scroll-mt-16 py-20 md:py-32">
@@ -101,6 +103,7 @@ export function LandingPage() {
         />
 
         <EinblickeSection />
+        <PreiseSection preise={preise} />
         <VertrauenSection />
         <CtaSection />
       </main>

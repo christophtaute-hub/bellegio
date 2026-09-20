@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { MeinProfilForm } from "@/components/einstellungen/mein-profil-form";
+import { MfaEinrichtung } from "@/components/einstellungen/mfa-einrichtung";
 
 export default async function MeinProfilPage() {
   const supabase = await createClient();
@@ -32,6 +33,7 @@ export default async function MeinProfilPage() {
         initialFullName={profile?.full_name ?? ""}
         email={profile?.email ?? user?.email ?? ""}
       />
+      <MfaEinrichtung />
     </div>
   );
 }

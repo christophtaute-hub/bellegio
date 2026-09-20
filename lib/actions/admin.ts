@@ -6,7 +6,9 @@ import type { Json } from "@/types/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { pruefeNeuenKunden, type NeuerKundeInput } from "@/lib/admin/neuer-kunde";
+import { ladeListenpreise, pruefeListenpreise, type ListenpreiseInput } from "@/lib/preise";
 import { isPlatformOperator } from "@/lib/server/current-user-role";
+import { getMfaStatus } from "@/lib/server/mfa";
 import {
   berechneRechnungsvorschlag,
   monatsGrenzen,
@@ -18,6 +20,7 @@ import {
 // und RPC-Guards in der Datenbank sind die eigentliche Sperre.
 async function betreiberClient() {
   if (!(await isPlatformOperator())) throw new Error("Nur für den Betreiber.");
+  if ((await getMfaStatus()) === "code_erforderlich") throw new Error("Bitte bestätige zuerst den Zwei-Faktor-Code.");
   return createClient();
 }
 
@@ -64,7 +67,7 @@ export async function speichereTragerAbrechnung(tragerId: string, input: TragerA
     .upsert({ trager_id: tragerId, ...input, updated_at: new Date().toISOString() });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/kunden");
-  revalidatePath("/kosten");
+  revalidatePath("/abrechnung");
 }
 
 export async function erstelleRechnungsEntwurf(tragerId: string, monat: string) {
@@ -269,11 +272,15 @@ export async function legeKundenAn(input: NeuerKundeInput): Promise<KundeAnlegen
     });
     if (profilError) throw new Error(profilError.message);
 
+    // Neue Kunden starten mit den Listenpreisen; individuelle Preise trägt der Betreiber danach ein.
+    const liste = await ladeListenpreise(admin);
     const { error: abrechnungError } = await admin.from("trager_abrechnung").upsert({
       trager_id: trager.id,
       rechnungsname: input.traegerName.trim(),
       rechnungsanschrift: input.rechnungsanschrift?.trim() || null,
       rechnungs_email: input.rechnungsEmail?.trim() || email,
+      preis_grundgebuehr_pro_einrichtung: liste.grundgebuehr,
+      preis_pro_kind: liste.proKind,
     });
     if (abrechnungError) throw new Error(abrechnungError.message);
   } catch (err) {
@@ -288,4 +295,35 @@ export async function legeKundenAn(input: NeuerKundeInput): Promise<KundeAnlegen
   revalidatePath("/admin/kunden");
   revalidatePath("/admin");
   return { ok: true, tragerId: tragerId! };
+}
+
+export type ListenpreiseErgebnis = { ok: true } | { ok: false; error: string };
+
+/** Speichert die öffentlichen Listenpreise, die auf der Landingpage stehen. Nur der Betreiber. */
+export async function speichereListenpreise(input: ListenpreiseInput): Promise<ListenpreiseErgebnis> {
+  let supabase;
+  try {
+    supabase = await betreiberClient();
+  } catch {
+    return { ok: false, error: "Nur für den Betreiber." };
+  }
+  const fehler = pruefeListenpreise(input);
+  if (fehler) return { ok: false, error: fehler };
+
+  const { data, error } = await supabase
+    .from("listenpreise")
+    .update({
+      grundgebuehr_pro_einrichtung: input.grundgebuehr,
+      preis_pro_kind: input.proKind,
+      hinweis: input.hinweis?.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", true)
+    .select("id")
+    .maybeSingle();
+  if (error || !data) return { ok: false, error: "Die Preise konnten nicht gespeichert werden." };
+
+  revalidatePath("/");
+  revalidatePath("/admin/kunden");
+  return { ok: true };
 }

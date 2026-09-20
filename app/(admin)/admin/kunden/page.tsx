@@ -5,14 +5,17 @@ import { toIsoDateString } from "@/lib/kita-datum";
 import type { OperatorKennzahl } from "@/lib/admin/abrechnung";
 import { TragerAbrechnungForm } from "@/components/admin/trager-abrechnung-form";
 import { Badge } from "@/components/ui/badge";
+import { ListenpreiseForm } from "@/components/admin/listenpreise-form";
+import { ladeListenpreise } from "@/lib/preise";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function KundenPage() {
   const supabase = await createClient();
   const heute = toIsoDateString(new Date());
-  const [{ data: kennzahlen }, { data: abrechnungen }] = await Promise.all([
+  const [{ data: kennzahlen }, { data: abrechnungen }, listenpreise] = await Promise.all([
     supabase.rpc("operator_kennzahlen", { p_stichtag: heute }),
     supabase.from("trager_abrechnung").select("*"),
+    ladeListenpreise(supabase),
   ]);
 
   const traeger = new Map<string, { name: string; einrichtungen: OperatorKennzahl[] }>();
@@ -36,6 +39,18 @@ export default async function KundenPage() {
           Neuen Kunden anlegen
         </Link>
       </div>
+
+      <section className="flex flex-col gap-3 rounded-2xl border bg-card p-6">
+        <div className="flex flex-col gap-1">
+          <h2 className="font-heading text-lg text-primary">Listenpreise (Landingpage)</h2>
+          <p className="text-sm text-muted-foreground">
+            Diese Preise stehen öffentlich auf der Landingpage und dienen neuen Kunden als Vorbelegung. Individuelle
+            Preise trägst du je Kunde weiter unten ein. Solange nichts eingetragen ist, zeigt die Landingpage „Preise
+            folgen“.
+          </p>
+        </div>
+        <ListenpreiseForm initial={listenpreise} />
+      </section>
 
       {Array.from(traeger.entries()).map(([id, t]) => {
         const abrechnung = (abrechnungen ?? []).find((a) => a.trager_id === id);

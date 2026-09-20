@@ -46,17 +46,26 @@ export type CompositionMatrix = {
   grandTotal: number;
 };
 
+/** Sortierwert einer Buchungszeit-Bezeichnung: die erste Zahl darin („6-7h“ → 6, „35,5h-40h“ → 35,5,
+ * „über 9h“ → 9). So stehen die Bänder in jedem Bundesland von niedrig nach hoch — der Förderfaktor
+ * taugt dafür nicht, denn er ist nur in Bayern unterschiedlich (BW/NRW: überall 1,0). „Ohne Buchungszeit“
+ * steht immer zuletzt. */
+export function buchungszeitSortWert(label: string): number {
+  if (label === OHNE_BUCHUNGSZEIT) return Number.POSITIVE_INFINITY;
+  const treffer = /(\d+(?:[.,]\d+)?)/.exec(label);
+  return treffer ? Number(treffer[1].replace(",", ".")) : Number.MAX_SAFE_INTEGER;
+}
+
 export function buildCompositionMatrix(rows: PresenceRow[]): CompositionMatrix {
-  const buchungszeitOrder = new Map<string, number>();
+  const buchungszeitFaktoren = new Map<string, number>();
   for (const row of rows) {
     const label = row.buchungszeit_label ?? OHNE_BUCHUNGSZEIT;
-    const factor = row.buchungszeit_factor ?? Number.POSITIVE_INFINITY;
-    if (!buchungszeitOrder.has(label)) {
-      buchungszeitOrder.set(label, factor);
+    if (!buchungszeitFaktoren.has(label)) {
+      buchungszeitFaktoren.set(label, row.buchungszeit_factor ?? Number.POSITIVE_INFINITY);
     }
   }
-  const buchungszeitLabels = Array.from(buchungszeitOrder.entries())
-    .sort((a, b) => a[1] - b[1])
+  const buchungszeitLabels = Array.from(buchungszeitFaktoren.entries())
+    .sort((a, b) => buchungszeitSortWert(a[0]) - buchungszeitSortWert(b[0]) || a[1] - b[1])
     .map(([label]) => label);
 
   const weightingRows = new Map<string, number>();

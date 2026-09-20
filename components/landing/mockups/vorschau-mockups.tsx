@@ -1,25 +1,31 @@
 import { BrowserFrame } from "@/components/landing/browser-frame";
-import { cn } from "cn";
 
-/** Schlüssel-Radar (Dashboard). */
-export function RadarMockup() {
+/** Personal-Ausblick (Dashboard): Satz in Klartext, Personal gegen Bedarf, Ereignisse. */
+export function AusblickMockup() {
   return (
-    <BrowserFrame titel="Dashboard · Schlüssel-Radar">
+    <BrowserFrame titel="Dashboard · Personal-Ausblick">
       <div className="flex flex-col gap-3">
-        <p className="font-heading text-lg font-semibold text-primary">Schlüssel-Radar</p>
+        <p className="font-heading text-lg font-semibold text-primary">Personal-Ausblick</p>
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3.5 text-sm">
-          <p className="font-medium text-destructive">Erster Engpass: April 2027 — es fehlen rund 10 Wochenstunden</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Ursache: Austritt von Julia V. (30,0 Wochenstunden). Es genügt, rund 10 Wochenstunden zu ergänzen — oder die
-            wegfallenden Stunden zu ersetzen.
-          </p>
+          <p className="font-medium text-destructive">Ab April 2027 fehlen dir rund 10 Wochenstunden Personal.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Julia V. scheidet aus (30 Wochenstunden weniger).</p>
         </div>
-        <div className="flex gap-1">
-          {Array.from({ length: 18 }, (_, i) => (
-            <div key={i} className={cn("h-6 flex-1 rounded", i < 7 || i >= 12 ? "bg-emerald-300" : "bg-red-300")} />
-          ))}
+        <svg viewBox="0 0 300 96" className="h-28 w-full" role="img" aria-label="Beispiel: Personal fällt im April unter den Bedarf">
+          <line x1="0" y1="24" x2="300" y2="24" className="stroke-border" strokeDasharray="3 3" />
+          <line x1="0" y1="60" x2="300" y2="60" className="stroke-border" strokeDasharray="3 3" />
+          <path d="M0 40 H150 V64 H300 V90 H0 Z" className="fill-primary/15" />
+          <path d="M150 40 H300 V64 H150 Z" className="fill-red-400/50" />
+          <path d="M0 40 H150 V64 H300" className="stroke-primary" fill="none" strokeWidth="2" />
+          <path d="M0 40 H300" className="stroke-foreground" fill="none" strokeWidth="1.5" strokeDasharray="5 4" />
+        </svg>
+        <div className="flex justify-between text-[10px] text-muted-foreground">
+          <span>Sep 26</span>
+          <span>Apr 27</span>
+          <span>Feb 28</span>
         </div>
-        <p className="text-[11px] text-muted-foreground">Die nächsten 18 Monate auf einen Blick — je Bundesland mit dem eigenen Rechenweg.</p>
+        <p className="text-[11px] text-muted-foreground">
+          Vorhandenes Personal gegen Bedarf in Wochenstunden — je Bundesland mit dem eigenen Rechenweg. Beispieldaten.
+        </p>
       </div>
     </BrowserFrame>
   );

@@ -11,7 +11,7 @@ import {
   type RechnungEmpfaenger,
 } from "@/components/admin/rechnung-dokument";
 
-export default async function KostenRechnungPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AbrechnungRechnungPage({ params }: { params: Promise<{ id: string }> }) {
   if ((await getCurrentUserRole()) !== "traeger_admin") notFound();
   const { id } = await params;
   const supabase = await createClient();
@@ -29,7 +29,7 @@ export default async function KostenRechnungPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/kosten" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground print:hidden">
+      <Link href="/abrechnung" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground print:hidden">
         <ArrowLeft className="size-3.5" />
         Alle Rechnungen
       </Link>

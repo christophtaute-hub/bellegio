@@ -34,6 +34,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    // Der Menüpunkt „Kosten“ heißt jetzt „Abrechnung“ — alte Lesezeichen und Mails führen weiter.
+    return [{ source: "/kosten/:path*", destination: "/abrechnung/:path*", permanent: true }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

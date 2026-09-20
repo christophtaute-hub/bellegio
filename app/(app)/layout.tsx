@@ -58,7 +58,7 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar zeigeKosten={rolle === "traeger_admin"} />
+      <AppSidebar abrechnung={istBetreiber ? "/admin" : rolle === "traeger_admin" ? "/abrechnung" : null} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
