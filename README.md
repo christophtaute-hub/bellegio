@@ -57,11 +57,15 @@ Läuft für ein Teammitglied aktuell eine Ausfallzeit vom Typ Krankheit, Schwang
 
 Träger-Administratoren legen Nutzer direkt in den Einrichtungs-Einstellungen an (`/einstellungen`): Rolle, Rechte je Bereich/Einrichtung, Zugang per Passwort oder Einladung. Sie können dort auch das Passwort eines Nutzers neu setzen, die Rolle ändern und den Nutzer löschen (`lib/actions/berechtigungen.ts`, geprüft in `lib/nutzer/verwaltung.ts`). Ein Träger-Admin kann nicht über diese Oberfläche geändert/gelöscht werden — dafür siehe unten „Mein Profil“.
 
+Alle Nutzer-Aktionen laufen über `mitZeitlimit()` (`lib/supabase/mit-zeitlimit.ts`, Default 20s) und geben bei jedem Fehler `{ok:false, error}` zurück statt zu werfen — ohne das bliebe ein Button bei einer hängenden Verbindung zu Supabases Admin-API dauerhaft im Ladezustand hängen (kein eigenes Zeitlimit in supabase-js). Jeder Aufrufer im Client hat zusätzlich ein try/catch/finally als zweite Absicherung.
+
 ## Demo-Zugang
 
 `scripts/demo-einrichten.ts` kopiert die drei Testkitas in einen eigenen Träger „Bellegio Demo“ und legt `demo@bellegio.de` als dessen Träger-Administration an (`user_profiles.ist_demo = true`). Ein Demo-Konto darf alles ausprobieren (auch Löschen, Import, Nutzer anlegen), sieht aber keine Abrechnung, kann sein Passwort und Zwei-Faktor nicht selbst ändern und muss AGB/AVV nicht bestätigen. Erneutes Ausführen setzt die Demo-Daten zurück (Kopie neu aus der Quelle, inklusive `kind_buchungszeit_historie`); `--neues-passwort` vergibt ein neues Passwort für den bestehenden Demo-Nutzer.
 
 `scripts/seed-milestone25-datenqualitaet.ts` befüllt auf den drei Testkitas unter „Villa Kunterbunt“ Notizen/Wohnort/Vertragsende/Einschulungsstatus auf ca. 85 % (nur leere Felder, idempotent), legt je Kita eine Ausfallzeit an und schreibt je Kita einen echten Buchungszeit-Wechsel in die Historie — wirkt über `demo-einrichten.ts` beim nächsten Zurücksetzen automatisch auch im Demo-Zugang.
+
+`scripts/seed-milestone26-kapazitaet.ts` füllt die großen, bisher nur zu 10–25 % belegten Gruppen auf realistische ~85–90 % (Zielgruppe: eine Kita vorführen können, ohne dass Räume leer wirken) und ergänzt in Bayern zwei neue Personen — eine davon bewusst als Vertretung für Sarah Langs Schwangerschaft/Beschäftigungsverbot, deren dauerhaft unbekanntes Ende sonst den Anstellungsschlüssel schon ab September 2026 statt erst ab April 2027 (Julia Vogts Austritt) ins Rot gekippt hätte. Ebenfalls idempotent.
 
 ## Datenschutz und Rechtstexte
 
