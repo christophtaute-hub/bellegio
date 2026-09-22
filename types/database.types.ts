@@ -75,9 +75,9 @@ export type Database = {
           firmenname: string | null
           id: boolean
           inhaltlich_verantwortlich: string | null
+          rechtstexte_geprueft: boolean
           registergericht: string | null
           registernummer: string | null
-          rechtstexte_geprueft: boolean
           telefon: string | null
           updated_at: string
           ust_id: string | null
@@ -92,9 +92,9 @@ export type Database = {
           firmenname?: string | null
           id?: boolean
           inhaltlich_verantwortlich?: string | null
+          rechtstexte_geprueft?: boolean
           registergericht?: string | null
           registernummer?: string | null
-          rechtstexte_geprueft?: boolean
           telefon?: string | null
           updated_at?: string
           ust_id?: string | null
@@ -109,9 +109,9 @@ export type Database = {
           firmenname?: string | null
           id?: boolean
           inhaltlich_verantwortlich?: string | null
+          rechtstexte_geprueft?: boolean
           registergericht?: string | null
           registernummer?: string | null
-          rechtstexte_geprueft?: boolean
           telefon?: string | null
           updated_at?: string
           ust_id?: string | null
@@ -216,8 +216,8 @@ export type Database = {
           created_at: string
           email: string
           id: string
-          name: string
           nachricht: string | null
+          name: string
           organisation: string
           status: string
         }
@@ -226,8 +226,8 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
-          name: string
           nachricht?: string | null
+          name: string
           organisation: string
           status?: string
         }
@@ -236,8 +236,8 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
-          name?: string
           nachricht?: string | null
+          name?: string
           organisation?: string
           status?: string
         }
@@ -296,10 +296,12 @@ export type Database = {
           archived_at: string | null
           auswaertigen_quote_prozent: number | null
           bundesland_code: string
+          cluster: string | null
           created_at: string
           empfohlener_anstellungsschluessel: number
           id: string
           kita_year_start_month: number
+          kostenstelle: string | null
           loeschfrist_monate: number | null
           name: string
           standort_gemeinde: string | null
@@ -314,10 +316,12 @@ export type Database = {
           archived_at?: string | null
           auswaertigen_quote_prozent?: number | null
           bundesland_code?: string
+          cluster?: string | null
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
+          kostenstelle?: string | null
           loeschfrist_monate?: number | null
           name: string
           standort_gemeinde?: string | null
@@ -332,10 +336,12 @@ export type Database = {
           archived_at?: string | null
           auswaertigen_quote_prozent?: number | null
           bundesland_code?: string
+          cluster?: string | null
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           id?: string
           kita_year_start_month?: number
+          kostenstelle?: string | null
           loeschfrist_monate?: number | null
           name?: string
           standort_gemeinde?: string | null
@@ -453,6 +459,59 @@ export type Database = {
             foreignKeyName: "kind_buchungszeit_historie_kind_id_fkey"
             columns: ["kind_id"]
             isOneToOne: false
+            referencedRelation: "children_place_calculation_view"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "kind_buchungszeit_historie_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "kinder"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kind_notizen_verlauf: {
+        Row: {
+          erstellt_am: string
+          erstellt_von: string | null
+          id: string
+          kind_id: string
+          text: string
+        }
+        Insert: {
+          erstellt_am?: string
+          erstellt_von?: string | null
+          id?: string
+          kind_id: string
+          text: string
+        }
+        Update: {
+          erstellt_am?: string
+          erstellt_von?: string | null
+          id?: string
+          kind_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_notizen_verlauf_erstellt_von_fkey"
+            columns: ["erstellt_von"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_notizen_verlauf_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "children_place_calculation_view"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "kind_notizen_verlauf_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
             referencedRelation: "kinder"
             referencedColumns: ["id"]
           },
@@ -508,6 +567,7 @@ export type Database = {
           einrichtung_id: string
           einschulungsstatus: string | null
           eintritt: string | null
+          ersetzt_kind_id: string | null
           geburtsdatum: string
           geschlecht: string
           gruppe_id: string | null
@@ -531,6 +591,7 @@ export type Database = {
           einrichtung_id: string
           einschulungsstatus?: string | null
           eintritt?: string | null
+          ersetzt_kind_id?: string | null
           geburtsdatum: string
           geschlecht?: string
           gruppe_id?: string | null
@@ -554,6 +615,7 @@ export type Database = {
           einrichtung_id?: string
           einschulungsstatus?: string | null
           eintritt?: string | null
+          ersetzt_kind_id?: string | null
           geburtsdatum?: string
           geschlecht?: string
           gruppe_id?: string | null
@@ -581,6 +643,20 @@ export type Database = {
             columns: ["einrichtung_id"]
             isOneToOne: false
             referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kinder_ersetzt_kind_id_fkey"
+            columns: ["ersetzt_kind_id"]
+            isOneToOne: false
+            referencedRelation: "children_place_calculation_view"
+            referencedColumns: ["kind_id"]
+          },
+          {
+            foreignKeyName: "kinder_ersetzt_kind_id_fkey"
+            columns: ["ersetzt_kind_id"]
+            isOneToOne: false
+            referencedRelation: "kinder"
             referencedColumns: ["id"]
           },
           {
@@ -646,21 +722,27 @@ export type Database = {
           grundgebuehr_pro_einrichtung: number | null
           hinweis: string | null
           id: boolean
-          preis_pro_kind: number | null
+          preis_pro_kind_1_30: number | null
+          preis_pro_kind_31_60: number | null
+          preis_pro_kind_ab_61: number | null
           updated_at: string
         }
         Insert: {
           grundgebuehr_pro_einrichtung?: number | null
           hinweis?: string | null
           id?: boolean
-          preis_pro_kind?: number | null
+          preis_pro_kind_1_30?: number | null
+          preis_pro_kind_31_60?: number | null
+          preis_pro_kind_ab_61?: number | null
           updated_at?: string
         }
         Update: {
           grundgebuehr_pro_einrichtung?: number | null
           hinweis?: string | null
           id?: boolean
-          preis_pro_kind?: number | null
+          preis_pro_kind_1_30?: number | null
+          preis_pro_kind_31_60?: number | null
+          preis_pro_kind_ab_61?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -696,7 +778,22 @@ export type Database = {
           trager_id?: string
           zeitpunkt?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "loeschprotokoll_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loeschprotokoll_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: false
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nrw_personalstunden: {
         Row: {
@@ -1176,7 +1273,9 @@ export type Database = {
       trager_abrechnung: {
         Row: {
           preis_grundgebuehr_pro_einrichtung: number | null
-          preis_pro_kind: number | null
+          preis_pro_kind_1_30: number | null
+          preis_pro_kind_31_60: number | null
+          preis_pro_kind_ab_61: number | null
           rechnungs_email: string | null
           rechnungsanschrift: string | null
           rechnungsname: string | null
@@ -1186,7 +1285,9 @@ export type Database = {
         }
         Insert: {
           preis_grundgebuehr_pro_einrichtung?: number | null
-          preis_pro_kind?: number | null
+          preis_pro_kind_1_30?: number | null
+          preis_pro_kind_31_60?: number | null
+          preis_pro_kind_ab_61?: number | null
           rechnungs_email?: string | null
           rechnungsanschrift?: string | null
           rechnungsname?: string | null
@@ -1196,7 +1297,9 @@ export type Database = {
         }
         Update: {
           preis_grundgebuehr_pro_einrichtung?: number | null
-          preis_pro_kind?: number | null
+          preis_pro_kind_1_30?: number | null
+          preis_pro_kind_31_60?: number | null
+          preis_pro_kind_ab_61?: number | null
           rechnungs_email?: string | null
           rechnungsanschrift?: string | null
           rechnungsname?: string | null
@@ -1319,7 +1422,15 @@ export type Database = {
           version?: string
           zugestimmt_am?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vertragszustimmungen_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: false
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       weighting_factors: {
         Row: {
@@ -1390,6 +1501,10 @@ export type Database = {
           monat: string
         }[]
       }
+      kind_datenschutz: {
+        Args: { p_aktion: string; p_kind_id: string }
+        Returns: undefined
+      }
       kind_max_weighting_factor: {
         Args: { p_kind_id: string }
         Returns: {
@@ -1434,10 +1549,6 @@ export type Database = {
           trager_id: string
           trager_name: string
         }[]
-      }
-      kind_datenschutz: {
-        Args: { p_aktion: string; p_kind_id: string }
-        Returns: undefined
       }
       rechnung_freigeben: { Args: { p_id: string }; Returns: string }
       rechnung_positionen_setzen: {

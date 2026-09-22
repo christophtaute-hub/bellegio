@@ -30,7 +30,7 @@ export default async function KindNeuPage() {
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("gruppe_id, geschlecht, wohnort")
+      .select("id, vorname, nachname, gruppe_id, geschlecht, wohnort")
       .eq("einrichtung_id", einrichtungId ?? "")
       .eq("status", "aktiv")
       .is("archived_at", null),
@@ -59,6 +59,13 @@ export default async function KindNeuPage() {
     sollplatze: Number(g.sollplatze),
     aktiveKinder: kinderProGruppe.get(g.id) ?? [],
   }));
+  const gruppenArtById = Object.fromEntries((gruppen ?? []).map((g) => [g.id, g.gruppenart]));
+  const aktiveKinderZurAuswahl = (aktiveKinder ?? []).map((k) => ({
+    id: k.id,
+    vorname: k.vorname,
+    nachname: k.nachname,
+    gruppe_id: k.gruppe_id ?? "",
+  }));
 
   const auswaertigenQuote =
     bundeslandCode === "bw" &&
@@ -79,6 +86,8 @@ export default async function KindNeuPage() {
         mode="create"
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
         gruppenMitKindern={gruppenMitKindern}
+        gruppenArtById={gruppenArtById}
+        aktiveKinderZurAuswahl={aktiveKinderZurAuswahl}
         bookingTimeBands={(bookingTimeBands ?? []).map((b) => ({
           id: b.id,
           label: b.label,

@@ -17,7 +17,7 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
   const { data: kind } = await supabase.from("kinder").select("*").eq("id", kindId).single();
   if (!kind || kind.einrichtung_id !== einrichtungId) notFound();
 
-  const [{ data: einrichtung }, { data: gruppen }, { data: baender }, { data: faktoren }, { data: kindFaktoren }, { data: auditLog }] = await Promise.all([
+  const [{ data: einrichtung }, { data: gruppen }, { data: baender }, { data: faktoren }, { data: kindFaktoren }, { data: auditLog }, { data: notizenRoh }] = await Promise.all([
     supabase
       .from("einrichtungen")
       .select("name, address_street, address_zip, address_city, loeschfrist_monate, bundesland_code, trager(name)")
@@ -32,6 +32,11 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
       .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
       .eq("kind_id", kindId)
       .order("changed_at", { ascending: true }),
+    supabase
+      .from("kind_notizen_verlauf")
+      .select("text, erstellt_am, user_profiles(full_name)")
+      .eq("kind_id", kindId)
+      .order("erstellt_am", { ascending: true }),
   ]);
 
   const gruppeName = (id: unknown) => (gruppen ?? []).find((g) => g.id === id)?.name ?? null;
@@ -46,6 +51,9 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
   }));
 
   const gewichtungen = (faktoren ?? []).filter((f) => (kindFaktoren ?? []).some((k) => k.weighting_factor_id === f.id)).map((f) => f.label);
+  const notizenText = (notizenRoh ?? [])
+    .map((n) => `${formatDate(n.erstellt_am.slice(0, 10))} — ${n.user_profiles?.full_name ?? "Unbekannt"}: ${n.text}`)
+    .join("\n");
   const trager = (einrichtung?.trager as unknown as { name: string } | null)?.name ?? "";
   const anschrift = [einrichtung?.address_street, [einrichtung?.address_zip, einrichtung?.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
 
@@ -62,7 +70,6 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
         { label: "Geschlecht", wert: GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht },
         { label: "Status", wert: KIND_STATUS_LABEL[kind.status] ?? kind.status },
         { label: "Gruppe", wert: gruppeName(kind.gruppe_id) ?? "" },
-        { label: "Platznummer", wert: kind.platznummer ?? "" },
         { label: "Eintritt", wert: formatDate(kind.eintritt) },
         { label: "Austritt", wert: formatDate(kind.austritt) },
         { label: "Vertrag gültig bis", wert: formatDate(kind.vertrag_gueltig_bis) },
@@ -71,7 +78,7 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
         { label: "I-Status", wert: kind.hat_behinderung ? "Ja" : "Nein" },
         { label: "Wohnort", wert: kind.wohnort ?? "" },
         { label: "Einschulungsstatus", wert: kind.einschulungsstatus ?? "" },
-        { label: "Notizen", wert: kind.notizen ?? "" },
+        { label: "Notizen (Verlauf)", wert: notizenText },
       ]}
       verlauf={verlauf}
     />

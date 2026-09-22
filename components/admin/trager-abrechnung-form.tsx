@@ -60,8 +60,16 @@ export function TragerAbrechnungForm({ tragerId, initial }: { tragerId: string; 
           <Input id={`grund-${tragerId}`} inputMode="decimal" value={werte.preis_grundgebuehr_pro_einrichtung ?? ""} onChange={(e) => feld("preis_grundgebuehr_pro_einrichtung", zahlOderNull(e.target.value))} placeholder="noch offen" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`kind-${tragerId}`}>Preis je aktivem Kind/Monat (netto, €)</Label>
-          <Input id={`kind-${tragerId}`} inputMode="decimal" value={werte.preis_pro_kind ?? ""} onChange={(e) => feld("preis_pro_kind", zahlOderNull(e.target.value))} placeholder="noch offen" />
+          <Label htmlFor={`kind1-${tragerId}`}>Preis je Kind, 1.–30. (netto, €)</Label>
+          <Input id={`kind1-${tragerId}`} inputMode="decimal" value={werte.preis_pro_kind_1_30 ?? ""} onChange={(e) => feld("preis_pro_kind_1_30", zahlOderNull(e.target.value))} placeholder="noch offen" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`kind2-${tragerId}`}>Preis je Kind, 31.–60. (netto, €)</Label>
+          <Input id={`kind2-${tragerId}`} inputMode="decimal" value={werte.preis_pro_kind_31_60 ?? ""} onChange={(e) => feld("preis_pro_kind_31_60", zahlOderNull(e.target.value))} placeholder="noch offen" />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`kind3-${tragerId}`}>Preis je Kind, ab 61. (netto, €)</Label>
+          <Input id={`kind3-${tragerId}`} inputMode="decimal" value={werte.preis_pro_kind_ab_61 ?? ""} onChange={(e) => feld("preis_pro_kind_ab_61", zahlOderNull(e.target.value))} placeholder="noch offen" />
         </div>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

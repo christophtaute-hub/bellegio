@@ -43,6 +43,14 @@ Ohne Skript oder SQL:
 
 Server Actions geben erwartbare Fehler als Ergebnisobjekt (`{ ok: false, error }`) zurück statt sie zu werfen — in Produktion blendet Next.js Fehlertexte geworfener Fehler aus.
 
+## Sitzplätze, Notizen-Verlauf, Preis-Staffel
+
+- **Gruppen-Sitzplätze**: Die Gruppen-Seite (`app/(app)/gruppen/[gruppeId]/page.tsx`, `lib/gruppen/sitzplaetze.ts`) zeigt 1..Sollplätze statt des früheren freien `kinder.platznummer`-Feldes — belegt in Alters-Reihenfolge, freie Plätze bleiben leer. `platznummer` bleibt als Spalte für Altdaten erhalten, wird aber nicht mehr befüllt/angezeigt. Ein Nachrücker mit gesetztem `kinder.ersetzt_kind_id` erscheint auf dem Platz des referenzierten aktiven Kindes; ohne Verknüpfung bleibt der Platz „offen" (rein optional, kein Zwang). Suche/Sortierung (Name, Buchungszeit, Eintritt, Austritt, Status) blendet dabei die freien Plätze aus — die Standardansicht ohne Suchbegriff/Sortierung zeigt weiterhin das vollständige Sitzplatzbild.
+- **Notizen-Verlauf**: `kind_notizen_verlauf` (append-only, gleiches RLS-Muster wie `kind_buchungszeit_historie`) hat das einzelne, überschreibbare `kinder.notizen`-Feld abgelöst — jede Notiz bleibt als eigener, datierter Eintrag erhalten (`components/kinder/notizen-verlauf.tsx`, `fuegeNotizHinzu` in `lib/actions/kinder.ts`). Die Spalte `kinder.notizen` bleibt für Altdaten in der DB, wird aber nirgends mehr beschrieben.
+- **Krippe-Übergang-Hinweis**: `krippenUebergangWarnung` (`lib/kita-datum.ts`) markiert Kinder in einer Gruppe mit `gruppenart='krippe'`, die bereits 3 sind oder es in den nächsten 3 Monaten werden — bundeslandunabhängig, rein informativ (Verlängerung bis Kitajahresende oder neuer Kindergarten-Vertrag), sichtbar auf der Gruppen- und der Kind-Seite.
+- **Kostenstelle/Cluster**: `einrichtungen.kostenstelle`/`.cluster` (freier Text) sind bei Anlegen und Bearbeiten einer Einrichtung pflegbar — reine Datenhaltung für spätere Controlling-Auswertungen, aktuell noch ohne Filterung/Gruppierung.
+- **Preis-Staffel (Variante B)**: `listenpreise`/`trager_abrechnung` haben `preis_pro_kind` durch drei feste Stufen ersetzt (1.–30./31.–60./ab 61. Kind, Grenzen fest in `lib/preise.ts`, nur die drei Preise sind pflegbar) — gilt je Einrichtung, nicht gebündelt über mehrere Einrichtungen eines Trägers. `verteileAufStaffel`/`berechneMonatspreis` sind die gemeinsame Rechenbasis für Landingpage-Rechner und echten Rechnungsvorschlag (`berechneRechnungsvorschlag` in `lib/admin/abrechnung.ts`, erzeugt bis zu drei „Nutzung je Kind"-Positionen je Einrichtung statt einer).
+
 Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunktion sieht die neue Zeile im selben Statement nicht): ID vorab erzeugen und ohne `RETURNING` einfügen, siehe `legeEinrichtungAn`.
 
 ## Dashboard-Hinweise

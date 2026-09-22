@@ -110,6 +110,21 @@ export function calculateAgeDecimal(
   });
 }
 
+/**
+ * rot: Kind ist bereits 3 Jahre alt oder wird es in den nächsten 3 Monaten — verlässt in der Regel die Krippe
+ * (Verlängerung bis Kitajahresende oder ein neuer Kindergarten-Vertrag sind die üblichen Optionen). Analog zu
+ * austrittWarnung, aber unabhängig vom Bundesland: gilt überall, wo gruppenart==='krippe' ist.
+ */
+export function krippenUebergangWarnung(geburtsdatum: string, today = new Date()): "rot" | null {
+  const dritterGeburtstag = parseIsoDate(geburtsdatum);
+  dritterGeburtstag.setUTCFullYear(dritterGeburtstag.getUTCFullYear() + 3);
+
+  const in3Monaten = new Date(today);
+  in3Monaten.setUTCMonth(in3Monaten.getUTCMonth() + 3);
+
+  return dritterGeburtstag <= in3Monaten ? "rot" : null;
+}
+
 export function addMonthsUtc(date: Date, months: number): Date {
   const result = new Date(date);
   result.setUTCMonth(result.getUTCMonth() + months);

@@ -14,7 +14,6 @@ export type KindInput = {
   geschlecht: "maennlich" | "weiblich" | "divers" | "keine_angabe";
   status: "aktiv" | "nachruecker" | "geplant";
   gruppe_id: string | null;
-  platznummer: string | null;
   eintritt: string | null;
   austritt: string | null;
   vertrag_gueltig_bis: string | null;
@@ -22,9 +21,10 @@ export type KindInput = {
   /** Ab wann die Buchungszeit gilt — schreibt einen Historie-Eintrag, wenn sich das Band ändert. */
   buchungszeit_wirksam_ab: string | null;
   wohnort: string | null;
-  notizen: string | null;
   hat_behinderung: boolean;
   weighting_factor_ids: string[];
+  /** Nur bei Nachrückern: das aktive Kind derselben Gruppe, dessen Platz übernommen wird (optional). */
+  ersetzt_kind_id: string | null;
 };
 
 const GESCHLECHT_WERTE = ["maennlich", "weiblich", "divers", "keine_angabe"];
@@ -41,6 +41,28 @@ function validateKindInput(input: KindInput) {
   if (input.status === "aktiv" && !input.eintritt) {
     throw new Error("Aktive Kinder brauchen ein Eintrittsdatum.");
   }
+  if (input.ersetzt_kind_id && input.status !== "nachruecker") {
+    throw new Error("Nur Nachrücker können ein Kind ersetzen.");
+  }
+}
+
+/** Prüft, dass das referenzierte Kind ein aktives Kind derselben Gruppe ist — sonst eine deutsche Fehlermeldung
+ * statt eines stillen Nichts-Tuns oder eines irreführenden Platzbezugs. */
+async function pruefeErsetztKindId(
+  ersetztKindId: string | null,
+  gruppeId: string | null
+): Promise<string | null> {
+  if (!ersetztKindId) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("kinder")
+    .select("id, status, gruppe_id")
+    .eq("id", ersetztKindId)
+    .maybeSingle();
+  if (!data || data.status !== "aktiv" || data.gruppe_id !== gruppeId) {
+    return "Das ausgewählte Kind ist kein aktives Kind derselben Gruppe.";
+  }
+  return null;
 }
 
 async function syncWeightingFactors(kindId: string, weightingFactorIds: string[]) {
@@ -79,6 +101,8 @@ async function schreibeBuchungszeitHistorie(
 
 export async function createKind(input: KindInput) {
   validateKindInput(input);
+  const ersetztFehler = await pruefeErsetztKindId(input.ersetzt_kind_id, input.gruppe_id);
+  if (ersetztFehler) throw new Error(ersetztFehler);
   const supabase = await createClient();
   const einrichtungId = await getActiveEinrichtungId();
   if (!einrichtungId) throw new Error("Keine aktive Einrichtung ausgewählt.");
@@ -93,14 +117,13 @@ export async function createKind(input: KindInput) {
       geschlecht: input.geschlecht,
       status: input.status,
       gruppe_id: input.gruppe_id,
-      platznummer: input.platznummer,
       eintritt: input.eintritt,
       austritt: input.austritt,
       vertrag_gueltig_bis: input.vertrag_gueltig_bis,
       buchungszeit_band_id: input.buchungszeit_band_id,
       wohnort: input.wohnort,
-      notizen: input.notizen,
       hat_behinderung: input.hat_behinderung,
+      ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .select("id")
     .single();
@@ -124,6 +147,8 @@ export async function createKind(input: KindInput) {
 
 export async function updateKind(kindId: string, input: KindInput) {
   validateKindInput(input);
+  const ersetztFehler = await pruefeErsetztKindId(input.ersetzt_kind_id, input.gruppe_id);
+  if (ersetztFehler) throw new Error(ersetztFehler);
   const supabase = await createClient();
 
   const { data: bisher } = await supabase
@@ -144,7 +169,6 @@ export async function updateKind(kindId: string, input: KindInput) {
       geschlecht: input.geschlecht,
       status: input.status,
       gruppe_id: input.gruppe_id,
-      platznummer: input.platznummer,
       eintritt: input.eintritt,
       austritt: input.austritt,
       vertrag_gueltig_bis: input.vertrag_gueltig_bis,
@@ -152,8 +176,8 @@ export async function updateKind(kindId: string, input: KindInput) {
       // erst ab dem gewählten Datum. Für Stichtags-Auswertungen ist das ohnehin egal, die lösen über die Historie auf.
       ...(wirdRueckwirkendOderHeuteWirksam ? { buchungszeit_band_id: input.buchungszeit_band_id } : {}),
       wohnort: input.wohnort,
-      notizen: input.notizen,
       hat_behinderung: input.hat_behinderung,
+      ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .eq("id", kindId);
 
@@ -171,4 +195,28 @@ export async function updateKind(kindId: string, input: KindInput) {
   revalidatePath(`/kinder/${kindId}`);
   revalidatePath("/gruppen");
   redirect(`/kinder/${kindId}`);
+}
+
+/** Fügt dem historischen Notizen-Verlauf eines Kindes einen neuen, datierten Eintrag hinzu — ersetzt das frühere,
+ * überschreibbare `kinder.notizen`-Feld. Kein Update/Löschen bestehender Einträge (Audit-Charakter), eine echte
+ * Korrektur macht die Träger-Administration nötigenfalls per SQL. */
+export async function fuegeNotizHinzu(kindId: string, text: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const bereinigt = text.trim();
+  if (!bereinigt) return { ok: false, error: "Bitte einen Text eingeben." };
+  if (bereinigt.length > 2000) return { ok: false, error: "Bitte höchstens 2000 Zeichen." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase.from("kind_notizen_verlauf").insert({
+    kind_id: kindId,
+    text: bereinigt,
+    erstellt_von: user?.id ?? null,
+  });
+  if (error) return { ok: false, error: "Die Notiz konnte nicht gespeichert werden." };
+
+  revalidatePath(`/kinder/${kindId}`);
+  revalidatePath("/gruppen");
+  return { ok: true };
 }

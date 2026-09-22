@@ -7,12 +7,12 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
+import { KrippenUebergangHinweis } from "@/components/kinder/krippen-uebergang-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 import { toIsoDateString } from "@/lib/kita-datum";
 
@@ -27,16 +27,15 @@ const kindFormSchema = z
     geschlecht: z.enum(["", "maennlich", "weiblich", "divers", "keine_angabe"]),
     status: z.enum(["aktiv", "nachruecker", "geplant"]),
     gruppe_id: z.string(),
-    platznummer: z.string(),
     eintritt: z.string(),
     austritt: z.string(),
     vertrag_gueltig_bis: z.string(),
     buchungszeit_band_id: z.string(),
     buchungszeit_wirksam_ab: z.string().min(1, "Bitte ein Datum angeben."),
     wohnort: z.string(),
-    notizen: z.string(),
     hat_behinderung: z.boolean(),
     weighting_factor_ids: z.array(z.string()),
+    ersetzt_kind_id: z.string(),
   })
   .refine((data) => data.geschlecht !== "", {
     message: "Bitte ein Geschlecht auswählen.",
@@ -59,6 +58,7 @@ type KindFormValues = z.infer<typeof kindFormSchema>;
 
 export type KindFormOption = { id: string; label: string };
 export type WeightingFactorOption = KindFormOption & { code: string };
+export type AktivesKindOption = { id: string; vorname: string; nachname: string; gruppe_id: string };
 
 export function KindForm({
   mode,
@@ -66,6 +66,8 @@ export function KindForm({
   defaultValues,
   gruppen,
   gruppenMitKindern,
+  gruppenArtById,
+  aktiveKinderZurAuswahl,
   bookingTimeBands,
   weightingFactors,
   auswaertigenQuote,
@@ -75,6 +77,10 @@ export function KindForm({
   defaultValues?: Partial<KindFormValues>;
   gruppen: KindFormOption[];
   gruppenMitKindern: GruppeFuerPassung[];
+  /** gruppe_id → gruppenart, für den Krippe-Übergang-Hinweis. */
+  gruppenArtById: Record<string, string>;
+  /** Aktive Kinder je Gruppe, für die "Ersetzt"-Auswahl bei Nachrückern. */
+  aktiveKinderZurAuswahl: AktivesKindOption[];
   bookingTimeBands: KindFormOption[];
   weightingFactors: WeightingFactorOption[];
   auswaertigenQuote?: {
@@ -100,16 +106,15 @@ export function KindForm({
       geschlecht: "",
       status: "geplant",
       gruppe_id: "",
-      platznummer: "",
       eintritt: "",
       austritt: "",
       vertrag_gueltig_bis: "",
       buchungszeit_band_id: "",
       buchungszeit_wirksam_ab: toIsoDateString(new Date()),
       wohnort: "",
-      notizen: "",
       hat_behinderung: false,
       weighting_factor_ids: [],
+      ersetzt_kind_id: "",
       ...defaultValues,
     },
   });
@@ -123,6 +128,9 @@ export function KindForm({
   const integrationsfaktorId = weightingFactors.find(
     (f) => f.code === "integrationskinder"
   )?.id;
+  const kinderInGewaehlterGruppe = aktiveKinderZurAuswahl.filter(
+    (k) => k.gruppe_id === watchedGruppeId && k.id !== kindId
+  );
 
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
@@ -133,16 +141,15 @@ export function KindForm({
       geschlecht: values.geschlecht as KindInput["geschlecht"],
       status: values.status,
       gruppe_id: values.gruppe_id || null,
-      platznummer: values.platznummer || null,
       eintritt: values.eintritt || null,
       austritt: values.austritt || null,
       vertrag_gueltig_bis: values.vertrag_gueltig_bis || null,
       buchungszeit_band_id: values.buchungszeit_band_id || null,
       buchungszeit_wirksam_ab: values.buchungszeit_wirksam_ab || null,
       wohnort: values.wohnort || null,
-      notizen: values.notizen || null,
       hat_behinderung: values.hat_behinderung,
       weighting_factor_ids: values.weighting_factor_ids,
+      ersetzt_kind_id: values.status === "nachruecker" ? values.ersetzt_kind_id || null : null,
     };
 
     try {
@@ -211,9 +218,6 @@ export function KindForm({
             ))}
           </select>
         </Field>
-        <Field id="platznummer" label="Platznummer">
-          <Input id="platznummer" {...register("platznummer")} />
-        </Field>
         <Field id="eintritt" label="Eintritt" error={errors.eintritt?.message}>
           <Input id="eintritt" type="date" {...register("eintritt")} />
         </Field>
@@ -272,16 +276,36 @@ export function KindForm({
         />
       ) : null}
 
+      {watchedStatus === "aktiv" && gruppenArtById[watchedGruppeId] === "krippe" ? (
+        <KrippenUebergangHinweis geburtsdatum={watchedGeburtsdatum} />
+      ) : null}
+
       {watchedStatus === "nachruecker" ? (
-        <GruppenPassungHinweis
-          geburtsdatum={watchedGeburtsdatum}
-          geschlecht={watchedGeschlecht}
-          ausgewaehlteGruppeId={watchedGruppeId}
-          gruppen={gruppenMitKindern}
-          onGruppeWaehlen={(gruppeId) =>
-            setValue("gruppe_id", gruppeId, { shouldValidate: true })
-          }
-        />
+        <>
+          <GruppenPassungHinweis
+            geburtsdatum={watchedGeburtsdatum}
+            geschlecht={watchedGeschlecht}
+            ausgewaehlteGruppeId={watchedGruppeId}
+            gruppen={gruppenMitKindern}
+            onGruppeWaehlen={(gruppeId) =>
+              setValue("gruppe_id", gruppeId, { shouldValidate: true })
+            }
+          />
+          <Field id="ersetzt_kind_id" label="Ersetzt (optional)">
+            <select id="ersetzt_kind_id" className={SELECT_CLASS} {...register("ersetzt_kind_id")}>
+              <option value="">Kein bestimmtes Kind — noch offen</option>
+              {kinderInGewaehlterGruppe.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.vorname} {k.nachname}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Wenn bekannt: das aktive Kind derselben Gruppe, dessen Platz dieser Nachrücker übernimmt — erscheint
+              dann auf dessen Platznummer statt &bdquo;offen&ldquo;.
+            </p>
+          </Field>
+        </>
       ) : null}
 
       <Field label="Gewichtung">
@@ -324,10 +348,6 @@ export function KindForm({
         Kind mit I-Status — bundeslandunabhängig, z.B. für die jährliche
         Kinder- und Jugendhilfestatistik
       </label>
-
-      <Field id="notizen" label="Notizen">
-        <Textarea id="notizen" rows={4} {...register("notizen")} />
-      </Field>
 
       {submitError ? (
         <p className="text-sm text-destructive">{submitError}</p>

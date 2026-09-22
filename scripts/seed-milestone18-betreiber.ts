@@ -4,8 +4,9 @@
  * - Kein Test-Betreiber: Christoph ist per SQL als einziger Betreiber eingetragen.
  * - Platzhalter-Betreiberdaten ("Testdaten"), falls noch nichts hinterlegt ist
  *   — bitte in /admin/einstellungen durch die echten Angaben ersetzen.
- * - Testpreise für den Testkunden "Villa Kunterbunt" (49,00 € je Einrichtung,
- *   1,50 € je Kind) — KEINE echten Preise, nur damit der Rechnungsvorschlag
+ * - Testpreise für den Testkunden "Villa Kunterbunt" (Variante B: 15,00 € je
+ *   Einrichtung, gestaffelt 1,20 €/0,80 €/0,60 € je Kind) — dieselben Werte
+ *   wie die öffentlichen Listenpreise, nur damit der Rechnungsvorschlag
  *   sichtbar funktioniert.
  * - Demo-Rechnungen Jan–Sep 2026 mit Nummern "DEMO-2026-NN" (Jan–Jun bezahlt,
  *   Jul/Aug versendet, Sep als Entwurf) für die Einnahmen-Ansichten. Sie
@@ -24,8 +25,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database.types";
 
-const GRUNDGEBUEHR = 49;
-const PREIS_PRO_KIND = 1.5;
+const GRUNDGEBUEHR = 15;
+const PREIS_PRO_KIND_1_30 = 1.2;
+const PREIS_PRO_KIND_31_60 = 0.8;
+const PREIS_PRO_KIND_AB_61 = 0.6;
 const UST_SATZ = 19;
 
 function monatsErster(jahr: number, monat: number): string {
@@ -81,7 +84,9 @@ async function main() {
     rechnungsanschrift: "Kinderweg 7\n80331 München",
     rechnungs_email: "rechnung@villa-kunterbunt.test",
     preis_grundgebuehr_pro_einrichtung: GRUNDGEBUEHR,
-    preis_pro_kind: PREIS_PRO_KIND,
+    preis_pro_kind_1_30: PREIS_PRO_KIND_1_30,
+    preis_pro_kind_31_60: PREIS_PRO_KIND_31_60,
+    preis_pro_kind_ab_61: PREIS_PRO_KIND_AB_61,
   });
   if (abrechnungError) throw new Error(abrechnungError.message);
 
@@ -171,7 +176,8 @@ async function main() {
         einrichtung_name: einrichtung.name,
         menge: kinder,
         einheit: "Kind",
-        einzelpreis_netto: PREIS_PRO_KIND,
+        // Vereinfacht: die Demo-Kitas haben deutlich unter 30 Kinder, daher reicht hier die erste Staffelstufe.
+        einzelpreis_netto: PREIS_PRO_KIND_1_30,
         kinderzahl_snapshot: kinder,
       });
     }

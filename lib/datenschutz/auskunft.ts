@@ -15,7 +15,6 @@ export const KIND_FELDER: Record<string, string> = {
   vertrag_gueltig_bis: "Vertrag gültig bis",
   buchungszeit_band_id: "Buchungszeit",
   wohnort: "Wohnort",
-  notizen: "Notizen",
   hat_behinderung: "I-Status",
   einschulungsstatus: "Einschulungsstatus",
   betriebszugehoerigkeit: "Betriebszugehörigkeit",

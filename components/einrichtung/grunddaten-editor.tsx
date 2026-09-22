@@ -126,6 +126,22 @@ export function GrunddatenEditor({
             {bundeslandLabel} — nur per Datenbank änderbar
           </p>
         </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="einrichtung-kostenstelle">Kostenstelle (optional)</Label>
+          <Input
+            id="einrichtung-kostenstelle"
+            value={values.kostenstelle ?? ""}
+            onChange={(event) => setValues({ ...values, kostenstelle: event.target.value || null })}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="einrichtung-cluster">Cluster (optional)</Label>
+          <Input
+            id="einrichtung-cluster"
+            value={values.cluster ?? ""}
+            onChange={(event) => setValues({ ...values, cluster: event.target.value || null })}
+          />
+        </div>
         {bundeslandCode === "bw" ? (
           <>
             <div className="flex flex-col gap-1.5">

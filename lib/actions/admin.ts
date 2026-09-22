@@ -57,7 +57,9 @@ export type TragerAbrechnungInput = {
   rechnungs_email: string | null;
   ust_id: string | null;
   preis_grundgebuehr_pro_einrichtung: number | null;
-  preis_pro_kind: number | null;
+  preis_pro_kind_1_30: number | null;
+  preis_pro_kind_31_60: number | null;
+  preis_pro_kind_ab_61: number | null;
 };
 
 export async function speichereTragerAbrechnung(tragerId: string, input: TragerAbrechnungInput) {
@@ -89,7 +91,9 @@ export async function erstelleRechnungsEntwurf(tragerId: string, monat: string) 
     (kennzahlen ?? []).filter((k) => k.trager_id === tragerId) as OperatorKennzahl[],
     {
       grundgebuehr: abrechnung?.preis_grundgebuehr_pro_einrichtung ?? null,
-      proKind: abrechnung?.preis_pro_kind ?? null,
+      proKind1Bis30: abrechnung?.preis_pro_kind_1_30 ?? null,
+      proKind31Bis60: abrechnung?.preis_pro_kind_31_60 ?? null,
+      proKindAb61: abrechnung?.preis_pro_kind_ab_61 ?? null,
     },
     von
   );
@@ -280,7 +284,9 @@ export async function legeKundenAn(input: NeuerKundeInput): Promise<KundeAnlegen
       rechnungsanschrift: input.rechnungsanschrift?.trim() || null,
       rechnungs_email: input.rechnungsEmail?.trim() || email,
       preis_grundgebuehr_pro_einrichtung: liste.grundgebuehr,
-      preis_pro_kind: liste.proKind,
+      preis_pro_kind_1_30: liste.proKind1Bis30,
+      preis_pro_kind_31_60: liste.proKind31Bis60,
+      preis_pro_kind_ab_61: liste.proKindAb61,
     });
     if (abrechnungError) throw new Error(abrechnungError.message);
   } catch (err) {
@@ -314,7 +320,9 @@ export async function speichereListenpreise(input: ListenpreiseInput): Promise<L
     .from("listenpreise")
     .update({
       grundgebuehr_pro_einrichtung: input.grundgebuehr,
-      preis_pro_kind: input.proKind,
+      preis_pro_kind_1_30: input.proKind1Bis30,
+      preis_pro_kind_31_60: input.proKind31Bis60,
+      preis_pro_kind_ab_61: input.proKindAb61,
       hinweis: input.hinweis?.trim() || null,
       updated_at: new Date().toISOString(),
     })

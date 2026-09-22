@@ -82,6 +82,8 @@ async function main() {
         empfohlener_anstellungsschluessel: q.empfohlener_anstellungsschluessel,
         standort_gemeinde: q.standort_gemeinde,
         auswaertigen_quote_prozent: q.auswaertigen_quote_prozent,
+        kostenstelle: q.kostenstelle,
+        cluster: q.cluster,
       })
       .select("id")
       .single();
@@ -120,14 +122,12 @@ async function main() {
         .insert({
           einrichtung_id: e.id,
           gruppe_id: k.gruppe_id ? (gruppeNeu.get(k.gruppe_id) ?? null) : null,
-          platznummer: k.platznummer,
           vorname: k.vorname,
           nachname: k.nachname,
           geburtsdatum: k.geburtsdatum,
           eintritt: k.eintritt,
           austritt: k.austritt,
           buchungszeit_band_id: k.buchungszeit_band_id,
-          notizen: k.notizen,
           status: k.status,
           geschlecht: k.geschlecht,
           einschulungsstatus: k.einschulungsstatus,
@@ -161,6 +161,33 @@ async function main() {
     if (historieZeilen.length > 0) {
       const { error: he } = await sb.from("kind_buchungszeit_historie").insert(historieZeilen);
       if (he) throw new Error(he.message);
+    }
+
+    // Notizen-Verlauf
+    const { data: notizen } = await sb
+      .from("kind_notizen_verlauf")
+      .select("kind_id, text, erstellt_von, erstellt_am")
+      .in("kind_id", Array.from(kindNeu.keys()));
+    const notizenZeilen = (notizen ?? []).map((n) => ({
+      kind_id: kindNeu.get(n.kind_id)!,
+      text: n.text,
+      erstellt_von: n.erstellt_von,
+      erstellt_am: n.erstellt_am,
+    }));
+    if (notizenZeilen.length > 0) {
+      const { error: ne } = await sb.from("kind_notizen_verlauf").insert(notizenZeilen);
+      if (ne) throw new Error(ne.message);
+    }
+
+    // "Ersetzt"-Bezug der Nachrücker erst jetzt setzen, da beide Seiten (Nachrücker + ersetztes Kind) zuerst mit
+    // ihrer neuen ID existieren müssen.
+    for (const k of kinder ?? []) {
+      if (!k.ersetzt_kind_id) continue;
+      const neueId = kindNeu.get(k.id);
+      const neuesZielId = kindNeu.get(k.ersetzt_kind_id);
+      if (!neueId || !neuesZielId) continue;
+      const { error: ee } = await sb.from("kinder").update({ ersetzt_kind_id: neuesZielId }).eq("id", neueId);
+      if (ee) throw new Error(ee.message);
     }
 
     // Personal samt Ausfallzeiten und Monatsstunden

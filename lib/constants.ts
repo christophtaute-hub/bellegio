@@ -18,6 +18,17 @@ export const GESCHLECHT_LABEL: Record<string, string> = {
   keine_angabe: "keine Angabe",
 };
 
+/** Kurzform je Gewichtungsfaktor-Code, für schmale Tabellenspalten (z.B. die Sitzplatz-Tabelle in Gruppen) —
+ * das volle Label bleibt per Tooltip/title-Attribut erreichbar. */
+export const WEIGHTING_FACTOR_KUERZEL: Record<string, string> = {
+  u3: "U3",
+  ue3_bis_schuleintritt: "Ü3",
+  schulkinder: "Schulk.",
+  integrationskinder: "Integr.",
+  tagespflege: "Hort",
+  nicht_deutschsprachig: "MK",
+};
+
 export const TEAM_ROLLE_OPTIONS = [
   "Einrichtungsleitung",
   "Stellvertretende Leitung",

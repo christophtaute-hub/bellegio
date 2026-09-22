@@ -177,7 +177,7 @@ export default async function KinderPage({
   let query = supabase
     .from("kinder")
     .select(
-      "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, notizen, gruppe_id, gruppen(name), booking_time_bands(label), kind_weighting_factors(weighting_factors(label))"
+      "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name), booking_time_bands(label), kind_weighting_factors(weighting_factors(label))"
     )
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null);
@@ -348,7 +348,6 @@ export default async function KinderPage({
                                   ? gewichtungsfaktoren.join(", ")
                                   : "Regelfaktor"}
                               </span>
-                              {kind.notizen ? <span>Notiz: {kind.notizen}</span> : null}
                             </div>
                           </TooltipContent>
                         </Tooltip>

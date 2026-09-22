@@ -86,7 +86,9 @@ export default async function KundenPage() {
                 rechnungs_email: abrechnung?.rechnungs_email ?? null,
                 ust_id: abrechnung?.ust_id ?? null,
                 preis_grundgebuehr_pro_einrichtung: abrechnung?.preis_grundgebuehr_pro_einrichtung ?? null,
-                preis_pro_kind: abrechnung?.preis_pro_kind ?? null,
+                preis_pro_kind_1_30: abrechnung?.preis_pro_kind_1_30 ?? null,
+                preis_pro_kind_31_60: abrechnung?.preis_pro_kind_31_60 ?? null,
+                preis_pro_kind_ab_61: abrechnung?.preis_pro_kind_ab_61 ?? null,
               }}
             />
           </section>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Clock, Scale, VenusAndMars } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Clock, Scale, VenusAndMars } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
+import { KIND_STATUS_LABEL, GESCHLECHT_LABEL, WEIGHTING_FACTOR_KUERZEL } from "@/lib/constants";
 import {
   austrittWarnung,
   calculateAgeDecimal,
@@ -28,9 +28,12 @@ const GESCHLECHT_KUERZEL: Record<string, string> = {
   divers: "d",
 };
 
-export type KinderTableRow = {
+export type GruppenSortSpalte = "name" | "buchungszeit" | "eintritt" | "austritt" | "status";
+
+export type KindZeile = {
+  frei: false;
   id: string;
-  platznummer: string | null;
+  platz: number | null;
   vorname: string;
   nachname: string;
   geburtsdatum: string;
@@ -38,11 +41,16 @@ export type KinderTableRow = {
   eintritt: string | null;
   austritt: string | null;
   vertrag_gueltig_bis: string | null;
-  notizen: string | null;
+  notizAktuell: string | null;
   status: string;
   booking_time_bands: { label: string } | null;
   weighting_factor_label?: string | null;
+  weighting_factor_code?: string | null;
 };
+
+export type FreieZeile = { frei: true; platz: number };
+
+export type KinderTableRow = KindZeile | FreieZeile;
 
 function SpaltenIcon({
   icon: Icon,
@@ -62,16 +70,60 @@ function SpaltenIcon({
   );
 }
 
+/** Sortierbarer Spaltenkopf — Klick ändert `sort`/`dir` in der URL, gilt gleichermaßen für die Tabellen "Aktive
+ * Kinder" und "Nachrücker" auf derselben Seite (geteilter Zustand über die URL). */
+function SortableHead({
+  spalte,
+  label,
+  aktuelleSpalte,
+  aktuelleRichtung,
+  baseQuery,
+}: {
+  spalte: GruppenSortSpalte;
+  label: string;
+  aktuelleSpalte: GruppenSortSpalte | null;
+  aktuelleRichtung: "asc" | "desc";
+  baseQuery: string;
+}) {
+  const istAktiv = spalte === aktuelleSpalte;
+  const naechsteRichtung = istAktiv && aktuelleRichtung === "asc" ? "desc" : "asc";
+  const params = new URLSearchParams(baseQuery);
+  params.set("sort", spalte);
+  params.set("dir", naechsteRichtung);
+  const Icon = !istAktiv ? ArrowUpDown : aktuelleRichtung === "asc" ? ArrowUp : ArrowDown;
+
+  return (
+    <TableHead>
+      <Link
+        href={`?${params.toString()}`}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground",
+          istAktiv && "font-semibold text-foreground"
+        )}
+      >
+        {label}
+        <Icon className="size-3.5 text-muted-foreground" />
+      </Link>
+    </TableHead>
+  );
+}
+
 export function KinderTable({
   rows,
   kitaYearStartMonth,
   highlightAustritt = false,
   emptyMessage,
+  sort,
+  dir,
+  baseQuery,
 }: {
   rows: KinderTableRow[];
   kitaYearStartMonth: number;
   highlightAustritt?: boolean;
   emptyMessage: string;
+  sort: GruppenSortSpalte | null;
+  dir: "asc" | "desc";
+  baseQuery: string;
 }) {
   if (rows.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
@@ -84,26 +136,38 @@ export function KinderTable({
           <TableHeader>
             <TableRow>
               <TableHead>Platz</TableHead>
-              <TableHead>Name</TableHead>
+              <SortableHead spalte="name" label="Name" aktuelleSpalte={sort} aktuelleRichtung={dir} baseQuery={baseQuery} />
               <TableHead className="text-center">
                 <SpaltenIcon icon={VenusAndMars} label="Geschlecht (m/w/d)" />
               </TableHead>
-              <TableHead className="text-center">
-                <SpaltenIcon icon={Clock} label="Buchungszeit" />
-              </TableHead>
+              <SortableHead spalte="buchungszeit" label="Zeit" aktuelleSpalte={sort} aktuelleRichtung={dir} baseQuery={baseQuery} />
               <TableHead className="text-center">
                 <SpaltenIcon icon={Scale} label="Gewichtungsfaktor" />
               </TableHead>
-              <TableHead>Eintritt</TableHead>
-              <TableHead>Austritt</TableHead>
-              <TableHead>Status</TableHead>
+              <SortableHead spalte="eintritt" label="Eintritt" aktuelleSpalte={sort} aktuelleRichtung={dir} baseQuery={baseQuery} />
+              <SortableHead spalte="austritt" label="Austritt" aktuelleSpalte={sort} aktuelleRichtung={dir} baseQuery={baseQuery} />
+              <SortableHead spalte="status" label="Status" aktuelleSpalte={sort} aktuelleRichtung={dir} baseQuery={baseQuery} />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((kind, index) => {
+            {rows.map((zeile) => {
+              if (zeile.frei) {
+                return (
+                  <TableRow key={`frei-${zeile.platz}`}>
+                    <TableCell className="tabular-nums text-muted-foreground/50">{zeile.platz}</TableCell>
+                    <TableCell colSpan={7} className="text-muted-foreground/50">
+                      frei
+                    </TableCell>
+                  </TableRow>
+                );
+              }
+              const kind = zeile;
               const warnung = highlightAustritt
                 ? austrittWarnung(kind.austritt, kitaYearStartMonth)
                 : null;
+              const kuerzel = kind.weighting_factor_code
+                ? (WEIGHTING_FACTOR_KUERZEL[kind.weighting_factor_code] ?? kind.weighting_factor_label)
+                : "Regelfaktor";
               return (
                 <TableRow
                   key={kind.id}
@@ -117,7 +181,7 @@ export function KinderTable({
                       warnung !== "rot" && "text-muted-foreground"
                     )}
                   >
-                    {kind.platznummer ?? index + 1}
+                    {kind.platz ?? "offen"}
                   </TableCell>
                   <TableCell className="font-medium">
                     <Tooltip>
@@ -138,12 +202,15 @@ export function KinderTable({
                             {" · "}
                             {calculateAgeDecimal(kind.geburtsdatum)} Jahre
                           </span>
+                          {kind.weighting_factor_label ? (
+                            <span>Gewichtung: {kind.weighting_factor_label}</span>
+                          ) : null}
                           {kind.vertrag_gueltig_bis ? (
                             <span>
                               Vertrag gültig bis: {formatDate(kind.vertrag_gueltig_bis)}
                             </span>
                           ) : null}
-                          {kind.notizen ? <span>Notiz: {kind.notizen}</span> : null}
+                          {kind.notizAktuell ? <span>Notiz: {kind.notizAktuell}</span> : null}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -162,7 +229,7 @@ export function KinderTable({
                       warnung !== "rot" && "text-muted-foreground"
                     )}
                   >
-                    {kind.weighting_factor_label ?? "Regelfaktor"}
+                    <span title={kind.weighting_factor_label ?? "Regelfaktor"}>{kuerzel}</span>
                   </TableCell>
                   <TableCell className="tabular-nums">
                     {formatDate(kind.eintritt)}

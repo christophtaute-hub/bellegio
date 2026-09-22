@@ -133,13 +133,11 @@ export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeEr
           geschlecht: k.geschlecht,
           status: k.status,
           gruppe_id: k.gruppe_id,
-          platznummer: k.platznummer,
           eintritt: k.eintritt,
           austritt: k.austritt,
           vertrag_gueltig_bis: k.vertrag_gueltig_bis,
           buchungszeit_band_id: k.buchungszeit_band_id,
           wohnort: k.wohnort,
-          notizen: k.notizen,
           hat_behinderung: k.hat_behinderung,
         }))
       )
@@ -168,6 +166,16 @@ export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeEr
     if (historie.length > 0) {
       const { error: historieError } = await supabase.from("kind_buchungszeit_historie").insert(historie);
       if (historieError) fehler.push("Die Buchungszeit-Historie einiger Kinder konnte nicht gespeichert werden. Bitte im Kind prüfen.");
+    }
+
+    // Eine mitgelieferte Notiz wird zum ersten Verlaufseintrag statt in ein einzelnes, überschreibbares Feld.
+    const notizen = teil.flatMap((k) => {
+      const kindId = idNachSchluessel.get(`${k.vorname}|${k.nachname}|${k.geburtsdatum}`);
+      return kindId && k.notizen ? [{ kind_id: kindId, text: k.notizen }] : [];
+    });
+    if (notizen.length > 0) {
+      const { error: notizenError } = await supabase.from("kind_notizen_verlauf").insert(notizen);
+      if (notizenError) fehler.push("Die Notizen einiger Kinder konnten nicht gespeichert werden. Bitte im Kind prüfen.");
     }
   }
 

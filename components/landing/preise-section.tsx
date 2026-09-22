@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/landing/reveal";
 import { PreisRechner } from "@/components/landing/preis-rechner";
-import { hatPreise, type Listenpreise } from "@/lib/preise";
+import { hatPreise, STAFFEL_GRENZE_1, STAFFEL_GRENZE_2, type Listenpreise } from "@/lib/preise";
 import { formatEuro } from "@/lib/admin/abrechnung";
 
 const ENTHALTEN = [
@@ -42,18 +42,31 @@ export function PreiseSection({ preise }: { preise: Listenpreise }) {
           <div className="mt-12 grid gap-8 lg:grid-cols-2">
             <Reveal>
               <div className="flex flex-col gap-6 rounded-3xl border bg-card p-8">
-                <div className="grid grid-cols-2 gap-6">
-                  {preise.grundgebuehr !== null ? (
-                    <div className="flex flex-col gap-1">
-                      <p className="font-heading text-4xl font-semibold tracking-tight tabular-nums">{formatEuro(preise.grundgebuehr)}</p>
-                      <p className="text-sm text-muted-foreground">je Einrichtung und Monat</p>
-                    </div>
+                {preise.grundgebuehr !== null ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="font-heading text-4xl font-semibold tracking-tight tabular-nums">{formatEuro(preise.grundgebuehr)}</p>
+                    <p className="text-sm text-muted-foreground">je Einrichtung und Monat</p>
+                  </div>
+                ) : null}
+                <div className="flex flex-col gap-1.5 border-t pt-4 text-sm">
+                  <p className="font-medium">Dazu je Kind und Monat, gestaffelt:</p>
+                  {preise.proKind1Bis30 !== null ? (
+                    <p className="flex justify-between text-muted-foreground">
+                      <span>1.–{STAFFEL_GRENZE_1}. Kind</span>
+                      <span className="font-medium tabular-nums text-foreground">{formatEuro(preise.proKind1Bis30)}</span>
+                    </p>
                   ) : null}
-                  {preise.proKind !== null ? (
-                    <div className="flex flex-col gap-1">
-                      <p className="font-heading text-4xl font-semibold tracking-tight tabular-nums">{formatEuro(preise.proKind)}</p>
-                      <p className="text-sm text-muted-foreground">je Kind und Monat</p>
-                    </div>
+                  {preise.proKind31Bis60 !== null ? (
+                    <p className="flex justify-between text-muted-foreground">
+                      <span>{STAFFEL_GRENZE_1 + 1}.–{STAFFEL_GRENZE_2}. Kind</span>
+                      <span className="font-medium tabular-nums text-foreground">{formatEuro(preise.proKind31Bis60)}</span>
+                    </p>
+                  ) : null}
+                  {preise.proKindAb61 !== null ? (
+                    <p className="flex justify-between text-muted-foreground">
+                      <span>ab {STAFFEL_GRENZE_2 + 1}. Kind</span>
+                      <span className="font-medium tabular-nums text-foreground">{formatEuro(preise.proKindAb61)}</span>
+                    </p>
                   ) : null}
                 </div>
                 <ul className="flex flex-col gap-2.5 text-sm">

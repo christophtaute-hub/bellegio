@@ -12,6 +12,7 @@ import {
   Aenderungshistorie,
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
+import { NotizenVerlauf, type NotizEintrag } from "@/components/kinder/notizen-verlauf";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 import { KIND_FELDER } from "@/lib/datenschutz/auskunft";
 import { DruckButton } from "@/components/shared/druck-button";
@@ -31,7 +32,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, platznummer, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, notizen, hat_behinderung"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung, ersetzt_kind_id"
     )
     .eq("id", kindId)
     .single();
@@ -53,6 +54,7 @@ export default async function KindDetailPage({
     { data: bookingTimeBands },
     { data: weightingFactors },
     { data: kindWeightingFactors },
+    { data: notizenRoh },
   ] = await Promise.all([
     supabase
       .from("gruppen")
@@ -62,7 +64,7 @@ export default async function KindDetailPage({
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("id, gruppe_id, geschlecht, wohnort")
+      .select("id, vorname, nachname, gruppe_id, geschlecht, wohnort, status")
       .eq("einrichtung_id", einrichtungId ?? "")
       .eq("status", "aktiv")
       .is("archived_at", null),
@@ -79,6 +81,11 @@ export default async function KindDetailPage({
       .from("kind_weighting_factors")
       .select("weighting_factor_id")
       .eq("kind_id", kindId),
+    supabase
+      .from("kind_notizen_verlauf")
+      .select("id, text, erstellt_am, user_profiles(full_name)")
+      .eq("kind_id", kindId)
+      .order("erstellt_am", { ascending: false }),
   ]);
 
   const kinderProGruppe = new Map<string, { geschlecht: string }[]>();
@@ -95,6 +102,13 @@ export default async function KindDetailPage({
     sollplatze: Number(g.sollplatze),
     aktiveKinder: kinderProGruppe.get(g.id) ?? [],
   }));
+  const gruppenArtById = Object.fromEntries((gruppen ?? []).map((g) => [g.id, g.gruppenart]));
+  const aktiveKinderZurAuswahl = (aktiveKinder ?? []).map((k) => ({
+    id: k.id,
+    vorname: k.vorname,
+    nachname: k.nachname,
+    gruppe_id: k.gruppe_id ?? "",
+  }));
 
   const { data: auditLog } = await supabase
     .from("kinder_audit_log")
@@ -108,6 +122,13 @@ export default async function KindDetailPage({
     changed_by_name: entry.user_profiles?.full_name ?? null,
     old_data: entry.old_data as Record<string, unknown> | null,
     new_data: entry.new_data as Record<string, unknown>,
+  }));
+
+  const notizen: NotizEintrag[] = (notizenRoh ?? []).map((n) => ({
+    id: n.id,
+    text: n.text,
+    erstellt_von_name: n.user_profiles?.full_name ?? null,
+    erstellt_am: n.erstellt_am,
   }));
 
   const auswaertigenQuote =
@@ -125,8 +146,9 @@ export default async function KindDetailPage({
       : undefined;
 
   const heuteIso = toIsoDateString(new Date());
-  const [rolle, darfAuskunft] = await Promise.all([
+  const [rolle, darfAuskunft, darfBelegungBearbeiten] = await Promise.all([
     getCurrentUserRole(),
+    einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
     einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
   ]);
 
@@ -168,7 +190,6 @@ export default async function KindDetailPage({
           { label: "Gewichtung", wert: gewichtungsLabels.join(", ") },
           { label: "I-Status", wert: kind.hat_behinderung ? "Ja" : "Nein" },
           { label: "Wohnort", wert: kind.wohnort ?? "" },
-          { label: "Notizen", wert: kind.notizen ?? "" },
         ]}
       />
       <div className="print:hidden">
@@ -186,20 +207,21 @@ export default async function KindDetailPage({
             | "keine_angabe",
           status: kind.status as "aktiv" | "nachruecker" | "geplant",
           gruppe_id: kind.gruppe_id ?? "",
-          platznummer: kind.platznummer ?? "",
           eintritt: kind.eintritt ?? "",
           austritt: kind.austritt ?? "",
           vertrag_gueltig_bis: kind.vertrag_gueltig_bis ?? "",
           buchungszeit_band_id: kind.buchungszeit_band_id ?? "",
           wohnort: kind.wohnort ?? "",
-          notizen: kind.notizen ?? "",
           hat_behinderung: kind.hat_behinderung,
           weighting_factor_ids: (kindWeightingFactors ?? []).map(
             (row) => row.weighting_factor_id
           ),
+          ersetzt_kind_id: kind.ersetzt_kind_id ?? "",
         }}
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
         gruppenMitKindern={gruppenMitKindern}
+        gruppenArtById={gruppenArtById}
+        aktiveKinderZurAuswahl={aktiveKinderZurAuswahl}
         bookingTimeBands={(bookingTimeBands ?? []).map((b) => ({
           id: b.id,
           label: b.label,
@@ -211,6 +233,9 @@ export default async function KindDetailPage({
         }))}
         auswaertigenQuote={auswaertigenQuote}
       />
+      </div>
+      <div className="print:hidden">
+        <NotizenVerlauf kindId={kind.id} eintraege={notizen} canEdit={darfBelegungBearbeiten} />
       </div>
       <Aenderungshistorie
         eintraege={aenderungen}

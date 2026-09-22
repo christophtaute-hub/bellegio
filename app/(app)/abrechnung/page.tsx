@@ -5,6 +5,7 @@ import { getCurrentUserRole, istDemoNutzer } from "@/lib/server/current-user-rol
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { formatEuro } from "@/lib/admin/abrechnung";
+import { berechneMonatspreis } from "@/lib/preise";
 import { RechnungStatusBadge } from "@/components/admin/status-badge";
 import { MetricCard } from "@/components/ui/metric-card";
 import {
@@ -36,7 +37,10 @@ export default async function AbrechnungKundenPage() {
 
   const [{ data: einrichtungen }, { data: abrechnung }, { data: rechnungen }] = await Promise.all([
     supabase.from("einrichtungen").select("id, name").is("archived_at", null).order("name"),
-    supabase.from("trager_abrechnung").select("preis_grundgebuehr_pro_einrichtung, preis_pro_kind").maybeSingle(),
+    supabase
+      .from("trager_abrechnung")
+      .select("preis_grundgebuehr_pro_einrichtung, preis_pro_kind_1_30, preis_pro_kind_31_60, preis_pro_kind_ab_61")
+      .maybeSingle(),
     supabase
       .from("rechnungen")
       .select("id, nummer, status, leistungszeitraum_von, leistungszeitraum_bis, summe_brutto, faellig_am")
@@ -49,12 +53,21 @@ export default async function AbrechnungKundenPage() {
       kinder: (await getKinderPresenceAtDate(supabase, e.id, monatsersterIso)).length,
     }))
   );
-  const grund = abrechnung?.preis_grundgebuehr_pro_einrichtung ?? null;
-  const proKind = abrechnung?.preis_pro_kind ?? null;
-  const hatPreise = grund !== null || proKind !== null;
+  const preise = {
+    grundgebuehr: abrechnung?.preis_grundgebuehr_pro_einrichtung ?? null,
+    proKind1Bis30: abrechnung?.preis_pro_kind_1_30 ?? null,
+    proKind31Bis60: abrechnung?.preis_pro_kind_31_60 ?? null,
+    proKindAb61: abrechnung?.preis_pro_kind_ab_61 ?? null,
+    hinweis: null,
+  };
+  const hatPreise =
+    preise.grundgebuehr !== null || preise.proKind1Bis30 !== null || preise.proKind31Bis60 !== null || preise.proKindAb61 !== null;
   const kinderGesamt = kinderProEinrichtung.reduce((s, e) => s + e.kinder, 0);
-  const vorschauNetto =
-    (grund ?? 0) * kinderProEinrichtung.length + (proKind ?? 0) * kinderGesamt;
+  // Die Staffel gilt je Einrichtung — jede Einrichtung zählt für ihre eigene Kinderzahl eigenständig bei 1 an.
+  const vorschauNetto = kinderProEinrichtung.reduce(
+    (summe, e) => summe + berechneMonatspreis(1, e.kinder, preise).summe,
+    0
+  );
   const monatsName = heute.toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
 
   return (

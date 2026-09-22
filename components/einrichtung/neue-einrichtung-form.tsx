@@ -30,6 +30,8 @@ export function NeueEinrichtungForm() {
           bundeslandCode: text("bundeslandCode"),
           ort: text("ort") || null,
           vollzeitWochenstunden: Number(text("vollzeit").replace(",", ".")),
+          kostenstelle: text("kostenstelle") || null,
+          cluster: text("cluster") || null,
         });
         if (!ergebnis.ok) {
           setPending(false);
@@ -67,6 +69,14 @@ export function NeueEinrichtungForm() {
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="vollzeit">Vollzeit-Wochenstunden (Referenz für VZÄ)</Label>
         <Input id="vollzeit" name="vollzeit" inputMode="decimal" defaultValue="39" required />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="kostenstelle">Kostenstelle (optional)</Label>
+        <Input id="kostenstelle" name="kostenstelle" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="cluster">Cluster (optional)</Label>
+        <Input id="cluster" name="cluster" />
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       <div className="flex items-center gap-3">

@@ -1,4 +1,10 @@
 /**
+ * NICHT MEHR AUSFÜHREN: Die hier vergebenen `platznummer`-Werte ("BY-05" o.ä.) waren genau die Ursache der
+ * Milestone-27-Rückmeldung ("Platz soll einfach 1 bis 25 sein") — die Gruppen-Seite zeigt seit Milestone 27 einen
+ * berechneten Sitzplatz statt `platznummer`. Auch `notizen` wird seither nicht mehr befüllt, sondern über
+ * `kind_notizen_verlauf` (siehe lib/actions/kinder.ts, `fuegeNotizHinzu`). Ein erneuter Lauf würde beides wieder
+ * mit veralteten Werten überschreiben.
+ *
  * Milestone 25, Phase 7: realistischere Demo-/Testdaten für die drei Testkitas unter "Villa Kunterbunt"
  * (wirken über scripts/demo-einrichten.ts beim nächsten Zurücksetzen automatisch auch im Demo-Zugang).
  *

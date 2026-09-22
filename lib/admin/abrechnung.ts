@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/kita-datum";
+import { STAFFEL_GRENZE_1, STAFFEL_GRENZE_2, verteileAufStaffel } from "@/lib/preise";
 
 export const RECHNUNG_STATUS_LABEL: Record<string, string> = {
   entwurf: "Entwurf",
@@ -43,10 +44,12 @@ export function monatsGrenzen(monat: string): { von: string; bis: string } {
 }
 
 /** Rechnungsvorschlag je Einrichtung aus den gepflegten Preisen — ohne Preise
- * entsteht kein Vorschlag, die Positionen werden dann von Hand erfasst. */
+ * entsteht kein Vorschlag, die Positionen werden dann von Hand erfasst. Der Kind-Preis ist gestaffelt
+ * (1.–30./31.–60./ab 61. Kind, je Einrichtung — siehe verteileAufStaffel) und erzeugt bis zu drei
+ * "Nutzung je Kind"-Positionen statt einer, damit die Staffel auf der Rechnung nachvollziehbar bleibt. */
 export function berechneRechnungsvorschlag(
   einrichtungen: OperatorKennzahl[],
-  preise: { grundgebuehr: number | null; proKind: number | null },
+  preise: { grundgebuehr: number | null; proKind1Bis30: number | null; proKind31Bis60: number | null; proKindAb61: number | null },
   stichtag: string
 ): PositionInput[] {
   const positionen: PositionInput[] = [];
@@ -63,15 +66,22 @@ export function berechneRechnungsvorschlag(
         kinderzahl_snapshot: null,
       });
     }
-    if (preise.proKind !== null) {
-      const kinder = e.aktive_kinder ?? 0;
+    const kinder = e.aktive_kinder ?? 0;
+    const { stufe1, stufe2, stufe3 } = verteileAufStaffel(kinder);
+    const stufen: [number, number | null, string][] = [
+      [stufe1, preise.proKind1Bis30, `1.–${STAFFEL_GRENZE_1}. Kind`],
+      [stufe2, preise.proKind31Bis60, `${STAFFEL_GRENZE_1 + 1}.–${STAFFEL_GRENZE_2}. Kind`],
+      [stufe3, preise.proKindAb61, `ab ${STAFFEL_GRENZE_2 + 1}. Kind`],
+    ];
+    for (const [menge, einzelpreis, staffelLabel] of stufen) {
+      if (menge <= 0 || einzelpreis === null) continue;
       positionen.push({
-        beschreibung: `Bellegio Nutzung je Kind — ${e.einrichtung_name} (${kinder} Kinder am ${formatDate(stichtag)})`,
+        beschreibung: `Bellegio Nutzung je Kind (${staffelLabel}) — ${e.einrichtung_name} (${menge} Kinder am ${formatDate(stichtag)})`,
         einrichtung_id: e.einrichtung_id,
         einrichtung_name: e.einrichtung_name,
-        menge: kinder,
+        menge,
         einheit: "Kind",
-        einzelpreis_netto: preise.proKind,
+        einzelpreis_netto: einzelpreis,
         kinderzahl_snapshot: kinder,
       });
     }

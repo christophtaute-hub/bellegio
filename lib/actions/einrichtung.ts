@@ -68,6 +68,8 @@ export type EinrichtungGrunddatenInput = {
   kita_year_start_month: number;
   standort_gemeinde: string | null;
   auswaertigen_quote_prozent: number | null;
+  kostenstelle: string | null;
+  cluster: string | null;
 };
 
 export async function updateEinrichtungGrunddaten(
@@ -95,6 +97,8 @@ export async function updateEinrichtungGrunddaten(
       kita_year_start_month: input.kita_year_start_month,
       standort_gemeinde: input.standort_gemeinde,
       auswaertigen_quote_prozent: input.auswaertigen_quote_prozent,
+      kostenstelle: input.kostenstelle,
+      cluster: input.cluster,
     })
     .eq("id", einrichtungId);
 
@@ -137,6 +141,8 @@ export type NeueEinrichtungInput = {
   bundeslandCode: string;
   ort: string | null;
   vollzeitWochenstunden: number;
+  kostenstelle: string | null;
+  cluster: string | null;
 };
 
 /** Legt eine weitere Einrichtung im eigenen Träger an. RLS lässt das nur Träger-Admins zu. */
@@ -169,6 +175,8 @@ export async function legeEinrichtungAn(input: NeueEinrichtungInput): Promise<Ei
     address_city: input.ort?.trim() || null,
     bundesland_code: input.bundeslandCode,
     vollzeit_wochenstunden: input.vollzeitWochenstunden,
+    kostenstelle: input.kostenstelle?.trim() || null,
+    cluster: input.cluster?.trim() || null,
   });
   if (error) return { ok: false, error: "Die Einrichtung konnte nicht angelegt werden." };
 
