@@ -22,8 +22,11 @@ const UNERWARTETER_FEHLER = "Unerwarteter Fehler. Bitte erneut versuchen.";
 
 /** Verwandelt eine geworfene Ausnahme in eine deutsche Fehlermeldung statt sie durchzureichen — eine Server
  * Action, die wirft statt {ok:false} zurückzugeben, lässt den aufrufenden Button sonst für immer im
- * „lädt…“-Zustand hängen (kein try/catch auf der Client-Seite fängt das ab, siehe NutzerAnlegenForm). */
-function alsErgebnis(fehler: unknown): NutzerErgebnis {
+ * „lädt…“-Zustand hängen (kein try/catch auf der Client-Seite fängt das ab, siehe NutzerAnlegenForm).
+ * Protokolliert die eigentliche Ausnahme serverseitig (Terminal/`preview_logs`) — die Meldung an den Client
+ * bleibt bewusst allgemein, sonst wäre ein Fehler sonst nirgends mehr nachvollziehbar. */
+function alsErgebnis(kontext: string, fehler: unknown): NutzerErgebnis {
+  console.error(`[berechtigungen:${kontext}]`, fehler);
   if (fehler instanceof ZeitlimitFehler) return { ok: false, error: ZEITLIMIT_MELDUNG };
   return { ok: false, error: UNERWARTETER_FEHLER };
 }
@@ -77,7 +80,7 @@ export async function setEinrichtungBerechtigung(
     revalidatePath("/einstellungen");
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("setEinrichtungBerechtigung", fehler);
   }
 }
 
@@ -89,7 +92,7 @@ export async function setKannRechteVerwalten(userId: string, value: boolean): Pr
     revalidatePath("/einstellungen");
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("setKannRechteVerwalten", fehler);
   }
 }
 
@@ -118,7 +121,7 @@ export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgeb
       angelegt = ergebnis.data;
       createError = ergebnis.error;
     } catch (netzwerkFehler) {
-      return alsErgebnis(netzwerkFehler);
+      return alsErgebnis("legeNutzerAn:createUser", netzwerkFehler);
     }
     if (createError || !angelegt.user) {
       const meldung = createError?.message ?? "";
@@ -162,7 +165,7 @@ export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgeb
     revalidatePath("/einstellungen");
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("legeNutzerAn", fehler);
   }
 }
 
@@ -177,7 +180,7 @@ export async function setzeNutzerPasswort(userId: string, passwort: string): Pro
     if (error) return { ok: false, error: "Das Passwort konnte nicht gesetzt werden." };
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("setzeNutzerPasswort", fehler);
   }
 }
 
@@ -191,7 +194,7 @@ export async function loescheNutzer(userId: string): Promise<NutzerErgebnis> {
     revalidatePath("/einstellungen");
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("loescheNutzer", fehler);
   }
 }
 
@@ -205,6 +208,6 @@ export async function setzeNutzerRolle(userId: string, rolle: NeueRolle): Promis
     revalidatePath("/einstellungen");
     return { ok: true };
   } catch (fehler) {
-    return alsErgebnis(fehler);
+    return alsErgebnis("setzeNutzerRolle", fehler);
   }
 }
