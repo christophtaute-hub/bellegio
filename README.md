@@ -45,6 +45,10 @@ Server Actions geben erwartbare Fehler als Ergebnisobjekt (`{ ok: false, error }
 
 Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunktion sieht die neue Zeile im selben Statement nicht): ID vorab erzeugen und ohne `RETURNING` einfügen, siehe `legeEinrichtungAn`.
 
+## Dashboard-Hinweise
+
+Läuft für ein Teammitglied aktuell eine Ausfallzeit vom Typ Krankheit, Schwangerschaft oder Mutterschutz, zeigt das Dashboard einen Hinweis dazu (`components/dashboard/personal-hinweise.tsx`, Regeln in `lib/team/langzeithinweise.ts`). Sonderurlaub und Sonstiges erscheinen dort bewusst nicht.
+
 ## Nutzerverwaltung
 
 Träger-Administratoren legen Nutzer direkt in den Einrichtungs-Einstellungen an (`/einstellungen`): Rolle, Rechte je Bereich/Einrichtung, Zugang per Passwort oder Einladung. Sie können dort auch das Passwort eines Nutzers neu setzen, die Rolle ändern und den Nutzer löschen (`lib/actions/berechtigungen.ts`, geprüft in `lib/nutzer/verwaltung.ts`). Ein Träger-Admin kann nicht über diese Oberfläche geändert/gelöscht werden — dafür siehe unten „Mein Profil“.

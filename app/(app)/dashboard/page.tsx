@@ -13,6 +13,7 @@ import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
 import { PersonalAusblick, PersonalAusblickSkeleton } from "@/components/dashboard/personal-ausblick";
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
+import { PersonalHinweise } from "@/components/dashboard/personal-hinweise";
 
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
 // der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
@@ -132,6 +133,8 @@ export default async function DashboardPage({
           <ErsteSchritte einrichtungId={einrichtungId} />
         </Suspense>
       ) : null}
+
+      {einrichtungId ? <PersonalHinweise einrichtungId={einrichtungId} stichtag={stichtag} /> : null}
 
       <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
 
