@@ -75,6 +75,16 @@ Alle Nutzer-Aktionen laufen über `mitZeitlimit()` (`lib/supabase/mit-zeitlimit.
 
 `scripts/seed-milestone26-kapazitaet.ts` füllt die großen, bisher nur zu 10–25 % belegten Gruppen auf realistische ~85–90 % (Zielgruppe: eine Kita vorführen können, ohne dass Räume leer wirken) und ergänzt in Bayern zwei neue Personen — eine davon bewusst als Vertretung für Sarah Langs Schwangerschaft/Beschäftigungsverbot, deren dauerhaft unbekanntes Ende sonst den Anstellungsschlüssel schon ab September 2026 statt erst ab April 2027 (Julia Vogts Austritt) ins Rot gekippt hätte. Ebenfalls idempotent.
 
+## Landingpage-Screenshots
+
+Die Mockup-Komponenten unter `components/landing/mockups/` zeigen keine nachgebauten Bildschirme mehr, sondern echte PNG-Screenshots aus `public/images/landing/`. `scripts/landing-screenshots.ts` nimmt sie über das lokal installierte Chrome (per `puppeteer-core`, kein Chromium-Download) mit dem Demo-Zugang neu auf und überschreibt die Dateien. Nach größeren UI-Änderungen an Dashboard/Team/Gruppen-Vorschau/Controlling/Kind-Profil erneut ausführen:
+
+```bash
+npx tsx scripts/landing-screenshots.ts
+```
+
+Voraussetzung: `next dev` läuft bereits auf Port 3000.
+
 ## Datenschutz und Rechtstexte
 
 - Löschen/Anonymisieren für ausgetretene Kinder und ausgeschiedenes Personal laufen über die Datenbankfunktionen `kind_datenschutz` und `team_datenschutz` (Definer-Funktion im Schema `app`, Wrapper in `public`; nur Träger-Administration, protokolliert in `loeschprotokoll`). Das Änderungsprotokoll enthält komplette Datensätze und wird dabei mit bereinigt. Tests: `supabase/tests/datenschutz_loeschen.sql`, `supabase/tests/rechtstexte_zugriff.sql`.
