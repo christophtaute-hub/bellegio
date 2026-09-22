@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserRole } from "@/lib/server/current-user-role";
+import { getCurrentUserRole, istDemoNutzer } from "@/lib/server/current-user-role";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { RechnungAktionen } from "@/components/admin/rechnung-aktionen";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/components/admin/rechnung-dokument";
 
 export default async function AbrechnungRechnungPage({ params }: { params: Promise<{ id: string }> }) {
-  if ((await getCurrentUserRole()) !== "traeger_admin") notFound();
+  if ((await getCurrentUserRole()) !== "traeger_admin" || (await istDemoNutzer())) notFound();
   const { id } = await params;
   const supabase = await createClient();
 

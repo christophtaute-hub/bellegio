@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
+import { getCurrentUserRole, isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
 import { ladeBetreiberOeffentlich } from "@/lib/rechtstexte/betreiber";
 import { DOKUMENTE } from "@/lib/rechtstexte/version";
 
@@ -8,7 +8,7 @@ import { DOKUMENTE } from "@/lib/rechtstexte/version";
  * selbst ist ausgenommen. */
 export async function zustimmungOffen(): Promise<boolean> {
   const [rolle, istBetreiber] = await Promise.all([getCurrentUserRole(), isPlatformOperator()]);
-  if (rolle !== "traeger_admin" || istBetreiber) return false;
+  if (rolle !== "traeger_admin" || istBetreiber || (await istDemoNutzer())) return false;
 
   const supabase = await createClient();
   const betreiber = await ladeBetreiberOeffentlich(supabase);

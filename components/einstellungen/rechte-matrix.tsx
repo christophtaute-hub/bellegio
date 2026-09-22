@@ -1,10 +1,18 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
+  loescheNutzer,
   setEinrichtungBerechtigung,
   setKannRechteVerwalten,
+  setzeNutzerPasswort,
+  setzeNutzerRolle,
 } from "@/lib/actions/berechtigungen";
+import { erzeugePasswort, ROLLEN, type NeueRolle } from "@/lib/nutzer/verwaltung";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { Bereich, Zugriff } from "@/lib/server/current-user-role";
 import {
   Table,
@@ -38,6 +46,7 @@ export type MatrixUser = {
   full_name: string | null;
   role: string;
   kann_rechte_verwalten: boolean;
+  ist_demo?: boolean;
 };
 
 export type MatrixEinrichtung = { id: string; name: string };
@@ -104,6 +113,7 @@ export function RechteMatrix({
                 ) : (
                   <Badge variant="secondary">Mitarbeiter</Badge>
                 )}
+                {user.ist_demo ? <Badge variant="outline">Demo</Badge> : null}
               </div>
             </button>
 
@@ -161,6 +171,10 @@ export function RechteMatrix({
                   </div>
                 )}
 
+                {istTraegerAdmin && user.id !== currentUserId && user.role !== "traeger_admin" ? (
+                  <KontoVerwaltung userId={user.id} name={user.full_name || user.email || ""} rolle={user.role as NeueRolle} />
+                ) : null}
+
                 {istTraegerAdmin && user.id !== currentUserId ? (
                   <KannRechteVerwaltenToggle
                     userId={user.id}
@@ -202,11 +216,8 @@ function ZugriffSelect({
           const neuerWert = event.target.value as Zugriff;
           setError(null);
           startTransition(async () => {
-            try {
-              await setEinrichtungBerechtigung(userId, einrichtungId, bereich, neuerWert);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Fehler beim Speichern.");
-            }
+            const ergebnis = await setEinrichtungBerechtigung(userId, einrichtungId, bereich, neuerWert);
+            if (!ergebnis.ok) setError(ergebnis.error);
           });
         }}
       >
@@ -241,11 +252,8 @@ function KannRechteVerwaltenToggle({
           const neuerWert = event.target.checked;
           setError(null);
           startTransition(async () => {
-            try {
-              await setKannRechteVerwalten(userId, neuerWert);
-            } catch (err) {
-              setError(err instanceof Error ? err.message : "Fehler beim Speichern.");
-            }
+            const ergebnis = await setKannRechteVerwalten(userId, neuerWert);
+            if (!ergebnis.ok) setError(ergebnis.error);
           });
         }}
       />
@@ -253,5 +261,110 @@ function KannRechteVerwaltenToggle({
       Niveau)
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </label>
+  );
+}
+
+/** Konto eines Nutzers: Rolle ändern, direkt ein neues Passwort vergeben, Nutzer löschen. Nur für die Träger-Administration. */
+function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string; rolle: NeueRolle }) {
+  const router = useRouter();
+  const [passwort, setPasswort] = useState("");
+  const [gesetzt, setGesetzt] = useState<string | null>(null);
+  const [bestaetigeLoeschen, setBestaetigeLoeschen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-4 rounded-lg border bg-secondary/30 p-4">
+      <h4 className="text-sm font-medium">Konto</h4>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`rolle-${userId}`}>Rolle</Label>
+        <select
+          id={`rolle-${userId}`}
+          className={`${SELECT_CLASS} w-56`}
+          defaultValue={rolle}
+          disabled={pending}
+          onChange={(e) => {
+            setError(null);
+            const neu = e.target.value as NeueRolle;
+            startTransition(async () => {
+              const ergebnis = await setzeNutzerRolle(userId, neu);
+              if (!ergebnis.ok) setError(ergebnis.error);
+              else router.refresh();
+            });
+          }}
+        >
+          {ROLLEN.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`pw-${userId}`}>Neues Passwort vergeben</Label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input id={`pw-${userId}`} type="text" autoComplete="off" value={passwort} onChange={(e) => { setPasswort(e.target.value); setGesetzt(null); }} className="w-64 font-mono" placeholder="mind. 10 Zeichen" />
+          <Button type="button" variant="secondary" size="sm" onClick={() => { setPasswort(erzeugePasswort()); setGesetzt(null); }}>
+            Erzeugen
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={pending || passwort.length === 0}
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                const ergebnis = await setzeNutzerPasswort(userId, passwort);
+                if (!ergebnis.ok) setError(ergebnis.error);
+                else setGesetzt(passwort);
+              });
+            }}
+          >
+            Passwort setzen
+          </Button>
+        </div>
+        {gesetzt ? (
+          <p className="text-xs text-primary">
+            Passwort gesetzt. Melde {name} mit <span className="font-mono">{gesetzt}</span> an; es wird nur jetzt angezeigt.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {bestaetigeLoeschen ? (
+          <>
+            <span className="text-sm">{name} endgültig löschen?</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              disabled={pending}
+              onClick={() => {
+                setError(null);
+                startTransition(async () => {
+                  const ergebnis = await loescheNutzer(userId);
+                  if (!ergebnis.ok) {
+                    setError(ergebnis.error);
+                    setBestaetigeLoeschen(false);
+                  } else router.refresh();
+                });
+              }}
+            >
+              Ja, löschen
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setBestaetigeLoeschen(false)}>
+              Abbrechen
+            </Button>
+          </>
+        ) : (
+          <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setBestaetigeLoeschen(true)}>
+            Nutzer löschen
+          </Button>
+        )}
+      </div>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }

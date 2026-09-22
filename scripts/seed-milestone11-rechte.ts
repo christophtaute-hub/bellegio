@@ -1,4 +1,7 @@
 /**
+ * NICHT MEHR AUSFÜHREN: legt Testkonten mit dem Passwort test1234 an. Die Testkonten wurden am 21.09.2026 entfernt;
+ * es gibt nur noch Christoph Taute als Admin und einen Demo-Zugang (scripts/demo-einrichten.ts).
+ *
  * Milestone 11, Phase T: rollt das Rechte-System mit den vom Nutzer
  * genannten Testaccounts aus — Katrin/Kristina/Desiree/Gizem/Verena nur
  * für Belegung, ein neuer Personal-Nutzer nur für Personal, ein neuer

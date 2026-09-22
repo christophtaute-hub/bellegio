@@ -11,9 +11,11 @@ import { Label } from "@/components/ui/label";
 export function MeinProfilForm({
   initialFullName,
   email,
+  passwortAenderbar = true,
 }: {
   initialFullName: string;
   email: string;
+  passwortAenderbar?: boolean;
 }) {
   const [fullName, setFullName] = useState(initialFullName);
   const [isSavingName, setIsSavingName] = useState(false);
@@ -67,6 +69,7 @@ export function MeinProfilForm({
         {nameError ? <p className="text-xs text-destructive">{nameError}</p> : null}
       </form>
 
+      {passwortAenderbar ? (
       <form
         className="flex flex-col gap-3"
         onSubmit={async (event) => {
@@ -128,6 +131,9 @@ export function MeinProfilForm({
         </div>
         {passwordError ? <p className="text-xs text-destructive">{passwordError}</p> : null}
       </form>
+      ) : (
+        <p className="text-sm text-muted-foreground">Das Passwort dieses Demo-Zugangs vergibt die Administration.</p>
+      )}
     </div>
   );
 }

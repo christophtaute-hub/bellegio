@@ -4,7 +4,7 @@ import { getCurrentUserRole, getZugriff, type Bereich, type Zugriff } from "@/li
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
 import { RechteMatrix } from "@/components/einstellungen/rechte-matrix";
-import { NutzerEinladenForm } from "@/components/einstellungen/nutzer-einladen-form";
+import { NutzerAnlegenForm } from "@/components/einstellungen/nutzer-anlegen-form";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
 import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
@@ -68,6 +68,7 @@ export default async function EinstellungenPage() {
       full_name: string | null;
       role: string;
       kann_rechte_verwalten: boolean;
+      ist_demo: boolean;
     }[];
     berechtigungen: {
       user_id: string;
@@ -89,7 +90,7 @@ export default async function EinstellungenPage() {
           .order("name"),
         supabase
           .from("user_profiles")
-          .select("id, email, full_name, role, kann_rechte_verwalten")
+          .select("id, email, full_name, role, kann_rechte_verwalten, ist_demo")
           .eq("trager_id", eigenesProfil.trager_id)
           .order("full_name"),
         supabase
@@ -219,7 +220,7 @@ export default async function EinstellungenPage() {
             </p>
           </div>
 
-          {istTraegerAdmin ? <NutzerEinladenForm /> : null}
+          {istTraegerAdmin ? <NutzerAnlegenForm einrichtungen={rechteVerwaltungDaten.einrichtungen} /> : null}
 
           <RechteMatrix
             currentUserId={eigenesProfil!.id}

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { istDemoNutzer } from "@/lib/server/current-user-role";
 import { MeinProfilForm } from "@/components/einstellungen/mein-profil-form";
 import { MfaEinrichtung } from "@/components/einstellungen/mfa-einrichtung";
 
@@ -16,6 +17,8 @@ export default async function MeinProfilPage() {
         .single()
     : { data: null };
 
+  const istDemo = await istDemoNutzer();
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-heading text-3xl tracking-tight text-primary">
@@ -32,8 +35,9 @@ export default async function MeinProfilPage() {
       <MeinProfilForm
         initialFullName={profile?.full_name ?? ""}
         email={profile?.email ?? user?.email ?? ""}
+        passwortAenderbar={!istDemo}
       />
-      <MfaEinrichtung />
+      {istDemo ? null : <MfaEinrichtung />}
     </div>
   );
 }

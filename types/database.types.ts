@@ -1217,6 +1217,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          ist_demo: boolean
           kann_rechte_verwalten: boolean
           role: string
           trager_id: string
@@ -1227,6 +1228,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          ist_demo?: boolean
           kann_rechte_verwalten?: boolean
           role: string
           trager_id: string
@@ -1237,6 +1239,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          ist_demo?: boolean
           kann_rechte_verwalten?: boolean
           role?: string
           trager_id?: string

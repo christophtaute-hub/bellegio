@@ -1,4 +1,7 @@
 /**
+ * NICHT MEHR AUSFÜHREN: legt Testkonten mit dem Passwort test1234 an. Die Testkonten wurden am 21.09.2026 entfernt;
+ * es gibt nur noch Christoph Taute als Admin und einen Demo-Zugang (scripts/demo-einrichten.ts).
+ *
  * Milestone 16: Aufräumen der Demo-Daten nach dem zweiten großen
  * Rückmeldungs-Batch (2026-09-18).
  *

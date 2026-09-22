@@ -45,6 +45,14 @@ Server Actions geben erwartbare Fehler als Ergebnisobjekt (`{ ok: false, error }
 
 Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunktion sieht die neue Zeile im selben Statement nicht): ID vorab erzeugen und ohne `RETURNING` einfügen, siehe `legeEinrichtungAn`.
 
+## Nutzerverwaltung
+
+Träger-Administratoren legen Nutzer direkt in den Einrichtungs-Einstellungen an (`/einstellungen`): Rolle, Rechte je Bereich/Einrichtung, Zugang per Passwort oder Einladung. Sie können dort auch das Passwort eines Nutzers neu setzen, die Rolle ändern und den Nutzer löschen (`lib/actions/berechtigungen.ts`, geprüft in `lib/nutzer/verwaltung.ts`). Ein Träger-Admin kann nicht über diese Oberfläche geändert/gelöscht werden — dafür siehe unten „Mein Profil“.
+
+## Demo-Zugang
+
+`scripts/demo-einrichten.ts` kopiert die drei Testkitas in einen eigenen Träger „Bellegio Demo“ und legt `demo@bellegio.de` als dessen Träger-Administration an (`user_profiles.ist_demo = true`). Ein Demo-Konto darf alles ausprobieren (auch Löschen, Import, Nutzer anlegen), sieht aber keine Abrechnung, kann sein Passwort und Zwei-Faktor nicht selbst ändern und muss AGB/AVV nicht bestätigen. Erneutes Ausführen setzt die Demo-Daten zurück (Kopie neu aus der Quelle); `--neues-passwort` vergibt ein neues Passwort für den bestehenden Demo-Nutzer.
+
 ## Datenschutz und Rechtstexte
 
 - Löschen/Anonymisieren für ausgetretene Kinder und ausgeschiedenes Personal laufen über die Datenbankfunktionen `kind_datenschutz` und `team_datenschutz` (Definer-Funktion im Schema `app`, Wrapper in `public`; nur Träger-Administration, protokolliert in `loeschprotokoll`). Das Änderungsprotokoll enthält komplette Datensätze und wird dabei mit bereinigt. Tests: `supabase/tests/datenschutz_loeschen.sql`, `supabase/tests/rechtstexte_zugriff.sql`.

@@ -29,6 +29,17 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
   return (profile?.role as UserRole) ?? null;
 }
 
+/** Demo-Konto: darf alles ausprobieren, sieht aber keine Abrechnung und ändert weder Passwort noch Zwei-Faktor. */
+export async function istDemoNutzer(): Promise<boolean> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase.from("user_profiles").select("ist_demo").eq("id", user.id).single();
+  return data?.ist_demo === true;
+}
+
 /** Betreiber (Bellegio-Team): eigene Rolle neben user_profiles.role, gesteuert
  * über platform_operators — bewusst nicht Teil der Kunden-Rollen. */
 export async function isPlatformOperator(): Promise<boolean> {

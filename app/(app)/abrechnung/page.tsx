@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUserRole } from "@/lib/server/current-user-role";
+import { notFound } from "next/navigation";
+import { getCurrentUserRole, istDemoNutzer } from "@/lib/server/current-user-role";
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { formatEuro } from "@/lib/admin/abrechnung";
@@ -16,6 +17,7 @@ import {
 } from "@/components/ui/table";
 
 export default async function AbrechnungKundenPage() {
+  if (await istDemoNutzer()) notFound();
   const rolle = await getCurrentUserRole();
   if (rolle !== "traeger_admin") {
     return (
