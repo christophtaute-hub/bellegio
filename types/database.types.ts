@@ -419,6 +419,45 @@ export type Database = {
           },
         ]
       }
+      kind_buchungszeit_historie: {
+        Row: {
+          buchungszeit_band_id: string | null
+          created_at: string
+          gueltig_ab: string
+          id: string
+          kind_id: string
+        }
+        Insert: {
+          buchungszeit_band_id?: string | null
+          created_at?: string
+          gueltig_ab: string
+          id?: string
+          kind_id: string
+        }
+        Update: {
+          buchungszeit_band_id?: string | null
+          created_at?: string
+          gueltig_ab?: string
+          id?: string
+          kind_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_buchungszeit_historie_buchungszeit_band_id_fkey"
+            columns: ["buchungszeit_band_id"]
+            isOneToOne: false
+            referencedRelation: "booking_time_bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_buchungszeit_historie_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "kinder"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_weighting_factors: {
         Row: {
           id: string

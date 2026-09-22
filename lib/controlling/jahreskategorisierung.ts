@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { resolveBandAmStichtag, type HistorieEintrag } from "@/lib/kinder/buchungszeit-historie";
 
 /**
  * Jährliche Kategorisierung aller Kinder nach vertraglich vereinbarter
@@ -141,11 +142,24 @@ export type KategorisierungsMonat = {
   nichtZugeordnet: number;
 };
 
+/** Löst je Kind und Monat das damals gültige Buchungszeit-Band über die Historie auf, statt immer das aktuell
+ * hinterlegte Band zu nehmen — sonst würde eine spätere Buchungszeit-Änderung frühere Monate rückwirkend
+ * verfälschen. Gleiche „letzter Wert vor Stichtag“-Logik wie die Datenbankfunktion `kinder_presence_at_date`. */
+function bandAmStichtagAufloesen(
+  kindId: string,
+  historieByKind: Map<string, HistorieEintrag[]>,
+  baenderById: Map<string, BandSpanne>,
+  stichtag: string
+): BandSpanne | null {
+  const bandId = resolveBandAmStichtag(historieByKind.get(kindId) ?? [], stichtag);
+  return bandId ? (baenderById.get(bandId) ?? null) : null;
+}
+
 /**
  * Kalenderjahr-Übersicht Januar bis Dezember: für jeden Monat (Stichtag =
  * 1. des Monats, wie in der Forecast-Tabelle) die Kinder je Wochenstunden-Band
- * inklusive der Kinder mit I-Status. Zwei Abfragen insgesamt; die zwölf
- * Stichtage werden im Speicher ausgezählt.
+ * inklusive der Kinder mit I-Status. Die Buchungszeit wird für jeden Monat aus
+ * der Historie zum jeweiligen Stichtag aufgelöst, nicht aus dem aktuellen Wert.
  *
  * Der amtliche Erhebungsstichtag der Kinder- und Jugendhilfestatistik ist der
  * 1. März — er steckt als Märzspalte in dieser Übersicht.
@@ -165,7 +179,7 @@ export async function getKalenderjahrKategorisierung(
   const { data } = await supabase
     .from("kinder")
     .select(
-      "hat_behinderung, eintritt, austritt, booking_time_bands(min_hours, max_hours), gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
+      "id, hat_behinderung, eintritt, austritt, gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
     )
     .eq("einrichtung_id", einrichtungId)
     .is("archived_at", null)
@@ -174,22 +188,38 @@ export async function getKalenderjahrKategorisierung(
     .lte("eintritt", `${jahr}-12-01`)
     .or(`austritt.is.null,austritt.gt.${jahr}-01-01`);
 
-  const kinder = (data ?? []).map((kind) => ({
-    kind,
-    wochenstunden: wochenstundenFuerKind(kind, bundeslandCode),
-  }));
+  const kinder = data ?? [];
+  const kindIds = kinder.map((k) => k.id);
+
+  const [{ data: historieRows }, { data: baender }] = await Promise.all([
+    kindIds.length > 0
+      ? supabase.from("kind_buchungszeit_historie").select("kind_id, buchungszeit_band_id, gueltig_ab").in("kind_id", kindIds)
+      : Promise.resolve({ data: [] as { kind_id: string; buchungszeit_band_id: string | null; gueltig_ab: string }[] }),
+    supabase.from("booking_time_bands").select("id, min_hours, max_hours").eq("bundesland_code", bundeslandCode),
+  ]);
+
+  const historieByKind = new Map<string, HistorieEintrag[]>();
+  for (const row of historieRows ?? []) {
+    const liste = historieByKind.get(row.kind_id) ?? [];
+    liste.push({ gueltig_ab: row.gueltig_ab, buchungszeit_band_id: row.buchungszeit_band_id });
+    historieByKind.set(row.kind_id, liste);
+  }
+  const baenderById = new Map((baender ?? []).map((b) => [b.id, { min_hours: b.min_hours, max_hours: b.max_hours }]));
 
   return Array.from({ length: 12 }, (_, i) => {
     const monat = `${jahr}-${String(i + 1).padStart(2, "0")}-01`;
     const eintraege: JahreskategorisierungEintrag[] = [];
     let nichtZugeordnet = 0;
 
-    for (const { kind, wochenstunden } of kinder) {
+    for (const kind of kinder) {
       const istAnwesend =
         kind.eintritt !== null &&
         kind.eintritt <= monat &&
         (kind.austritt === null || kind.austritt > monat);
       if (!istAnwesend) continue;
+
+      const band = bandAmStichtagAufloesen(kind.id, historieByKind, baenderById, monat);
+      const wochenstunden = wochenstundenFuerKind({ booking_time_bands: band, gruppen: kind.gruppen }, bundeslandCode);
       if (wochenstunden === null) {
         nichtZugeordnet += 1;
         continue;

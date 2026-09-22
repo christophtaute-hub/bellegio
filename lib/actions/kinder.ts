@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { toIsoDateString } from "@/lib/kita-datum";
+import { sollHistorieGeschriebenWerden } from "@/lib/kinder/buchungszeit-historie";
 
 export type KindInput = {
   vorname: string;
@@ -17,6 +19,8 @@ export type KindInput = {
   austritt: string | null;
   vertrag_gueltig_bis: string | null;
   buchungszeit_band_id: string | null;
+  /** Ab wann die Buchungszeit gilt — schreibt einen Historie-Eintrag, wenn sich das Band ändert. */
+  buchungszeit_wirksam_ab: string | null;
   wohnort: string | null;
   notizen: string | null;
   hat_behinderung: boolean;
@@ -52,6 +56,27 @@ async function syncWeightingFactors(kindId: string, weightingFactorIds: string[]
   }
 }
 
+/** Schreibt einen Buchungszeit-Historie-Eintrag, wenn sich das Band ändert — Stichtags-Auswertungen der
+ * Vergangenheit bleiben dadurch bei der damals gültigen Buchungszeit (siehe `kinder_presence_at_date`). */
+async function schreibeBuchungszeitHistorie(
+  kindId: string,
+  altesBand: string | null,
+  neuesBand: string | null,
+  wirksamAb: string | null
+) {
+  if (!sollHistorieGeschriebenWerden(altesBand, neuesBand)) return;
+  const gueltigAb = wirksamAb || toIsoDateString(new Date());
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("kind_buchungszeit_historie")
+    .upsert(
+      { kind_id: kindId, buchungszeit_band_id: neuesBand, gueltig_ab: gueltigAb },
+      { onConflict: "kind_id,gueltig_ab" }
+    );
+  // Ein fehlgeschlagener Historie-Eintrag darf das Speichern des Kindes nicht verhindern — nur protokollieren.
+  if (error) console.error("Buchungszeit-Historie konnte nicht geschrieben werden:", error.message);
+}
+
 export async function createKind(input: KindInput) {
   validateKindInput(input);
   const supabase = await createClient();
@@ -85,6 +110,12 @@ export async function createKind(input: KindInput) {
   }
 
   await syncWeightingFactors(kind.id, input.weighting_factor_ids);
+  await schreibeBuchungszeitHistorie(
+    kind.id,
+    null,
+    input.buchungszeit_band_id,
+    input.buchungszeit_wirksam_ab || input.eintritt
+  );
 
   revalidatePath("/kinder");
   revalidatePath("/gruppen");
@@ -94,6 +125,15 @@ export async function createKind(input: KindInput) {
 export async function updateKind(kindId: string, input: KindInput) {
   validateKindInput(input);
   const supabase = await createClient();
+
+  const { data: bisher } = await supabase
+    .from("kinder")
+    .select("buchungszeit_band_id")
+    .eq("id", kindId)
+    .single();
+
+  const heute = toIsoDateString(new Date());
+  const wirdRueckwirkendOderHeuteWirksam = !input.buchungszeit_wirksam_ab || input.buchungszeit_wirksam_ab <= heute;
 
   const { error } = await supabase
     .from("kinder")
@@ -108,7 +148,9 @@ export async function updateKind(kindId: string, input: KindInput) {
       eintritt: input.eintritt,
       austritt: input.austritt,
       vertrag_gueltig_bis: input.vertrag_gueltig_bis,
-      buchungszeit_band_id: input.buchungszeit_band_id,
+      // Ein Wechsel, der erst in der Zukunft wirksam wird, ändert den "aktuellen" Wert noch nicht — der gilt ja
+      // erst ab dem gewählten Datum. Für Stichtags-Auswertungen ist das ohnehin egal, die lösen über die Historie auf.
+      ...(wirdRueckwirkendOderHeuteWirksam ? { buchungszeit_band_id: input.buchungszeit_band_id } : {}),
       wohnort: input.wohnort,
       notizen: input.notizen,
       hat_behinderung: input.hat_behinderung,
@@ -118,6 +160,12 @@ export async function updateKind(kindId: string, input: KindInput) {
   if (error) throw new Error(error.message);
 
   await syncWeightingFactors(kindId, input.weighting_factor_ids);
+  await schreibeBuchungszeitHistorie(
+    kindId,
+    bisher?.buchungszeit_band_id ?? null,
+    input.buchungszeit_band_id,
+    input.buchungszeit_wirksam_ab
+  );
 
   revalidatePath("/kinder");
   revalidatePath(`/kinder/${kindId}`);

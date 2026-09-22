@@ -17,6 +17,7 @@ import {
   Aenderungshistorie,
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
+import { TEAM_FELDER } from "@/lib/datenschutz/auskunft";
 
 export default async function TeamDetailPage({
   params,
@@ -133,7 +134,11 @@ export default async function TeamDetailPage({
         canEdit={canEditPersonal}
       />
       </div>
-      <Aenderungshistorie eintraege={aenderungen} />
+      <Aenderungshistorie
+        eintraege={aenderungen}
+        felder={TEAM_FELDER}
+        aufloesen={(feld, wert) => (feld === "gruppe_id" ? ((gruppen ?? []).find((g) => g.id === wert)?.name ?? null) : null)}
+      />
       {rolle === "traeger_admin" ? (
         <DatenschutzAktionen
           art="team"

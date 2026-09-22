@@ -6,12 +6,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "cn";
 import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
 
 const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-/** Amtlicher Erhebungsstichtag der Kinder- und Jugendhilfestatistik. */
-const STATISTIK_STICHTAG_MONAT_INDEX = 2;
 
 function Zahl({ wert }: { wert: number }) {
   return <>{wert === 0 ? <span className="text-muted-foreground/50">–</span> : wert}</>;
@@ -54,19 +51,8 @@ export function KalenderjahrKategorisierungTabelle({
             <TableRow>
               <TableHead className="sticky left-0 z-10 bg-card">Wochenstunden</TableHead>
               {monate.map((m, i) => (
-                <TableHead
-                  key={m.monat}
-                  className={cn(
-                    "text-right whitespace-nowrap",
-                    i === STATISTIK_STICHTAG_MONAT_INDEX && "bg-accent/15 text-foreground"
-                  )}
-                >
+                <TableHead key={m.monat} className="text-right whitespace-nowrap">
                   {MONATSNAMEN[i]}
-                  {i === STATISTIK_STICHTAG_MONAT_INDEX ? (
-                    <span className="block text-[10px] font-normal leading-none text-muted-foreground">
-                      Statistik-Stichtag
-                    </span>
-                  ) : null}
                 </TableHead>
               ))}
             </TableRow>

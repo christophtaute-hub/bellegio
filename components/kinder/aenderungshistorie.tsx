@@ -1,8 +1,4 @@
-"use client";
-
-import { useState } from "react";
-import { cn } from "cn";
-import { Button } from "@/components/ui/button";
+import { berechneAenderungen } from "@/lib/datenschutz/auskunft";
 
 export type AenderungsEintrag = {
   id: string;
@@ -19,64 +15,55 @@ function formatTimestamp(value: string): string {
   });
 }
 
-function RawDataRow({ eintrag }: { eintrag: AenderungsEintrag }) {
-  const [expanded, setExpanded] = useState(false);
+function AenderungsZeile({
+  eintrag,
+  felder,
+  aufloesen,
+}: {
+  eintrag: AenderungsEintrag;
+  felder: Record<string, string>;
+  aufloesen?: (feld: string, wert: unknown) => string | null;
+}) {
+  const aenderungen = berechneAenderungen(eintrag.old_data, eintrag.new_data, felder, aufloesen);
   return (
     <li className="rounded-lg border p-3 text-sm break-inside-avoid">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span>
-          <span className="font-medium">
-            {formatTimestamp(eintrag.changed_at)}
-          </span>{" "}
-          <span className="text-muted-foreground">
-            — {eintrag.changed_by_name ?? "Unbekannt"}
-            {eintrag.old_data ? " (Änderung)" : " (Angelegt)"}
-          </span>
+      <p>
+        <span className="font-medium">{formatTimestamp(eintrag.changed_at)}</span>{" "}
+        <span className="text-muted-foreground">
+          — {eintrag.changed_by_name ?? "Unbekannt"}
+          {eintrag.old_data ? " (Änderung)" : " (Angelegt)"}
         </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="print:hidden"
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? "Details ausblenden" : "Details anzeigen"}
-        </Button>
-      </div>
-      {/* Im Ausdruck immer aufgeklappt, damit der Verlauf vollständig ist. */}
-      <div
-        className={cn(
-          "mt-2 grid-cols-1 gap-3 sm:grid-cols-2",
-          expanded ? "grid" : "hidden print:grid"
-        )}
-      >
-          {eintrag.old_data ? (
-            <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">
-                Vorher
-              </p>
-              <pre className="overflow-x-auto rounded bg-secondary/50 p-2 text-xs">
-                {JSON.stringify(eintrag.old_data, null, 2)}
-              </pre>
-            </div>
-          ) : null}
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">
-              Nachher
-            </p>
-            <pre className="overflow-x-auto rounded bg-secondary/50 p-2 text-xs">
-              {JSON.stringify(eintrag.new_data, null, 2)}
-            </pre>
-          </div>
-        </div>
+      </p>
+      {aenderungen.length > 0 ? (
+        <ul className="mt-1.5 flex flex-col gap-0.5 text-muted-foreground">
+          {aenderungen.map((a) => (
+            <li key={a.feld}>
+              {a.feld}
+              {eintrag.old_data ? (
+                <>
+                  : {a.vorher} → <span className="text-foreground">{a.nachher}</span>
+                </>
+              ) : (
+                <>: {a.nachher}</>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </li>
   );
 }
 
+/** Änderungsverlauf mit lesbaren Feldnamen statt rohem JSON — Kennungen wie Gruppe oder Buchungszeit werden über
+ * `aufloesen` in ihre Bezeichnung übersetzt (dieselbe Übersetzung wie die Auskunft nach Art. 15 DSGVO). */
 export function Aenderungshistorie({
   eintraege,
+  felder,
+  aufloesen,
 }: {
   eintraege: AenderungsEintrag[];
+  felder: Record<string, string>;
+  aufloesen?: (feld: string, wert: unknown) => string | null;
 }) {
   if (eintraege.length === 0) {
     return (
@@ -91,7 +78,7 @@ export function Aenderungshistorie({
       <h2 className="font-heading text-lg text-primary">Änderungshistorie</h2>
       <ul className="flex flex-col gap-2">
         {eintraege.map((eintrag) => (
-          <RawDataRow key={eintrag.id} eintrag={eintrag} />
+          <AenderungsZeile key={eintrag.id} eintrag={eintrag} felder={felder} aufloesen={aufloesen} />
         ))}
       </ul>
     </div>

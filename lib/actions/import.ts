@@ -159,6 +159,16 @@ export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeEr
       const { error: faktorError } = await supabase.from("kind_weighting_factors").insert(faktoren);
       if (faktorError) fehler.push("Die Gewichtungsfaktoren einiger Kinder konnten nicht gespeichert werden. Bitte im Kind prüfen.");
     }
+
+    // Baseline für die Buchungszeit-Historie, analog zum Backfill bestehender Kinder: "dieses Band gilt seit dem Eintritt".
+    const historie = teil.flatMap((k) => {
+      const kindId = idNachSchluessel.get(`${k.vorname}|${k.nachname}|${k.geburtsdatum}`);
+      return kindId ? [{ kind_id: kindId, buchungszeit_band_id: k.buchungszeit_band_id, gueltig_ab: k.eintritt ?? k.geburtsdatum }] : [];
+    });
+    if (historie.length > 0) {
+      const { error: historieError } = await supabase.from("kind_buchungszeit_historie").insert(historie);
+      if (historieError) fehler.push("Die Buchungszeit-Historie einiger Kinder konnte nicht gespeichert werden. Bitte im Kind prüfen.");
+    }
   }
 
   for (const pfad of ["/kinder", "/gruppen", "/dashboard", "/controlling", "/team"]) revalidatePath(pfad);

@@ -148,6 +148,21 @@ async function main() {
       if (fe) throw new Error(fe.message);
     }
 
+    // Buchungszeit-Historie (sonst findet kinder_presence_at_date für die kopierten Kinder kein Band)
+    const { data: historie } = await sb
+      .from("kind_buchungszeit_historie")
+      .select("kind_id, buchungszeit_band_id, gueltig_ab")
+      .in("kind_id", Array.from(kindNeu.keys()));
+    const historieZeilen = (historie ?? []).map((h) => ({
+      kind_id: kindNeu.get(h.kind_id)!,
+      buchungszeit_band_id: h.buchungszeit_band_id,
+      gueltig_ab: h.gueltig_ab,
+    }));
+    if (historieZeilen.length > 0) {
+      const { error: he } = await sb.from("kind_buchungszeit_historie").insert(historieZeilen);
+      if (he) throw new Error(he.message);
+    }
+
     // Personal samt Ausfallzeiten und Monatsstunden
     const { data: team } = await sb.from("team").select("*").eq("einrichtung_id", q.id).is("archived_at", null);
     for (const t of team ?? []) {

@@ -13,6 +13,7 @@ import {
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
+import { KIND_FELDER } from "@/lib/datenschutz/auskunft";
 import { DruckButton } from "@/components/shared/druck-button";
 import { DruckKopf } from "@/components/shared/druck-kopf";
 import { GESCHLECHT_LABEL, KIND_STATUS_LABEL } from "@/lib/constants";
@@ -211,7 +212,17 @@ export default async function KindDetailPage({
         auswaertigenQuote={auswaertigenQuote}
       />
       </div>
-      <Aenderungshistorie eintraege={aenderungen} />
+      <Aenderungshistorie
+        eintraege={aenderungen}
+        felder={KIND_FELDER}
+        aufloesen={(feld, wert) =>
+          feld === "gruppe_id"
+            ? ((gruppen ?? []).find((g) => g.id === wert)?.name ?? null)
+            : feld === "buchungszeit_band_id"
+              ? ((bookingTimeBands ?? []).find((b) => b.id === wert)?.label ?? null)
+              : null
+        }
+      />
       {rolle === "traeger_admin" ? (
         <DatenschutzAktionen
           art="kind"

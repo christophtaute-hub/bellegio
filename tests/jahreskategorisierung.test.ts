@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveBandAmStichtag } from "@/lib/kinder/buchungszeit-historie";
 import {
   bandGrenzeFuerWochenstunden,
   bandLabelFuerGrenze,
@@ -74,5 +75,27 @@ describe("Wochenstunden aus der gebuchten Zeit", () => {
     };
     expect(wochenstundenFuerKind(kind, "bw")).toBe(40);
     expect(wochenstundenFuerKind(kind, "nrw")).toBe(35);
+  });
+});
+
+describe("Bandauflösung über die Historie (Grundlage für die Kalenderjahr-Kategorisierung)", () => {
+  it("ein Kind mit Buchungszeit-Wechsel zählt in jedem Monat mit dem damals gültigen Band", () => {
+    const historie = [
+      { gueltig_ab: "2025-09-01", buchungszeit_band_id: "band-6-7" },
+      { gueltig_ab: "2026-04-01", buchungszeit_band_id: "band-8-9" },
+    ];
+    const baender = new Map([
+      ["band-6-7", { min_hours: 6, max_hours: 7 }],
+      ["band-8-9", { min_hours: 8, max_hours: 9 }],
+    ]);
+
+    const wochenstundenImMonat = (monat: string) => {
+      const bandId = resolveBandAmStichtag(historie, monat);
+      const band = bandId ? baender.get(bandId) ?? null : null;
+      return wochenstundenFuerKind({ booking_time_bands: band, gruppen: null }, "by");
+    };
+
+    expect(wochenstundenImMonat("2026-03-01")).toBe(32.5); // (6+7)/2 × 5 — vor dem Wechsel
+    expect(wochenstundenImMonat("2026-04-01")).toBe(42.5); // (8+9)/2 × 5 — ab dem Wechsel
   });
 });

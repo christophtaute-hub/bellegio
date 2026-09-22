@@ -49,13 +49,19 @@ Insert mit `.select()` auf `einrichtungen` scheitert unter RLS (die Zugriffsfunk
 
 Läuft für ein Teammitglied aktuell eine Ausfallzeit vom Typ Krankheit, Schwangerschaft oder Mutterschutz, zeigt das Dashboard einen Hinweis dazu (`components/dashboard/personal-hinweise.tsx`, Regeln in `lib/team/langzeithinweise.ts`). Sonderurlaub und Sonstiges erscheinen dort bewusst nicht.
 
+## Buchungszeit-Historie
+
+Ändert ein Kind seine Buchungszeit, schreibt `updateKind`/`createKind` (`lib/actions/kinder.ts`) zusätzlich eine Zeile in `kind_buchungszeit_historie` (ein Datum je Zeile, kein „gültig bis“ — „welches Band galt an Tag X“ ist immer die Zeile mit dem größten `gueltig_ab <= X`). `kinder.buchungszeit_band_id` bleibt der bequeme aktuelle Wert für Formulare/Listen/Import, ist aber nicht mehr die Quelle für Stichtag-Auswertungen: Dashboard, Forecast/Controlling, Personal-Ausblick und der Szenario-Rechner-Startwert lesen über die RPC `kinder_presence_at_date` (löst das Band pro Kind zum jeweiligen Stichtag auf), die Kalenderjahr-Kategorisierung löst pro Kind/Monat unabhängig davon auf (`lib/controlling/jahreskategorisierung.ts`). Ehrliche Grenze: Stichtage vor dem Anlegen der Historie zeigen die zum Anlegezeitpunkt aktuelle Buchungszeit, echte Vergangenheit lässt sich nicht rekonstruieren. Keine `update`/`delete`-Policy über die App (Audit-Charakter wie das Änderungsprotokoll); eine Korrektur macht die Träger-Administration nötigenfalls per SQL. Test: `tests/buchungszeit-historie.test.ts`, `tests/zeitkategorie-uebersicht.test.ts`.
+
 ## Nutzerverwaltung
 
 Träger-Administratoren legen Nutzer direkt in den Einrichtungs-Einstellungen an (`/einstellungen`): Rolle, Rechte je Bereich/Einrichtung, Zugang per Passwort oder Einladung. Sie können dort auch das Passwort eines Nutzers neu setzen, die Rolle ändern und den Nutzer löschen (`lib/actions/berechtigungen.ts`, geprüft in `lib/nutzer/verwaltung.ts`). Ein Träger-Admin kann nicht über diese Oberfläche geändert/gelöscht werden — dafür siehe unten „Mein Profil“.
 
 ## Demo-Zugang
 
-`scripts/demo-einrichten.ts` kopiert die drei Testkitas in einen eigenen Träger „Bellegio Demo“ und legt `demo@bellegio.de` als dessen Träger-Administration an (`user_profiles.ist_demo = true`). Ein Demo-Konto darf alles ausprobieren (auch Löschen, Import, Nutzer anlegen), sieht aber keine Abrechnung, kann sein Passwort und Zwei-Faktor nicht selbst ändern und muss AGB/AVV nicht bestätigen. Erneutes Ausführen setzt die Demo-Daten zurück (Kopie neu aus der Quelle); `--neues-passwort` vergibt ein neues Passwort für den bestehenden Demo-Nutzer.
+`scripts/demo-einrichten.ts` kopiert die drei Testkitas in einen eigenen Träger „Bellegio Demo“ und legt `demo@bellegio.de` als dessen Träger-Administration an (`user_profiles.ist_demo = true`). Ein Demo-Konto darf alles ausprobieren (auch Löschen, Import, Nutzer anlegen), sieht aber keine Abrechnung, kann sein Passwort und Zwei-Faktor nicht selbst ändern und muss AGB/AVV nicht bestätigen. Erneutes Ausführen setzt die Demo-Daten zurück (Kopie neu aus der Quelle, inklusive `kind_buchungszeit_historie`); `--neues-passwort` vergibt ein neues Passwort für den bestehenden Demo-Nutzer.
+
+`scripts/seed-milestone25-datenqualitaet.ts` befüllt auf den drei Testkitas unter „Villa Kunterbunt“ Notizen/Wohnort/Vertragsende/Einschulungsstatus auf ca. 85 % (nur leere Felder, idempotent), legt je Kita eine Ausfallzeit an und schreibt je Kita einen echten Buchungszeit-Wechsel in die Historie — wirkt über `demo-einrichten.ts` beim nächsten Zurücksetzen automatisch auch im Demo-Zugang.
 
 ## Datenschutz und Rechtstexte
 

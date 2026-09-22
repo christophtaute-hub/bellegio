@@ -6,30 +6,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { parseIsoDate } from "@/lib/kita-datum";
+import { ZeitkategorieUebersicht } from "@/components/forecast/zeitkategorie-uebersicht";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
-
-function formatGewichtet(value: number): string {
-  return value.toLocaleString("de-DE", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
-}
-
-function formatMonthLabel(month: string): string {
-  return parseIsoDate(month).toLocaleDateString("de-DE", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
 
 const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
   halbtagsgruppe: "Halbtagsgruppe",
@@ -49,81 +28,12 @@ export function ZeitkategorieTabelle({ months }: { months: ForecastMonth[] }) {
   const erster = months[0].zeitkategorie;
 
   if (erster.modell === "bayern") {
-    const sichtbareMonate = months.filter(
-      (m) => m.zeitkategorie.modell === "bayern" && m.zeitkategorie.matrix.grandTotal > 0
-    );
+    const sichtbareMonate = months
+      .filter((m) => m.zeitkategorie.modell === "bayern" && m.zeitkategorie.matrix.grandTotal > 0)
+      .map((m) => ({ month: m.month, matrix: (m.zeitkategorie as Extract<typeof m.zeitkategorie, { modell: "bayern" }>).matrix }));
     if (sichtbareMonate.length === 0) return null;
 
-    return (
-      <Accordion
-        multiple
-        defaultValue={sichtbareMonate.slice(0, 1).map((m) => m.month)}
-        className="rounded-lg border px-3"
-      >
-        {sichtbareMonate.map((m) => {
-          const zk = m.zeitkategorie;
-          if (zk.modell !== "bayern") return null;
-          const gewichteteKinderzahl = zk.matrix.rows.reduce(
-            (sum, row) => sum + row.total * row.weightingFactor,
-            0
-          );
-          return (
-            <AccordionItem key={m.month} value={m.month}>
-              <AccordionTrigger>
-                <span>{formatMonthLabel(m.month)}</span>
-                <span className="mr-auto pl-3 font-normal text-muted-foreground">
-                  {zk.matrix.grandTotal} Kinder · gewichtet{" "}
-                  {formatGewichtet(gewichteteKinderzahl)}
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b bg-secondary/40">
-                        <th className="p-2 text-left">Gewichtungsfaktor</th>
-                        {zk.matrix.buchungszeitLabels.map((label) => (
-                          <th key={label} className="p-2 text-right">
-                            {label}
-                          </th>
-                        ))}
-                        <th className="p-2 text-right font-semibold">Summe</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {zk.matrix.rows.map((row) => (
-                        <tr key={row.weightingLabel} className="border-b last:border-0">
-                          <td className="p-2">{row.weightingLabel}</td>
-                          {zk.matrix.buchungszeitLabels.map((label) => (
-                            <td key={label} className="p-2 text-right tabular-nums">
-                              {row.cells[label] || "–"}
-                            </td>
-                          ))}
-                          <td className="p-2 text-right font-medium tabular-nums">
-                            {row.total}
-                          </td>
-                        </tr>
-                      ))}
-                      <tr className="bg-secondary/40 font-semibold">
-                        <td className="p-2">Summe</td>
-                        {zk.matrix.buchungszeitLabels.map((label) => (
-                          <td key={label} className="p-2 text-right tabular-nums">
-                            {zk.matrix.columnTotals[label]}
-                          </td>
-                        ))}
-                        <td className="p-2 text-right tabular-nums">
-                          {zk.matrix.grandTotal}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          );
-        })}
-      </Accordion>
-    );
+    return <ZeitkategorieUebersicht monate={sichtbareMonate} />;
   }
 
   // BW/NRW: eine Tabelle, Monate als Spalten, da die Gruppen-Konfiguration

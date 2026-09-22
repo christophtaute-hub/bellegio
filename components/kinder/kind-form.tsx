@@ -14,6 +14,7 @@ import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
+import { toIsoDateString } from "@/lib/kita-datum";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -31,6 +32,7 @@ const kindFormSchema = z
     austritt: z.string(),
     vertrag_gueltig_bis: z.string(),
     buchungszeit_band_id: z.string(),
+    buchungszeit_wirksam_ab: z.string().min(1, "Bitte ein Datum angeben."),
     wohnort: z.string(),
     notizen: z.string(),
     hat_behinderung: z.boolean(),
@@ -103,6 +105,7 @@ export function KindForm({
       austritt: "",
       vertrag_gueltig_bis: "",
       buchungszeit_band_id: "",
+      buchungszeit_wirksam_ab: toIsoDateString(new Date()),
       wohnort: "",
       notizen: "",
       hat_behinderung: false,
@@ -135,6 +138,7 @@ export function KindForm({
       austritt: values.austritt || null,
       vertrag_gueltig_bis: values.vertrag_gueltig_bis || null,
       buchungszeit_band_id: values.buchungszeit_band_id || null,
+      buchungszeit_wirksam_ab: values.buchungszeit_wirksam_ab || null,
       wohnort: values.wohnort || null,
       notizen: values.notizen || null,
       hat_behinderung: values.hat_behinderung,
@@ -239,6 +243,20 @@ export function KindForm({
               </option>
             ))}
           </select>
+        </Field>
+        <Field
+          id="buchungszeit_wirksam_ab"
+          label="Buchungszeit gültig ab"
+          error={errors.buchungszeit_wirksam_ab?.message}
+        >
+          <Input
+            id="buchungszeit_wirksam_ab"
+            type="date"
+            {...register("buchungszeit_wirksam_ab")}
+          />
+          <p className="text-xs text-muted-foreground">
+            Nur wichtig, wenn sich die Buchungszeit ändert — frühere Stichtage zeigen dann weiterhin die alte Zeit.
+          </p>
         </Field>
         <Field id="wohnort" label="Wohnort">
           <Input id="wohnort" {...register("wohnort")} />
