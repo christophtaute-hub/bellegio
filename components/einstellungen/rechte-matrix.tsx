@@ -216,8 +216,12 @@ function ZugriffSelect({
           const neuerWert = event.target.value as Zugriff;
           setError(null);
           startTransition(async () => {
-            const ergebnis = await setEinrichtungBerechtigung(userId, einrichtungId, bereich, neuerWert);
-            if (!ergebnis.ok) setError(ergebnis.error);
+            try {
+              const ergebnis = await setEinrichtungBerechtigung(userId, einrichtungId, bereich, neuerWert);
+              if (!ergebnis.ok) setError(ergebnis.error);
+            } catch {
+              setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+            }
           });
         }}
       >
@@ -252,8 +256,12 @@ function KannRechteVerwaltenToggle({
           const neuerWert = event.target.checked;
           setError(null);
           startTransition(async () => {
-            const ergebnis = await setKannRechteVerwalten(userId, neuerWert);
-            if (!ergebnis.ok) setError(ergebnis.error);
+            try {
+              const ergebnis = await setKannRechteVerwalten(userId, neuerWert);
+              if (!ergebnis.ok) setError(ergebnis.error);
+            } catch {
+              setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+            }
           });
         }}
       />
@@ -288,9 +296,13 @@ function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string
             setError(null);
             const neu = e.target.value as NeueRolle;
             startTransition(async () => {
-              const ergebnis = await setzeNutzerRolle(userId, neu);
-              if (!ergebnis.ok) setError(ergebnis.error);
-              else router.refresh();
+              try {
+                const ergebnis = await setzeNutzerRolle(userId, neu);
+                if (!ergebnis.ok) setError(ergebnis.error);
+                else router.refresh();
+              } catch {
+                setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+              }
             });
           }}
         >
@@ -316,9 +328,13 @@ function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string
             onClick={() => {
               setError(null);
               startTransition(async () => {
-                const ergebnis = await setzeNutzerPasswort(userId, passwort);
-                if (!ergebnis.ok) setError(ergebnis.error);
-                else setGesetzt(passwort);
+                try {
+                  const ergebnis = await setzeNutzerPasswort(userId, passwort);
+                  if (!ergebnis.ok) setError(ergebnis.error);
+                  else setGesetzt(passwort);
+                } catch {
+                  setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+                }
               });
             }}
           >
@@ -344,11 +360,16 @@ function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string
               onClick={() => {
                 setError(null);
                 startTransition(async () => {
-                  const ergebnis = await loescheNutzer(userId);
-                  if (!ergebnis.ok) {
-                    setError(ergebnis.error);
+                  try {
+                    const ergebnis = await loescheNutzer(userId);
+                    if (!ergebnis.ok) {
+                      setError(ergebnis.error);
+                      setBestaetigeLoeschen(false);
+                    } else router.refresh();
+                  } catch {
+                    setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
                     setBestaetigeLoeschen(false);
-                  } else router.refresh();
+                  }
                 });
               }}
             >

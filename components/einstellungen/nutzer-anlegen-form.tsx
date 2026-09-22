@@ -47,25 +47,33 @@ export function NutzerAnlegenForm({ einrichtungen }: { einrichtungen: { id: stri
     setPending(true);
     setError(null);
     setZugangsdaten(null);
-    const ergebnis = await legeNutzerAn({
-      email,
-      name,
-      passwort: zugang === "passwort" ? passwort : null,
-      rolle,
-      einrichtungIds: rolle === "mitarbeiter" ? gewaehlt : [],
-      rechte,
-    });
-    setPending(false);
-    if (!ergebnis.ok) {
-      setError(ergebnis.error);
-      return;
+    // try/finally, damit der Button auch dann wieder freigegeben wird, wenn legeNutzerAn ausnahmsweise wirft statt
+    // {ok:false} zurückzugeben (z.B. ein Verbindungsabbruch zur Server Action selbst) — sonst bliebe „Wird
+    // angelegt…“ dauerhaft hängen, ohne dass ein erneuter Versuch möglich ist.
+    try {
+      const ergebnis = await legeNutzerAn({
+        email,
+        name,
+        passwort: zugang === "passwort" ? passwort : null,
+        rolle,
+        einrichtungIds: rolle === "mitarbeiter" ? gewaehlt : [],
+        rechte,
+      });
+      if (!ergebnis.ok) {
+        setError(ergebnis.error);
+        return;
+      }
+      setZugangsdaten({ email: email.trim().toLowerCase(), passwort: zugang === "passwort" ? passwort : null });
+      setKopiert(false);
+      setName("");
+      setEmail("");
+      setPasswort("");
+      router.refresh();
+    } catch {
+      setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+    } finally {
+      setPending(false);
     }
-    setZugangsdaten({ email: email.trim().toLowerCase(), passwort: zugang === "passwort" ? passwort : null });
-    setKopiert(false);
-    setName("");
-    setEmail("");
-    setPasswort("");
-    router.refresh();
   }
 
   return (
