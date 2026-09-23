@@ -5,7 +5,12 @@ import { toIsoDateString, parseIsoDate } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { berechnePersonalAusblick, monatLang, type AusblickAustritt, type AusblickErgebnis } from "@/lib/ausblick/personal-ausblick";
 import { PersonalAusblickChart, type AusblickPunkt } from "@/components/dashboard/personal-ausblick-chart";
+import { StatTile } from "@/components/ui/stat-tile";
 import { cn } from "cn";
+
+/** Monatsabstände, für die zusätzlich zum fortlaufenden Diagramm ein kompakter
+ * Meilenstein-Wert gezeigt wird — 0-indexiert ab dem aktuellen Monat. */
+const MEILENSTEIN_OFFSETS = [3, 6, 12] as const;
 
 const AUSBLICK_MONATE = 18;
 
@@ -17,6 +22,10 @@ const MODELL_LABEL = {
 
 function monatKurz(monat: string): string {
   return parseIsoDate(monat).toLocaleDateString("de-DE", { month: "short", year: "2-digit", timeZone: "UTC" });
+}
+
+function formatStunden(value: number): string {
+  return (Math.round(value * 10) / 10).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 export function PersonalAusblickSkeleton() {
@@ -117,6 +126,21 @@ export async function PersonalAusblick({ einrichtungId }: { einrichtungId: strin
           <span className="flex items-center gap-1.5"><span className="size-2 rounded-sm bg-destructive/40" />Es fehlen Stunden</span>
           <span>Wochenstunden je Monat</span>
         </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        {MEILENSTEIN_OFFSETS.map((offset) => {
+          const m = a.monate[offset];
+          if (!m) return null;
+          return (
+            <StatTile
+              key={offset}
+              label={`In ${offset} Monaten (${monatKurz(m.monat)})`}
+              value={`${formatStunden(m.istStunden)} / ${formatStunden(m.bedarfStunden)} Std.`}
+              tone={m.ampel === "gruen" ? "default" : "warn"}
+            />
+          );
+        })}
       </div>
 
       {a.ereignisse.length > 0 ? (

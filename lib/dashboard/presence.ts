@@ -109,6 +109,9 @@ export function buildCompositionMatrix(rows: PresenceRow[]): CompositionMatrix {
 
 export type KpiSummary = {
   kinderGesamt: number;
+  /** Summe der Buchungszeitfaktoren ohne Gewichtungsfaktor — die "rohen"
+   * Buchungsstunden-Punkte, bevor der Gewichtungsfaktor je Kind einfließt. */
+  ungewichteteSumme: number;
   gewichteteSumme: number;
   /** Gewichtete Summe für die Fachkraftquote-Grundlage — Integrationskinder
    * zählen hier mit ihrem sonst zutreffenden Faktor, nicht mit 4,5. */
@@ -128,6 +131,7 @@ export type KpiSummary = {
 
 export function buildKpis(rows: PresenceRow[]): KpiSummary {
   const kinderGesamt = rows.length;
+  let ungewichteteSumme = 0;
   let gewichteteSumme = 0;
   let gewichteteSummeFachkraftquote = 0;
   let gewichteteKinderzahl = 0;
@@ -136,6 +140,7 @@ export function buildKpis(rows: PresenceRow[]): KpiSummary {
 
   for (const row of rows) {
     const buchungszeitFactor = row.buchungszeit_factor ?? 0;
+    ungewichteteSumme += buchungszeitFactor;
     gewichteteSumme += buchungszeitFactor * row.weighting_factor_value;
     gewichteteSummeFachkraftquote +=
       buchungszeitFactor * row.weighting_factor_value_fachkraftquote;
@@ -148,6 +153,7 @@ export function buildKpis(rows: PresenceRow[]): KpiSummary {
 
   return {
     kinderGesamt,
+    ungewichteteSumme,
     gewichteteSumme,
     gewichteteSummeFachkraftquote,
     gewichteteKinderzahl,
@@ -156,6 +162,42 @@ export function buildKpis(rows: PresenceRow[]): KpiSummary {
       kinderGesamt > 0 ? gewichteteKinderzahl / kinderGesamt : 0,
     ohneBuchungszeit,
   };
+}
+
+export type GruppenartZeile = {
+  gruppenart: string;
+  belegt: number;
+  sollplaetze: number;
+};
+
+/** Teilt Ist-Belegung und Sollplätze nach Gruppenart auf (Krippe/Kindergarten/…) —
+ * für eine Dashboard-Kachelreihe, die Krippe und Kindergarten klar trennt statt
+ * nur einrichtungsweit zu summieren. */
+export function buildGruppenartAufteilung(
+  rows: PresenceRow[],
+  gruppen: { id: string; gruppenart: string | null; sollplatze: number }[]
+): GruppenartZeile[] {
+  const gruppenartByGruppeId = new Map(gruppen.map((g) => [g.id, g.gruppenart ?? "unbekannt"]));
+  const zeilen = new Map<string, GruppenartZeile>();
+
+  const zeile = (gruppenart: string) => {
+    let z = zeilen.get(gruppenart);
+    if (!z) {
+      z = { gruppenart, belegt: 0, sollplaetze: 0 };
+      zeilen.set(gruppenart, z);
+    }
+    return z;
+  };
+
+  for (const g of gruppen) {
+    zeile(g.gruppenart ?? "unbekannt").sollplaetze += Number(g.sollplatze);
+  }
+  for (const row of rows) {
+    const gruppenart = row.gruppe_id ? (gruppenartByGruppeId.get(row.gruppe_id) ?? "unbekannt") : "unbekannt";
+    zeile(gruppenart).belegt += 1;
+  }
+
+  return Array.from(zeilen.values()).sort((a, b) => b.sollplaetze - a.sollplaetze);
 }
 
 export type BelegungKennzahlen = {

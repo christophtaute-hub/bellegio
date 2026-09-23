@@ -10,40 +10,46 @@ import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+/** Lädt die Kacheln-Kennzahlen für mehrere Einrichtungen auf einmal. Die Sollplätze
+ * kommen aus einer einzigen Batch-Query statt einer je Einrichtung — Belegung und
+ * Personalplanung laufen weiterhin je Einrichtung (eigene RPC/Berechnung je Bundesland),
+ * aber alle parallel statt verschachtelt, damit die Seite auch bei vielen Einrichtungen
+ * mit einer konstanten Zahl an Roundtrips auskommt. */
 async function ladeEinrichtungsKennzahlen(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  einrichtungId: string,
+  einrichtungIds: string[],
   stichtag: string
 ) {
-  const [{ data: gruppen }, kinderRows, personalErgebnis] = await Promise.all([
+  const [{ data: gruppen }, kinderRowsListe, personalErgebnisListe] = await Promise.all([
     supabase
       .from("gruppen")
-      .select("sollplatze")
-      .eq("einrichtung_id", einrichtungId)
+      .select("einrichtung_id, sollplatze")
+      .in("einrichtung_id", einrichtungIds)
       .is("archived_at", null),
-    getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
-    getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag),
+    Promise.all(einrichtungIds.map((id) => getKinderPresenceAtDate(supabase, id, stichtag))),
+    Promise.all(einrichtungIds.map((id) => getPersonalplanungFuerEinrichtung(supabase, id, stichtag))),
   ]);
 
-  const sollplaetzeSumme = (gruppen ?? []).reduce(
-    (sum, g) => sum + Number(g.sollplatze),
-    0
-  );
-  const { kinderGesamt } = buildKpis(kinderRows);
+  const sollplaetzeByEinrichtung = new Map<string, number>();
+  for (const g of gruppen ?? []) {
+    sollplaetzeByEinrichtung.set(
+      g.einrichtung_id,
+      (sollplaetzeByEinrichtung.get(g.einrichtung_id) ?? 0) + Number(g.sollplatze)
+    );
+  }
 
-  return {
-    kinderGesamt,
-    freiePlaetze: Math.max(0, sollplaetzeSumme - kinderGesamt),
-    ampel: personalErgebnis.daten.ampel,
-  };
+  return einrichtungIds.map((id, i) => {
+    const sollplaetzeSumme = sollplaetzeByEinrichtung.get(id) ?? 0;
+    const { kinderGesamt } = buildKpis(kinderRowsListe[i]);
+    return {
+      kinderGesamt,
+      freiePlaetze: Math.max(0, sollplaetzeSumme - kinderGesamt),
+      ampel: personalErgebnisListe[i].daten.ampel,
+    };
+  });
 }
 
 export default async function EinrichtungAuswahlPage() {
@@ -70,11 +76,10 @@ export default async function EinrichtungAuswahlPage() {
         .order("name")
     : { data: [] };
 
-  const kennzahlenListe = einrichtungen
-    ? await Promise.all(
-        einrichtungen.map((e) => ladeEinrichtungsKennzahlen(supabase, e.id, stichtag))
-      )
-    : [];
+  const kennzahlenListe =
+    einrichtungen && einrichtungen.length > 0
+      ? await ladeEinrichtungsKennzahlen(supabase, einrichtungen.map((e) => e.id), stichtag)
+      : [];
 
   return (
     <div className="flex flex-1 flex-col items-center gap-8 p-4 py-16">
@@ -88,7 +93,7 @@ export default async function EinrichtungAuswahlPage() {
       </div>
 
       {einrichtungen && einrichtungen.length > 0 ? (
-        <div className="grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="flex w-full max-w-2xl flex-col gap-2">
           {einrichtungen.map((einrichtung, i) => {
             const kennzahlen = kennzahlenListe[i];
             return (
@@ -97,39 +102,38 @@ export default async function EinrichtungAuswahlPage() {
                 action={setActiveEinrichtung.bind(null, einrichtung.id)}
               >
                 <button type="submit" className="block w-full text-left">
-                  <Card className="cursor-pointer gap-3 transition-shadow hover:shadow-md">
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-col gap-1">
-                          <Building2
-                            className="mb-1 size-5 text-primary"
-                            aria-hidden
-                          />
-                          <CardTitle>{einrichtung.name}</CardTitle>
+                  <Card className="cursor-pointer gap-0 py-3 transition-shadow hover:shadow-md">
+                    <CardContent className="flex flex-wrap items-center justify-between gap-3 px-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Building2 className="size-5 shrink-0 text-primary" aria-hidden />
+                        <div className="min-w-0">
+                          <p className="truncate font-heading text-base text-primary">
+                            {einrichtung.name}
+                          </p>
                           {einrichtung.address_city ? (
-                            <CardDescription>
+                            <p className="truncate text-xs text-muted-foreground">
                               {einrichtung.address_city}
-                            </CardDescription>
+                            </p>
                           ) : null}
                         </div>
-                        {kennzahlen ? (
-                          <AmpelBadge ampel={kennzahlen.ampel} labels={{ gruen: "In Ordnung", gelb: "Knapp", rot: "Handlungsbedarf" }} />
-                        ) : null}
                       </div>
-                    </CardHeader>
-                    {kennzahlen ? (
-                      <div className="flex gap-4 px-6 pb-6 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1.5">
-                          <Users className="size-4" />
-                          {kennzahlen.kinderGesamt}{" "}
-                          {kennzahlen.kinderGesamt === 1 ? "Kind" : "Kinder"}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <DoorOpen className="size-4" />
-                          {kennzahlen.freiePlaetze} freie Plätze
-                        </span>
-                      </div>
-                    ) : null}
+                      {kennzahlen ? (
+                        <div className="flex shrink-0 items-center gap-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Users className="size-4" />
+                            {kennzahlen.kinderGesamt}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <DoorOpen className="size-4" />
+                            {kennzahlen.freiePlaetze} frei
+                          </span>
+                          <AmpelBadge
+                            ampel={kennzahlen.ampel}
+                            labels={{ gruen: "In Ordnung", gelb: "Knapp", rot: "Handlungsbedarf" }}
+                          />
+                        </div>
+                      ) : null}
+                    </CardContent>
                   </Card>
                 </button>
               </form>

@@ -1,13 +1,21 @@
 import { Suspense } from "react";
-import { Users, Scale, Wallet, DoorOpen } from "lucide-react";
+import { Users, Scale, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
-import { getKinderPresenceAtDate, buildCompositionMatrix, buildKpis } from "@/lib/dashboard/presence";
+import {
+  getKinderPresenceAtDate,
+  buildCompositionMatrix,
+  buildKpis,
+  buildBelegungKennzahlen,
+  buildGruppenartAufteilung,
+} from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
+import { GRUPPENART_LABEL } from "@/lib/constants";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { MetricCard } from "@/components/ui/metric-card";
+import { StatTile } from "@/components/ui/stat-tile";
 import { CompositionChart } from "@/components/dashboard/composition-chart";
 import { CompositionTable } from "@/components/dashboard/composition-table";
 import { BuchungszeitVerteilung } from "@/components/dashboard/buchungszeit-verteilung";
@@ -80,7 +88,7 @@ export default async function DashboardPage({
         getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag),
         supabase
           .from("gruppen")
-          .select("sollplatze")
+          .select("id, gruppenart, sollplatze")
           .eq("einrichtung_id", einrichtungId)
           .is("archived_at", null),
       ])
@@ -92,6 +100,8 @@ export default async function DashboardPage({
   const kinderMitBuchungszeit = kpis.kinderGesamt - kpis.ohneBuchungszeit;
   const sollplaetzeSumme = (gruppen ?? []).reduce((sum, g) => sum + Number(g.sollplatze), 0);
   const freiePlaetze = Math.max(0, sollplaetzeSumme - kpis.kinderGesamt);
+  const belegung = buildBelegungKennzahlen(rows, sollplaetzeSumme);
+  const gruppenartAufteilung = buildGruppenartAufteilung(rows, gruppen ?? []);
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i))
@@ -111,6 +121,7 @@ export default async function DashboardPage({
       )
     : [];
   const trendKinderGesamt = trendData.map((t) => t.kpis.kinderGesamt);
+  const trendUngewichteteSumme = trendData.map((t) => t.kpis.ungewichteteSumme);
   const trendGewichteteSumme = trendData.map((t) => t.kpis.gewichteteSumme);
   const trendMitBuchungszeit = trendData.map(
     (t) => t.kpis.kinderGesamt - t.kpis.ohneBuchungszeit
@@ -145,19 +156,21 @@ export default async function DashboardPage({
           icon={<Users />}
           trend={trendKinderGesamt}
         />
-        <MetricCard
-          label="Freie Plätze"
-          value={`${freiePlaetze} / ${sollplaetzeSumme}`}
-          icon={<DoorOpen />}
-          tone={freiePlaetze === 0 ? "warn" : "default"}
-        />
         {modell === "bayern" ? (
-          <MetricCard
-            label="Gewichtete Buchungsstunden"
-            value={formatGewichtet(kpis.gewichteteSumme)}
-            icon={<Wallet />}
-            trend={trendGewichteteSumme}
-          />
+          <>
+            <MetricCard
+              label="Ungewichtete Buchungsstunden"
+              value={formatGewichtet(kpis.ungewichteteSumme)}
+              icon={<Wallet />}
+              trend={trendUngewichteteSumme}
+            />
+            <MetricCard
+              label="Gewichtete Buchungsstunden"
+              value={formatGewichtet(kpis.gewichteteSumme)}
+              icon={<Wallet />}
+              trend={trendGewichteteSumme}
+            />
+          </>
         ) : (
           <MetricCard
             label="Kinder mit Buchungszeit"
@@ -175,6 +188,24 @@ export default async function DashboardPage({
             trend={trendPersonal}
           />
         ) : null}
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 lg:grid-cols-6">
+        <StatTile label="Sollplätze" value={String(sollplaetzeSumme)} />
+        <StatTile label="Ist-Plätze" value={String(belegung.belegteMitI)} />
+        <StatTile
+          label="Freie Plätze"
+          value={String(freiePlaetze)}
+          tone={freiePlaetze === 0 ? "warn" : "default"}
+        />
+        {gruppenartAufteilung.map((z) => (
+          <StatTile
+            key={z.gruppenart}
+            label={GRUPPENART_LABEL[z.gruppenart] ?? z.gruppenart}
+            value={`${z.belegt} / ${z.sollplaetze}`}
+            tone={z.belegt > z.sollplaetze ? "warn" : "default"}
+          />
+        ))}
       </div>
 
       {einrichtungId ? (
