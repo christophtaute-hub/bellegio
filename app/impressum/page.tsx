@@ -3,7 +3,13 @@ import { ladeBetreiberOeffentlich } from "@/lib/rechtstexte/betreiber";
 import { Abschnitt, Angabe, RechtstextSeite } from "@/components/legal/bausteine";
 
 export default async function ImpressumPage() {
-  const b = await ladeBetreiberOeffentlich(await createClient());
+  const supabase = await createClient();
+  const b = await ladeBetreiberOeffentlich(supabase);
+  const { data: einstellungen } = await supabase
+    .from("betreiber_einstellungen")
+    .select("steuernummer")
+    .eq("id", true)
+    .maybeSingle();
   const hatRegister = Boolean(b.registergericht || b.registernummer);
 
   return (
@@ -48,6 +54,12 @@ export default async function ImpressumPage() {
       {b.ust_id ? (
         <Abschnitt titel="Umsatzsteuer-Identifikationsnummer">
           <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: {b.ust_id}</p>
+        </Abschnitt>
+      ) : null}
+
+      {einstellungen?.steuernummer ? (
+        <Abschnitt titel="Steuernummer">
+          <p>{einstellungen.steuernummer}</p>
         </Abschnitt>
       ) : null}
 

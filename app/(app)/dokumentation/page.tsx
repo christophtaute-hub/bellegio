@@ -154,8 +154,8 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Gewichtungsfaktoren nach Art. 21 Abs. 5 BayKiBiG: Kinder unter drei
             Jahren 2,0 · Kinder von drei Jahren bis Schuleintritt 1,0 ·
-            Schulkinder 1,2 · Hort 1,3 · Migrationskind 1,3 ·
-            Integrationskinder 4,5. Ist ein Kind mehreren Kategorien
+            Schulkinder 1,2 · Hort 1,3 · Eltern beide nichtdeutschsprachiger
+            Herkunft 1,3 · Integrationskinder 4,5. Ist ein Kind mehreren Kategorien
             zuzuordnen, zählt ausschließlich der höchste zutreffende Faktor —
             nie die Summe.
           </p>

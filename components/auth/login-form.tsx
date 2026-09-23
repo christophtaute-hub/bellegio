@@ -49,6 +49,12 @@ export function LoginForm() {
       >
         Passwort vergessen?
       </Link>
+      <Link
+        href="/"
+        className="text-center text-sm text-muted-foreground hover:text-foreground"
+      >
+        Zurück zur Startseite
+      </Link>
     </form>
   );
 }

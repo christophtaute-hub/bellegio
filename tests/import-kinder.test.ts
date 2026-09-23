@@ -16,7 +16,7 @@ const kontext: KindImportKontext = {
     { id: "f-ue3", code: "ue3_bis_schuleintritt", label: "Kinder von drei Jahren bis Schuleintritt" },
     { id: "f-schul", code: "schulkinder", label: "Schulkinder" },
     { id: "f-int", code: "integrationskinder", label: "Integrationskinder" },
-    { id: "f-mig", code: "nicht_deutschsprachig", label: "Migrationskind" },
+    { id: "f-mig", code: "nicht_deutschsprachig", label: "Eltern beide nichtdeutschsprachiger Herkunft" },
   ],
   vorhandene: [{ vorname: "Emil", nachname: "Alt", geburtsdatum: "2021-01-01" }],
   heute: "2026-09-20",
