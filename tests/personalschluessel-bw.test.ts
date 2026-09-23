@@ -95,6 +95,15 @@ describe("Baden-Württemberg: Soll-VZÄ mit Randzeit-Trennung (§ 1 Abs. 2 KiTaV
     ).toBeCloseTo(2.06, 10);
   });
 
+  it("klammert die (ggf. per Standardwert angenommene) Randzeit auf die Öffnungszeit — nie negative Hauptbetreuung", () => {
+    // Unrealistisch kurze Öffnungszeit (0,5 Std.) ohne gesetzte Randzeit: die Standard-Randzeit
+    // (1 Std.) darf nicht länger sein als die Öffnungszeit selbst.
+    const ergebnis = berechneSollVzaeBW(gruppe({ bwOeffnungszeitStunden: 0.5, bwRandzeitStunden: null }), tabelle);
+    // randzeitStunden = min(1, 0,5) = 0,5, hauptbetreuungStunden = 0,5 - 0,5 = 0 → nur Randzeit-Rate zählt.
+    expect(ergebnis).toBeCloseTo(0.5 * (2.3 / 13), 10);
+    expect(ergebnis).toBeGreaterThanOrEqual(0);
+  });
+
   it("gibt 0 zurück, wenn keine Betriebsform oder keine passende Zeile existiert", () => {
     expect(berechneSollVzaeBW(gruppe({ bwBetriebsform: null }), tabelle)).toBe(0);
     expect(berechneSollVzaeBW(gruppe({ bwBetriebsform: "unbekannt" }), tabelle)).toBe(0);

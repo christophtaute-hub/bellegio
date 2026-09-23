@@ -123,7 +123,10 @@ export function berechneSollVzaeBW(
   //   referenzVzae = randzeitRate × (2 × referenzHauptbetreuungStunden + referenzRandzeitStunden).
   // Weicht die tatsächliche Randzeit vom Standardwert ab, verschiebt das nur, wie viele Stunden
   // mit welcher Rate gezählt werden — die insgesamt benötigten VZÄ ändern sich entsprechend.
-  const randzeitStunden = gruppe.bwRandzeitStunden ?? BW_STANDARD_RANDZEIT_STUNDEN;
+  // Geklammert auf die Öffnungszeit: eine (auch nur per Standardwert angenommene) Randzeit kann
+  // nie länger sein als die Gruppe überhaupt geöffnet hat — sonst würde die Hauptbetreuungszeit
+  // rechnerisch negativ (nur bei unrealistisch kurzen Öffnungszeiten unter 1 Std. relevant).
+  const randzeitStunden = Math.min(gruppe.bwRandzeitStunden ?? BW_STANDARD_RANDZEIT_STUNDEN, oeffnungszeit);
   const referenzHauptbetreuungStunden = row.referenzOeffnungszeitStunden - BW_STANDARD_RANDZEIT_STUNDEN;
   const randzeitRate = row.referenzVzae / (2 * referenzHauptbetreuungStunden + BW_STANDARD_RANDZEIT_STUNDEN);
   const hauptbetreuungRate = 2 * randzeitRate;
