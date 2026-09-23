@@ -262,8 +262,7 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Kein Anstellungsschlüssel, keine Gewichtung pro Kind. §1 KiTaVO
             legt für jede Betriebsform (bei Referenz-Öffnungszeit) einen
-            festen VZÄ-Sollwert fest; weicht die tatsächliche Öffnungszeit
-            ab, wird linear skaliert.
+            festen VZÄ-Sollwert fest.
           </p>
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full text-sm">
@@ -318,9 +317,80 @@ export default async function DokumentationPage() {
               </tbody>
             </table>
           </div>
+
+          <p className="text-sm text-muted-foreground">
+            Bei der <strong className="text-foreground">reinen Halbtags-/Regelgruppe ohne Altersmischung</strong> wird
+            eine abweichende Öffnungszeit linear skaliert:
+          </p>
           <p className="font-mono text-sm font-semibold text-primary">
             Soll-VZÄ = Referenz-VZÄ + (Öffnungszeit − Referenz-Öffnungszeit) ×
             Stellen/Std.
+          </p>
+
+          <p className="text-sm text-muted-foreground">
+            Bei <strong className="text-foreground">allen anderen Betriebsformen</strong> (auch Halbtags-/Regelgruppe MIT
+            Altersmischung) besteht die tägliche Öffnungszeit laut §1 Abs. 2 KiTaVO aus{" "}
+            <strong className="text-foreground">Hauptbetreuungszeit</strong> (Anwesenheit von mehr als der Hälfte der
+            Höchstgruppenstärke — dort sind zwei Fachkräfte vorzuhalten) und{" "}
+            <strong className="text-foreground">Randzeit</strong> (bis zur Hälfte anwesend — dort genügt eine
+            Fachkraft). Der Gesetzgeber setzt die Randzeit standardmäßig mit 1 Stunde an; weicht die tatsächliche
+            Randzeit einer Gruppe davon ab, ändert sich der Mindestpersonalschlüssel entsprechend:
+          </p>
+          <p className="font-mono text-sm font-semibold text-primary">
+            Soll-VZÄ = Hauptbetreuungsstunden × Stellen/Std. (Hauptbetreuung) + Randzeitstunden × Stellen/Std.
+            (Randzeit), mit Hauptbetreuungsstunden = Öffnungszeit − Randzeit
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Die Stellen/Std.-Sätze für Hauptbetreuung und Randzeit sind je Betriebsform amtlich vorgegeben — die
+            Hauptbetreuungs-Rate ist dabei stets exakt das Doppelte der Randzeit-Rate (zwei statt eine Fachkraft):
+          </p>
+          <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-secondary/40">
+                  <th className="p-2 text-left">Betriebsform</th>
+                  <th className="p-2 text-right">Stellen/Std. Randzeit</th>
+                  <th className="p-2 text-right">Stellen/Std. Hauptbetreuung</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono">
+                <tr className="border-b">
+                  <td className="p-2">Halbtagsgruppe, mit Altersmischung U3</td>
+                  <td className="p-2 text-right">0,200</td>
+                  <td className="p-2 text-right">0,400</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Regelgruppe, mit Altersmischung U3</td>
+                  <td className="p-2 text-right">0,182</td>
+                  <td className="p-2 text-right">0,364</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Verlängerte Öffnungszeit, ohne AM</td>
+                  <td className="p-2 text-right">0,173</td>
+                  <td className="p-2 text-right">0,345</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Verlängerte Öffnungszeit, mit AM</td>
+                  <td className="p-2 text-right">0,182</td>
+                  <td className="p-2 text-right">0,364</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="p-2">Ganztagsgruppe</td>
+                  <td className="p-2 text-right">0,177</td>
+                  <td className="p-2 text-right">0,354</td>
+                </tr>
+                <tr>
+                  <td className="p-2">Kinderkrippe (≥34 Std./Woche)</td>
+                  <td className="p-2 text-right">0,158</td>
+                  <td className="p-2 text-right">0,317</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Kinderkrippen mit weniger als 34 Std./Woche rechnen nach einem eigenen Verfahren mit einer separaten
+            Verfügungszeit-Pauschale (10 Std./Woche) statt der einfachen Randzeit/Hauptbetreuung-Aufteilung — dieser
+            Sonderfall ist in Bellegio aktuell nicht abgebildet.
           </p>
           <p className="text-sm text-muted-foreground">
             Bellegio erfasst zusätzlich pro Kind eine Buchungszeit (z.B. für
@@ -337,13 +407,13 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
             gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
-            BW (Demo)&ldquo; (Testaccount katrin@bellegio.test), live
+            Baden-Württemberg&ldquo; (Demo-Zugang demo@bellegio.de), live
             nachvollziehbar im Team/Dashboard dieser Einrichtung.
           </p>
           <div className="flex flex-col gap-1 font-mono text-sm">
-            <p>Regelgruppe, keine AM, 6 Std./Tag (Referenz) → Soll-VZÄ 1,80</p>
-            <p>Ganztagsgruppe, keine AM, 7 Std./Tag (Referenz) → Soll-VZÄ 2,30</p>
-            <p>Kinderkrippe, keine AM, 7 Std./Tag (Referenz) → Soll-VZÄ 2,06</p>
+            <p>Regelgruppe, keine AM, 6 Std./Tag (Referenz, ohne Randzeit-Trennung) → Soll-VZÄ 1,80</p>
+            <p>Ganztagsgruppe, keine AM, 7 Std./Tag, 1 Std. Randzeit (Standard) → Soll-VZÄ 2,30</p>
+            <p>Kinderkrippe, keine AM, 7 Std./Tag, 1 Std. Randzeit (Standard) → Soll-VZÄ 2,06</p>
             <p className="mt-1 font-semibold">Soll-VZÄ gesamt = 1,80 + 2,30 + 2,06 = 6,16</p>
             <p className="mt-2">
               Personal gesamt: 240,0 Std./Woche (bei einer Vollzeit-Referenz
@@ -357,6 +427,19 @@ export default async function DokumentationPage() {
               akuter Handlungsbedarf, aber kein Puffer mehr.
             </p>
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Was ändert eine abweichende Randzeit? Bliebe die Ganztagsgruppe bei 7 Std./Tag, aber mit 2 statt 1 Std.
+            Randzeit (also nur noch 5 statt 6 Std. Hauptbetreuung):
+          </p>
+          <div className="flex flex-col gap-1 font-mono text-sm">
+            <p>Hauptbetreuung: 5 Std. × 0,354 = 1,77</p>
+            <p>Randzeit: 2 Std. × 0,177 = 0,354</p>
+            <p className="font-semibold text-primary">Soll-VZÄ = 1,77 + 0,354 = 2,12 (statt 2,30)</p>
+            <p className="text-muted-foreground">
+              Mehr Randzeit (einfach besetzt) statt Hauptbetreuung (doppelt besetzt) senkt den Sollwert — genau
+              umgekehrt gilt: weniger Randzeit als der Standardwert erhöht ihn.
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
@@ -364,11 +447,12 @@ export default async function DokumentationPage() {
             Wichtiger Hinweis zur Quellenlage
           </h3>
           <p className="text-sm text-muted-foreground">
-            Direkt vorgerechnet durch das KVJS-Rundschreiben ist nur die
-            Regelgruppe ohne Altersmischung (1,8 VZÄ ÷ 6 Std. = 0,300
-            Stellen/Std.). Die übrigen Betriebsformen folgen erkennbar
-            derselben linearen Regel, sind aber nicht einzeln
-            primärquellenbestätigt. Fachkraftquote: es gibt keine
+            Alle Referenzwerte und Stellen/Std.-Sätze oben (auch die
+            Randzeit/Hauptbetreuung-Aufteilung) sind direkt in der
+            KVJS-Berechnungshilfe vorgerechnet und gegen zwei unabhängige
+            Fassungen davon geprüft (Rundschreiben 14/2021 sowie eine
+            spätere Ausführungshinweise-Version) — beide stimmen exakt
+            überein. Fachkraftquote: es gibt keine
             Prozent-Vorgabe wie in Bayern — Basis ist faktisch 100 %
             Fachkraft (§7 KiTaG), dessen genauer Wortlaut hier nur über eine
             Sekundärquelle bestätigt werden konnte. Die befristete
