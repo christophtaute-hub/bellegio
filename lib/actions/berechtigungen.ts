@@ -77,7 +77,7 @@ export async function setEinrichtungBerechtigung(
       { onConflict: "user_id,einrichtung_id,bereich" }
     );
     if (error) return { ok: false, error: NICHT_ERLAUBT };
-    revalidatePath("/einstellungen");
+    revalidatePath("/einstellungen/nutzer");
     return { ok: true };
   } catch (fehler) {
     return alsErgebnis("setEinrichtungBerechtigung", fehler);
@@ -89,7 +89,7 @@ export async function setKannRechteVerwalten(userId: string, value: boolean): Pr
     const supabase = await createClient();
     const { error } = await supabase.from("user_profiles").update({ kann_rechte_verwalten: value }).eq("id", userId);
     if (error) return { ok: false, error: NICHT_ERLAUBT };
-    revalidatePath("/einstellungen");
+    revalidatePath("/einstellungen/nutzer");
     return { ok: true };
   } catch (fehler) {
     return alsErgebnis("setKannRechteVerwalten", fehler);
@@ -162,7 +162,7 @@ export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgeb
       }
     }
 
-    revalidatePath("/einstellungen");
+    revalidatePath("/einstellungen/nutzer");
     return { ok: true };
   } catch (fehler) {
     return alsErgebnis("legeNutzerAn", fehler);
@@ -191,10 +191,31 @@ export async function loescheNutzer(userId: string): Promise<NutzerErgebnis> {
     // Profil und Rechte folgen per Cascade; Einträge in den Änderungsprotokollen verlieren nur den Verweis auf den Nutzer.
     const { error } = await mitZeitlimit(pruefung.admin.auth.admin.deleteUser(userId));
     if (error) return { ok: false, error: "Der Nutzer konnte nicht gelöscht werden." };
-    revalidatePath("/einstellungen");
+    revalidatePath("/einstellungen/nutzer");
     return { ok: true };
   } catch (fehler) {
     return alsErgebnis("loescheNutzer", fehler);
+  }
+}
+
+// Supabase kennt kein "für immer" — 100 Jahre ist der von der Auth Admin API dokumentierte Weg,
+// einen Nutzer bis auf Weiteres zu sperren (entsperren setzt ban_duration wieder auf "none").
+const SPERR_DAUER = "876000h";
+
+/** Sperrt einen Nutzer (Login schlägt danach fehl) oder hebt eine Sperre wieder auf — ohne den Nutzer
+ * zu löschen, damit seine Daten/Zuordnungen erhalten bleiben. */
+export async function sperreNutzer(userId: string, gesperrt: boolean): Promise<NutzerErgebnis> {
+  try {
+    const pruefung = await zielPruefen(userId, "sperren");
+    if (!pruefung.ok) return pruefung;
+    const { error } = await mitZeitlimit(
+      pruefung.admin.auth.admin.updateUserById(userId, { ban_duration: gesperrt ? SPERR_DAUER : "none" })
+    );
+    if (error) return { ok: false, error: gesperrt ? "Der Nutzer konnte nicht gesperrt werden." : "Die Sperre konnte nicht aufgehoben werden." };
+    revalidatePath("/einstellungen/nutzer");
+    return { ok: true };
+  } catch (fehler) {
+    return alsErgebnis("sperreNutzer", fehler);
   }
 }
 
@@ -205,7 +226,7 @@ export async function setzeNutzerRolle(userId: string, rolle: NeueRolle): Promis
     if (!pruefung.ok) return pruefung;
     const { error } = await pruefung.admin.from("user_profiles").update({ role: rolle }).eq("id", userId);
     if (error) return { ok: false, error: "Die Rolle konnte nicht geändert werden." };
-    revalidatePath("/einstellungen");
+    revalidatePath("/einstellungen/nutzer");
     return { ok: true };
   } catch (fehler) {
     return alsErgebnis("setzeNutzerRolle", fehler);

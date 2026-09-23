@@ -6,7 +6,7 @@ const admin = { id: "a", rolle: "traeger_admin", tragerId: "t1" };
 
 describe("Nutzer verwalten: wer darf was", () => {
   it("die Träger-Administration darf Mitarbeiter im eigenen Träger verwalten", () => {
-    for (const aktion of ["passwort", "loeschen", "rolle"] as const) {
+    for (const aktion of ["passwort", "loeschen", "rolle", "sperren"] as const) {
       expect(darfNutzerVerwalten(admin, { id: "m", rolle: "mitarbeiter", tragerId: "t1" }, aktion)).toBeNull();
       expect(darfNutzerVerwalten(admin, { id: "l", rolle: "einrichtungsleitung", tragerId: "t1" }, aktion)).toBeNull();
     }
@@ -25,9 +25,10 @@ describe("Nutzer verwalten: wer darf was", () => {
 
   it("Träger-Administratoren lassen sich weder löschen noch herabstufen, auch nicht der eigene Zugang", () => {
     const anderer = { id: "b", rolle: "traeger_admin", tragerId: "t1" };
-    expect(darfNutzerVerwalten(admin, anderer, "loeschen")).toMatch(/nicht ändern oder löschen/);
-    expect(darfNutzerVerwalten(admin, admin, "loeschen")).toMatch(/nicht ändern oder löschen/);
-    expect(darfNutzerVerwalten(admin, anderer, "rolle")).toMatch(/nicht ändern oder löschen/);
+    expect(darfNutzerVerwalten(admin, anderer, "loeschen")).toMatch(/nicht ändern, sperren oder löschen/);
+    expect(darfNutzerVerwalten(admin, admin, "loeschen")).toMatch(/nicht ändern, sperren oder löschen/);
+    expect(darfNutzerVerwalten(admin, anderer, "rolle")).toMatch(/nicht ändern, sperren oder löschen/);
+    expect(darfNutzerVerwalten(admin, anderer, "sperren")).toMatch(/nicht ändern, sperren oder löschen/);
     expect(darfNutzerVerwalten(admin, anderer, "passwort")).toMatch(/Mein Profil/);
   });
 });

@@ -8,6 +8,7 @@ import {
   setKannRechteVerwalten,
   setzeNutzerPasswort,
   setzeNutzerRolle,
+  sperreNutzer,
 } from "@/lib/actions/berechtigungen";
 import { erzeugePasswort, ROLLEN, type NeueRolle } from "@/lib/nutzer/verwaltung";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ export type MatrixUser = {
   role: string;
   kann_rechte_verwalten: boolean;
   ist_demo?: boolean;
+  gesperrt?: boolean;
 };
 
 export type MatrixEinrichtung = { id: string; name: string };
@@ -114,6 +116,7 @@ export function RechteMatrix({
                   <Badge variant="secondary">Mitarbeiter</Badge>
                 )}
                 {user.ist_demo ? <Badge variant="outline">Demo</Badge> : null}
+                {user.gesperrt ? <Badge variant="destructive">Gesperrt</Badge> : null}
               </div>
             </button>
 
@@ -172,7 +175,12 @@ export function RechteMatrix({
                 )}
 
                 {istTraegerAdmin && user.id !== currentUserId && user.role !== "traeger_admin" ? (
-                  <KontoVerwaltung userId={user.id} name={user.full_name || user.email || ""} rolle={user.role as NeueRolle} />
+                  <KontoVerwaltung
+                    userId={user.id}
+                    name={user.full_name || user.email || ""}
+                    rolle={user.role as NeueRolle}
+                    gesperrt={user.gesperrt ?? false}
+                  />
                 ) : null}
 
                 {istTraegerAdmin && user.id !== currentUserId ? (
@@ -272,13 +280,25 @@ function KannRechteVerwaltenToggle({
   );
 }
 
-/** Konto eines Nutzers: Rolle ändern, direkt ein neues Passwort vergeben, Nutzer löschen. Nur für die Träger-Administration. */
-function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string; rolle: NeueRolle }) {
+/** Konto eines Nutzers: Rolle ändern, direkt ein neues Passwort vergeben, sperren/entsperren, Nutzer löschen.
+ * Nur für die Träger-Administration. */
+function KontoVerwaltung({
+  userId,
+  name,
+  rolle,
+  gesperrt,
+}: {
+  userId: string;
+  name: string;
+  rolle: NeueRolle;
+  gesperrt: boolean;
+}) {
   const router = useRouter();
   const [passwort, setPasswort] = useState("");
   const [gesetzt, setGesetzt] = useState<string | null>(null);
   const [bestaetigeLoeschen, setBestaetigeLoeschen] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [sperrPending, startSperrTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -346,6 +366,29 @@ function KontoVerwaltung({ userId, name, rolle }: { userId: string; name: string
             Passwort gesetzt. Melde {name} mit <span className="font-mono">{gesetzt}</span> an; es wird nur jetzt angezeigt.
           </p>
         ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={sperrPending}
+          onClick={() => {
+            setError(null);
+            startSperrTransition(async () => {
+              try {
+                const ergebnis = await sperreNutzer(userId, !gesperrt);
+                if (!ergebnis.ok) setError(ergebnis.error);
+                else router.refresh();
+              } catch {
+                setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+              }
+            });
+          }}
+        >
+          {gesperrt ? "Entsperren" : "Sperren"}
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

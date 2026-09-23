@@ -55,7 +55,7 @@ export function pruefeNeuenNutzer(input: NeuerNutzerInput): string | null {
 }
 
 export type Beteiligter = { id: string; rolle: string; tragerId: string };
-export type Verwaltungsaktion = "passwort" | "loeschen" | "rolle";
+export type Verwaltungsaktion = "passwort" | "loeschen" | "rolle" | "sperren";
 
 /** Darf der Aufrufer diese Aktion am Ziel-Nutzer ausführen? Die Aktionen laufen mit erhöhten Rechten (Service-Role) —
  * diese Prüfung ist deshalb die eigentliche Sperre und gilt vor jedem Zugriff. */
@@ -65,7 +65,7 @@ export function darfNutzerVerwalten(aufrufer: Beteiligter, ziel: Beteiligter, ak
   if (ziel.rolle === "traeger_admin") {
     return aktion === "passwort"
       ? "Das Passwort eines Träger-Administrators änderst du unter „Mein Profil“."
-      : "Träger-Administratoren lassen sich hier nicht ändern oder löschen.";
+      : "Träger-Administratoren lassen sich hier nicht ändern, sperren oder löschen.";
   }
   return null;
 }

@@ -13,6 +13,7 @@ import {
   BookOpen,
   User,
   Receipt,
+  Users2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: "/szenario", label: "Szenario-Rechner", icon: Calculator },
   { href: "/dokumentation", label: "Dokumentation", icon: BookOpen },
   { href: "/einstellungen", label: "Einrichtung", icon: Settings },
+  { href: "/einstellungen/nutzer", label: "Nutzer & Rechte", icon: Users2 },
   { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
 ] as const;
 

@@ -1,15 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { getCurrentUserRole, getZugriff, type Bereich, type Zugriff } from "@/lib/server/current-user-role";
+import { getCurrentUserRole } from "@/lib/server/current-user-role";
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
-import { RechteMatrix } from "@/components/einstellungen/rechte-matrix";
-import { NutzerAnlegenForm } from "@/components/einstellungen/nutzer-anlegen-form";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
 import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
-
-const ALLE_BEREICHE: Bereich[] = ["belegung", "personal", "controlling", "szenario"];
 
 async function ladeEinrichtungenFuerVerwaltung(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -49,73 +45,10 @@ export default async function EinstellungenPage() {
     data: { user: authUser },
   } = await supabase.auth.getUser();
   const { data: eigenesProfil } = authUser
-    ? await supabase
-        .from("user_profiles")
-        .select("id, trager_id, role, kann_rechte_verwalten")
-        .eq("id", authUser.id)
-        .single()
+    ? await supabase.from("user_profiles").select("id, trager_id, role").eq("id", authUser.id).single()
     : { data: null };
 
   const istTraegerAdmin = eigenesProfil?.role === "traeger_admin";
-  const darfRechteVerwalten =
-    istTraegerAdmin || Boolean(eigenesProfil?.kann_rechte_verwalten);
-
-  let rechteVerwaltungDaten: {
-    einrichtungen: { id: string; name: string }[];
-    users: {
-      id: string;
-      email: string | null;
-      full_name: string | null;
-      role: string;
-      kann_rechte_verwalten: boolean;
-      ist_demo: boolean;
-    }[];
-    berechtigungen: {
-      user_id: string;
-      einrichtung_id: string;
-      bereich: string;
-      zugriff: string;
-    }[];
-    eigeneZugriffe: Record<string, Record<Bereich, Zugriff>>;
-  } | null = null;
-
-  if (eigenesProfil && darfRechteVerwalten) {
-    const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }] =
-      await Promise.all([
-        supabase
-          .from("einrichtungen")
-          .select("id, name")
-          .eq("trager_id", eigenesProfil.trager_id)
-          .is("archived_at", null)
-          .order("name"),
-        supabase
-          .from("user_profiles")
-          .select("id, email, full_name, role, kann_rechte_verwalten, ist_demo")
-          .eq("trager_id", eigenesProfil.trager_id)
-          .order("full_name"),
-        supabase
-          .from("einrichtung_berechtigungen")
-          .select("user_id, einrichtung_id, bereich, zugriff"),
-      ]);
-
-    const einrichtungenListe = alleEinrichtungen ?? [];
-    const eigeneZugriffe: Record<string, Record<Bereich, Zugriff>> = {};
-    if (!istTraegerAdmin) {
-      for (const e of einrichtungenListe) {
-        eigeneZugriffe[e.id] = {} as Record<Bereich, Zugriff>;
-        for (const bereich of ALLE_BEREICHE) {
-          eigeneZugriffe[e.id][bereich] = await getZugriff(supabase, e.id, bereich);
-        }
-      }
-    }
-
-    rechteVerwaltungDaten = {
-      einrichtungen: einrichtungenListe,
-      users: alleUsers ?? [],
-      berechtigungen: alleBerechtigungen ?? [],
-      eigeneZugriffe,
-    };
-  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -124,6 +57,9 @@ export default async function EinstellungenPage() {
           Einrichtungs-Einstellungen
         </h1>
         <div className="flex items-center gap-4">
+          <a href="/einstellungen/nutzer" className="text-sm text-primary underline-offset-2 hover:underline">
+            Nutzer &amp; Rechte →
+          </a>
           {istTraegerAdmin ? (
             <a href="/einstellungen/datenschutz" className="text-sm text-primary underline-offset-2 hover:underline">
               Datenschutz →
@@ -194,7 +130,7 @@ export default async function EinstellungenPage() {
         </p>
       )}
 
-      {istTraegerAdmin && einrichtungId && rechteVerwaltungDaten ? (
+      {istTraegerAdmin && einrichtungId && eigenesProfil ? (
         <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
           <h2 className="font-heading text-lg text-primary">Einrichtungen des Trägers</h2>
           <p className="max-w-2xl text-sm text-muted-foreground">
@@ -203,34 +139,7 @@ export default async function EinstellungenPage() {
           </p>
           <EinrichtungenVerwalten
             aktiveId={einrichtungId}
-            einrichtungen={await ladeEinrichtungenFuerVerwaltung(supabase, eigenesProfil!.trager_id)}
-          />
-        </section>
-      ) : null}
-
-      {rechteVerwaltungDaten ? (
-        <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-heading text-lg text-primary">
-              Nutzer &amp; Rechte
-            </h2>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Wer sieht welche Einrichtung, und wer darf in welchem Bereich
-              bearbeiten? Träger-Admin und Einrichtungsleitung haben immer
-              vollen Zugriff. Wer selbst Rechte vergeben darf, kann anderen
-              nie mehr geben, als er selbst hat.
-            </p>
-          </div>
-
-          {istTraegerAdmin ? <NutzerAnlegenForm einrichtungen={rechteVerwaltungDaten.einrichtungen} /> : null}
-
-          <RechteMatrix
-            currentUserId={eigenesProfil!.id}
-            istTraegerAdmin={istTraegerAdmin}
-            einrichtungen={rechteVerwaltungDaten.einrichtungen}
-            users={rechteVerwaltungDaten.users}
-            berechtigungen={rechteVerwaltungDaten.berechtigungen}
-            eigeneZugriffe={rechteVerwaltungDaten.eigeneZugriffe}
+            einrichtungen={await ladeEinrichtungenFuerVerwaltung(supabase, eigenesProfil.trager_id)}
           />
         </section>
       ) : null}
