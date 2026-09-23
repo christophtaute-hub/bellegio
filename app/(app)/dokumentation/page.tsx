@@ -566,7 +566,7 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
             gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
-            NRW (Demo)&ldquo; (Testaccount katrin@bellegio.test), live
+            Nordrhein-Westfalen&ldquo; (Demo-Zugang demo@bellegio.de), live
             nachvollziehbar im Team/Dashboard dieser Einrichtung.
           </p>
           <div className="flex flex-col gap-1 font-mono text-sm">
