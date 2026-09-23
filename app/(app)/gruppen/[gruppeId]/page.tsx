@@ -15,8 +15,35 @@ import {
   type KinderTableRow,
 } from "@/components/gruppen/kinder-table";
 import { HinweiseBox, type HinweisEintrag } from "@/components/gruppen/hinweise-box";
-import { austrittWarnung, verlaengerungWarnung, krippenUebergangWarnung } from "@/lib/kita-datum";
-import { berechneSitzplaetze, findePlatzVonKindId } from "@/lib/gruppen/sitzplaetze";
+import {
+  austrittWarnung,
+  verlaengerungWarnung,
+  krippenUebergangWarnung,
+  formatDate,
+  toIsoDateString,
+  parseIsoDate,
+} from "@/lib/kita-datum";
+import { berechneSitzplaetze, findePlatzVonKindId, bestimmeBelegungsStatus } from "@/lib/gruppen/sitzplaetze";
+import { berechneBelegungsVorschau } from "@/lib/belegung/vorschau";
+import { AmpelBadge } from "@/components/team/ampel-badge";
+import type { PassungsEinschaetzung } from "@/lib/kinder/gruppen-passung";
+import type { Ampel } from "@/lib/team/anstellungsschluessel";
+
+// Horizont für die Handlungsbedarf-Vorschau auf dieser Seite — bewusst kürzer als die volle
+// 18-Monats-Tabelle unter /gruppen/vorschau, da hier nur die nächsten anstehenden Plätze zählen.
+const HANDLUNGSBEDARF_MONATE = 15;
+const HANDLUNGSBEDARF_MAX_EINTRAEGE = 2;
+
+const PASSUNG_AMPEL: Record<PassungsEinschaetzung, Ampel> = { gut: "gruen", bedingt: "gelb", schlecht: "rot" };
+const PASSUNG_LABEL: Record<PassungsEinschaetzung, string> = {
+  gut: "Gut passend",
+  bedingt: "Bedingt passend",
+  schlecht: "Schlecht passend",
+};
+
+function monatLang(monat: string): string {
+  return parseIsoDate(monat).toLocaleDateString("de-DE", { month: "long", year: "numeric", timeZone: "UTC" });
+}
 
 const KIND_SELECT =
   "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, vertrag_gueltig_bis, status, ersetzt_kind_id, booking_time_bands(label)";
@@ -149,7 +176,9 @@ export default async function GruppeDetailPage({
 
   const { data: gruppe } = await supabase
     .from("gruppen")
-    .select("id, name, gruppenart, sollplatze, sort_order, einrichtung_id, einrichtungen(kita_year_start_month)")
+    .select(
+      "id, name, gruppenart, sollplatze, sort_order, einrichtung_id, einrichtungen(kita_year_start_month, bundesland_code, standort_gemeinde, auswaertigen_quote_prozent)"
+    )
     .eq("id", gruppeId)
     .single();
 
@@ -160,33 +189,47 @@ export default async function GruppeDetailPage({
   const kitaYearStartMonth = gruppe.einrichtungen?.kita_year_start_month ?? 9;
   const darfBearbeiten = einrichtungId ? await canWriteBelegung(supabase, einrichtungId) : false;
 
-  const [{ data: geschwisterGruppen }, { data: aktiveKinderRoh }, { data: nachrueckerKinderRoh }, { data: platzwerte }] =
-    await Promise.all([
-      supabase
-        .from("gruppen")
-        .select("id, name")
-        .eq("einrichtung_id", einrichtungId ?? "")
-        .is("archived_at", null)
-        .order("sort_order"),
-      supabase
-        .from("kinder")
-        .select(KIND_SELECT)
-        .eq("gruppe_id", gruppeId)
-        .eq("status", "aktiv")
-        .is("archived_at", null)
-        .order("geburtsdatum", { ascending: true }),
-      supabase
-        .from("kinder")
-        .select(KIND_SELECT)
-        .eq("gruppe_id", gruppeId)
-        .in("status", ["nachruecker", "geplant"])
-        .is("archived_at", null)
-        .order("geburtsdatum", { ascending: true }),
-      supabase
-        .from("children_place_calculation_view")
-        .select("platzwert")
-        .eq("gruppe_id", gruppeId),
-    ]);
+  const [
+    { data: geschwisterGruppen },
+    { data: aktiveKinderRoh },
+    { data: nachrueckerKinderRoh },
+    { data: platzwerte },
+    { data: alleKinderRoh },
+  ] = await Promise.all([
+    supabase
+      .from("gruppen")
+      .select("id, name, gruppenart, sollplatze")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .is("archived_at", null)
+      .order("sort_order"),
+    supabase
+      .from("kinder")
+      .select(KIND_SELECT)
+      .eq("gruppe_id", gruppeId)
+      .eq("status", "aktiv")
+      .is("archived_at", null)
+      .order("geburtsdatum", { ascending: true }),
+    supabase
+      .from("kinder")
+      .select(KIND_SELECT)
+      .eq("gruppe_id", gruppeId)
+      .in("status", ["nachruecker", "geplant"])
+      .is("archived_at", null)
+      .order("geburtsdatum", { ascending: true }),
+    supabase
+      .from("children_place_calculation_view")
+      .select("platzwert")
+      .eq("gruppe_id", gruppeId),
+    // Für die Handlungsbedarf-Vorschau unten: die gleiche Berechnung wie auf /gruppen/vorschau,
+    // aber nur für diese Gruppe gefiltert — braucht dafür Kinder der ganzen Einrichtung (Nachrücker
+    // können für Vorschläge auch aus anderen Gruppen kommen).
+    supabase
+      .from("kinder")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort")
+      .eq("einrichtung_id", einrichtungId ?? "")
+      .is("archived_at", null)
+      .limit(3000),
+  ]);
 
   const aktiveKinder = (aktiveKinderRoh ?? []) as RohKind[];
   const nachrueckerKinder = (nachrueckerKinderRoh ?? []) as RohKind[];
@@ -200,6 +243,7 @@ export default async function GruppeDetailPage({
   const sollplatzeRounded = Math.round(Number(gruppe.sollplatze));
   const belegtRounded = Math.round(belegtRaw);
   const freiRounded = sollplatzeRounded - belegtRounded;
+  const belegungsStatus = bestimmeBelegungsStatus(sollplatzeRounded, belegtRounded);
 
   // Sitzplätze 1..Sollplätze in kanonischer Alters-Reihenfolge — die Platznummer eines Kindes bleibt unabhängig
   // von der gewählten Anzeige-Sortierung gleich (siehe lib/gruppen/sitzplaetze.ts).
@@ -245,7 +289,13 @@ export default async function GruppeDetailPage({
   const hinweise: HinweisEintrag[] = aktiveKinder.flatMap((kind) => {
     const eintraege: HinweisEintrag[] = [];
     if (austrittWarnung(kind.austritt, kitaYearStartMonth) === "rot" && kind.austritt) {
-      eintraege.push({ id: kind.id, name: `${kind.vorname} ${kind.nachname}`, grund: "Austritt", datum: kind.austritt });
+      eintraege.push({
+        id: kind.id,
+        name: `${kind.vorname} ${kind.nachname}`,
+        grund: "Austritt",
+        datum: kind.austritt,
+        aktion: "Nachrücker prüfen",
+      });
     }
     if (verlaengerungWarnung(kind.vertrag_gueltig_bis) === "rot" && kind.vertrag_gueltig_bis) {
       eintraege.push({
@@ -253,6 +303,7 @@ export default async function GruppeDetailPage({
         name: `${kind.vorname} ${kind.nachname}`,
         grund: "Vertrag/Buchung läuft ab",
         datum: kind.vertrag_gueltig_bis,
+        aktion: "Verlängerung oder Nachfolge klären",
       });
     }
     if (gruppe.gruppenart === "krippe" && krippenUebergangWarnung(kind.geburtsdatum) === "rot") {
@@ -265,6 +316,40 @@ export default async function GruppeDetailPage({
     }
     return eintraege;
   });
+
+  // Handlungsbedarf: dieselbe Berechnung wie /gruppen/vorschau, hier auf die aktuelle Gruppe gefiltert und auf die
+  // nächsten anstehenden Plätze verdichtet statt als volle Monatstabelle.
+  const einrichtungsDaten = gruppe.einrichtungen;
+  const auswaertigen =
+    einrichtungsDaten?.bundesland_code === "bw" &&
+    einrichtungsDaten.standort_gemeinde &&
+    einrichtungsDaten.auswaertigen_quote_prozent !== null
+      ? {
+          standortGemeinde: einrichtungsDaten.standort_gemeinde,
+          quoteProzent: Number(einrichtungsDaten.auswaertigen_quote_prozent),
+        }
+      : undefined;
+  const heute = new Date();
+  const vorschauStart = toIsoDateString(new Date(Date.UTC(heute.getUTCFullYear(), heute.getUTCMonth(), 1)));
+  const { freiwerdende } = berechneBelegungsVorschau(
+    (geschwisterGruppen ?? []).map((g) => ({ id: g.id, name: g.name, gruppenart: g.gruppenart, sollplatze: Number(g.sollplatze) })),
+    (alleKinderRoh ?? []).map((k) => ({
+      id: k.id,
+      vorname: k.vorname,
+      nachname: k.nachname,
+      geburtsdatum: k.geburtsdatum,
+      geschlecht: k.geschlecht,
+      status: k.status,
+      gruppeId: k.gruppe_id,
+      eintritt: k.eintritt,
+      austritt: k.austritt,
+      wohnort: k.wohnort,
+    })),
+    vorschauStart,
+    HANDLUNGSBEDARF_MONATE,
+    auswaertigen
+  );
+  const eigeneFreiwerdende = freiwerdende.filter((f) => f.gruppeId === gruppeId).slice(0, HANDLUNGSBEDARF_MAX_EINTRAEGE);
 
   const geschwister = geschwisterGruppen ?? [];
   const eigenerIndex = geschwister.findIndex((g) => g.id === gruppeId);
@@ -329,9 +414,9 @@ export default async function GruppeDetailPage({
         <StatTile label="Sollplätze" value={String(sollplatzeRounded)} />
         <StatTile label="Belegt" value={String(belegtRounded)} />
         <StatTile
-          label={freiRounded < 0 ? "Überbelegt" : "Frei"}
+          label={belegungsStatus === "ueberbelegt" ? "Überbelegt" : "Frei"}
           value={String(Math.abs(freiRounded))}
-          tone={freiRounded < 0 ? "warn" : "default"}
+          tone={belegungsStatus === "ueberbelegt" ? "warn" : "default"}
         />
         <StatTile label="Nachrücker/geplant" value={String(nachrueckerKinder.length)} />
         <StatTile
@@ -341,6 +426,65 @@ export default async function GruppeDetailPage({
       </div>
 
       <HinweiseBox eintraege={hinweise} />
+
+      {eigeneFreiwerdende.length > 0 ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="font-heading text-sm font-medium text-muted-foreground">
+            Nächste freie Plätze &amp; Nachrücker-Vorschläge
+          </h2>
+          <ul className="flex flex-col gap-2">
+            {eigeneFreiwerdende.map((f) => (
+              <li key={f.monat} className="flex flex-col gap-2 rounded-xl border bg-secondary/30 p-4">
+                <p className="text-sm font-medium">
+                  {monatLang(f.monat)}: {f.anzahl === 1 ? "1 Platz wird frei" : `${f.anzahl} Plätze werden frei`}
+                </p>
+                {f.abgaenge.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Austritt: {f.abgaenge.map((a) => `${a.name} (${formatDate(a.austritt)})`).join(", ")}
+                  </p>
+                ) : null}
+                {f.bereitsEingeplant.length > 0 ? (
+                  <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                    Bereits vergeben an:{" "}
+                    {f.bereitsEingeplant.map((e, i) => (
+                      <span key={e.kindId}>
+                        {i > 0 ? ", " : ""}
+                        <Link href={`/kinder/${e.kindId}`} className="font-medium underline-offset-2 hover:underline">
+                          {e.name}
+                        </Link>{" "}
+                        (Eintritt {formatDate(e.eintritt)})
+                      </span>
+                    ))}
+                  </p>
+                ) : null}
+                {f.vorschlaege.length > 0 ? (
+                  <ul className="flex flex-col gap-1.5">
+                    {f.vorschlaege.map((v) => (
+                      <li key={v.kindId} className="flex flex-wrap items-center gap-2 text-sm">
+                        <Link href={`/kinder/${v.kindId}`} className="font-medium underline-offset-2 hover:underline">
+                          {v.name}
+                        </Link>
+                        <AmpelBadge
+                          ampel={PASSUNG_AMPEL[v.einschaetzung]}
+                          labels={{ [PASSUNG_AMPEL[v.einschaetzung]]: PASSUNG_LABEL[v.einschaetzung] }}
+                        />
+                        {v.eintritt ? (
+                          <span className="text-xs text-muted-foreground">Eintritt geplant {formatDate(v.eintritt)}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : f.bereitsEingeplant.length < f.anzahl ? (
+                  <p className="text-xs text-muted-foreground">Kein passender Nachrücker vorgemerkt — prüfe die Warteliste.</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <Link href="/gruppen/vorschau" className="self-start text-xs text-primary underline-offset-2 hover:underline print:hidden">
+            Alle Gruppen &amp; mehr Monate ansehen →
+          </Link>
+        </section>
+      ) : null}
 
       <form className="flex flex-wrap items-end gap-3 print:hidden" method="get">
         {sort ? <input type="hidden" name="sort" value={sort} /> : null}

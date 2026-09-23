@@ -7,6 +7,8 @@ export type HinweisEintrag = {
   name: string;
   grund: string;
   datum: string;
+  /** Kurzer Handlungsvorschlag, z.B. "Nachrücker prüfen" — ergänzt den reinen Zustand um ein "was tun". */
+  aktion?: string;
 };
 
 export function HinweiseBox({ eintraege }: { eintraege: HinweisEintrag[] }) {
@@ -29,6 +31,7 @@ export function HinweiseBox({ eintraege }: { eintraege: HinweisEintrag[] }) {
             </Link>
             {" — "}
             {eintrag.grund} am {formatDate(eintrag.datum)}
+            {eintrag.aktion ? ` — ${eintrag.aktion}` : ""}
           </li>
         ))}
       </ul>

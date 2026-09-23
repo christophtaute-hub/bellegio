@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { berechneSitzplaetze, findePlatzVonKindId } from "@/lib/gruppen/sitzplaetze";
+import { berechneSitzplaetze, findePlatzVonKindId, bestimmeBelegungsStatus } from "@/lib/gruppen/sitzplaetze";
 
 type TestKind = { id: string; name: string };
 
@@ -51,5 +51,23 @@ describe("findePlatzVonKindId", () => {
 
   it("gibt null zurück ohne kindId", () => {
     expect(findePlatzVonKindId(zeilen, null)).toBeNull();
+  });
+});
+
+describe("bestimmeBelegungsStatus", () => {
+  it("weniger Kinder als Sollplätze: frei", () => {
+    expect(bestimmeBelegungsStatus(10, 7)).toBe("frei");
+  });
+
+  it("genau so viele Kinder wie Sollplätze: voll", () => {
+    expect(bestimmeBelegungsStatus(10, 10)).toBe("voll");
+  });
+
+  it("mehr Kinder als Sollplätze: ueberbelegt", () => {
+    expect(bestimmeBelegungsStatus(10, 11)).toBe("ueberbelegt");
+  });
+
+  it("keine Sollplätze und keine Kinder: voll (0 == 0)", () => {
+    expect(bestimmeBelegungsStatus(0, 0)).toBe("voll");
   });
 });

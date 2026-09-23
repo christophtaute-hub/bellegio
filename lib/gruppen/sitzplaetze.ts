@@ -14,6 +14,17 @@ export function berechneSitzplaetze<K>(sollplatze: number, kinderSortiert: K[]):
   return zeilen;
 }
 
+export type GruppenBelegungsStatus = "frei" | "voll" | "ueberbelegt";
+
+/** Belegungsstatus einer Gruppe aus Sollplätzen und tatsächlich belegten Plätzen — dieselbe
+ * Klassifizierung, die bisher inline auf der Gruppen-Detailseite berechnet wurde, jetzt als
+ * eigene, testbare Funktion. */
+export function bestimmeBelegungsStatus(sollplatze: number, belegt: number): GruppenBelegungsStatus {
+  if (belegt > sollplatze) return "ueberbelegt";
+  if (belegt === sollplatze) return "voll";
+  return "frei";
+}
+
 /** Platznummer eines Kindes in einer berechneten Sitzplatzliste — für den Nachrücker-Bezug (Phase 5): welchen
  * Platz hat das Kind, das der Nachrücker ersetzt? `null`, wenn das Kind aktuell keinen Platz (mehr) belegt. */
 export function findePlatzVonKindId<K extends { id: string }>(
