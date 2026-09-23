@@ -19,7 +19,7 @@ export default async function GruppeBearbeitenPage({
     supabase
       .from("gruppen")
       .select(
-        "id, name, gruppenart, sollplatze, einrichtung_id, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden, nrw_gruppenform, nrw_buchungszeit_stunden"
+        "id, name, gruppenart, sollplatze, einrichtung_id, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden, bw_randzeit_stunden, nrw_gruppenform, nrw_buchungszeit_stunden"
       )
       .eq("id", gruppeId)
       .is("archived_at", null)
@@ -42,6 +42,7 @@ export default async function GruppeBearbeitenPage({
           bwBetriebsform: gruppe.bw_betriebsform,
           bwAltersmischung: gruppe.bw_altersmischung ?? false,
           bwOeffnungszeitStunden: gruppe.bw_oeffnungszeit_stunden === null ? null : Number(gruppe.bw_oeffnungszeit_stunden),
+          bwRandzeitStunden: gruppe.bw_randzeit_stunden === null ? null : Number(gruppe.bw_randzeit_stunden),
           nrwGruppenform: gruppe.nrw_gruppenform,
           nrwBuchungszeitStunden: gruppe.nrw_buchungszeit_stunden === null ? null : Number(gruppe.nrw_buchungszeit_stunden),
         }}

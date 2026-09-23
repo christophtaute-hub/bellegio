@@ -74,7 +74,7 @@ export async function ladePersonalplanungKontext(
     const [{ data: gruppenRows }, tabelle] = await Promise.all([
       supabase
         .from("gruppen")
-        .select("id, name, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden")
+        .select("id, name, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden, bw_randzeit_stunden")
         .eq("einrichtung_id", einrichtungId)
         .is("archived_at", null),
       getBWPersonalschluesselTabelle(supabase),
@@ -89,6 +89,7 @@ export async function ladePersonalplanungKontext(
         bwBetriebsform: g.bw_betriebsform,
         bwAltersmischung: g.bw_altersmischung,
         bwOeffnungszeitStunden: g.bw_oeffnungszeit_stunden,
+        bwRandzeitStunden: g.bw_randzeit_stunden,
       })),
     };
   }

@@ -8,6 +8,8 @@ import { StatTile } from "@/components/ui/stat-tile";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import {
   buildBWPersonalplanung,
+  hatRandzeitSplit,
+  BW_STANDARD_RANDZEIT_STUNDEN,
   type BWGruppe,
   type BWPersonalschluesselRow,
 } from "@/lib/team/personalschluessel-bw";
@@ -45,6 +47,7 @@ type GruppeState = {
   betriebsform: string;
   altersmischung: boolean;
   oeffnungszeitStunden: number;
+  randzeitStunden: number;
 };
 type PersonalState = { id: number; wochenstunden: number };
 
@@ -60,6 +63,7 @@ export function SzenarioRechnerBW({
     betriebsform: string | null;
     altersmischung: boolean;
     oeffnungszeitStunden: number | null;
+    randzeitStunden?: number | null;
   }[];
   initialPersonal: { wochenstunden: number }[];
   vollzeitWochenstunden: number;
@@ -73,6 +77,7 @@ export function SzenarioRechnerBW({
       altersmischung: g.altersmischung,
       oeffnungszeitStunden:
         g.oeffnungszeitStunden ?? ersteZeile?.referenzOeffnungszeitStunden ?? 6,
+      randzeitStunden: g.randzeitStunden ?? BW_STANDARD_RANDZEIT_STUNDEN,
     }))
   );
   const [personal, setPersonal] = useState<PersonalState[]>(
@@ -86,6 +91,7 @@ export function SzenarioRechnerBW({
       bwBetriebsform: g.betriebsform,
       bwAltersmischung: g.altersmischung,
       bwOeffnungszeitStunden: g.oeffnungszeitStunden,
+      bwRandzeitStunden: g.randzeitStunden,
     }));
     const istAzGesamt = personal.reduce((sum, p) => sum + p.wochenstunden, 0);
     return buildBWPersonalplanung(bwGruppen, tabelle, istAzGesamt, vollzeitWochenstunden);
@@ -102,6 +108,7 @@ export function SzenarioRechnerBW({
                 <th className="p-2 text-left">Name</th>
                 <th className="p-2 text-left">Betriebsform / Altersmischung</th>
                 <th className="p-2 text-right">Öffnungszeit (Std./Tag)</th>
+                <th className="p-2 text-right">Randzeit (Std./Tag)</th>
                 <th className="p-2 text-right">Soll-VZÄ</th>
                 <th className="p-2"></th>
               </tr>
@@ -186,6 +193,28 @@ export function SzenarioRechnerBW({
                         }
                       />
                     </td>
+                    <td className="p-1 text-right">
+                      {hatRandzeitSplit(g.betriebsform, g.altersmischung) ? (
+                        <Input
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          className="h-8 w-24 text-right"
+                          value={g.randzeitStunden}
+                          onChange={(e) =>
+                            setGruppen((prev) =>
+                              prev.map((row) =>
+                                row.id === g.id
+                                  ? { ...row, randzeitStunden: Number(e.target.value) || 0 }
+                                  : row
+                              )
+                            )
+                          }
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">— (ohne Randzeit-Trennung)</span>
+                      )}
+                    </td>
                     <td className="p-2 text-right tabular-nums">
                       {ergebnisZeile ? formatNumber(ergebnisZeile.sollVzae) : "–"}
                     </td>
@@ -221,6 +250,7 @@ export function SzenarioRechnerBW({
                 betriebsform: ersteZeile?.betriebsform ?? "",
                 altersmischung: false,
                 oeffnungszeitStunden: ersteZeile?.referenzOeffnungszeitStunden ?? 6,
+                randzeitStunden: BW_STANDARD_RANDZEIT_STUNDEN,
               },
             ])
           }

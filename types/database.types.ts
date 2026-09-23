@@ -372,6 +372,7 @@ export type Database = {
           bw_altersmischung: boolean
           bw_betriebsform: string | null
           bw_oeffnungszeit_stunden: number | null
+          bw_randzeit_stunden: number | null
           created_at: string
           einrichtung_id: string
           gruppenart: string
@@ -388,6 +389,7 @@ export type Database = {
           bw_altersmischung?: boolean
           bw_betriebsform?: string | null
           bw_oeffnungszeit_stunden?: number | null
+          bw_randzeit_stunden?: number | null
           created_at?: string
           einrichtung_id: string
           gruppenart: string
@@ -404,6 +406,7 @@ export type Database = {
           bw_altersmischung?: boolean
           bw_betriebsform?: string | null
           bw_oeffnungszeit_stunden?: number | null
+          bw_randzeit_stunden?: number | null
           created_at?: string
           einrichtung_id?: string
           gruppenart?: string

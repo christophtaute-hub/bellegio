@@ -13,6 +13,7 @@ import {
   NRW_GRUPPENFORMEN,
   type GruppeInput,
 } from "@/lib/gruppen/optionen";
+import { hatRandzeitSplit, BW_STANDARD_RANDZEIT_STUNDEN } from "@/lib/team/personalschluessel-bw";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -24,6 +25,7 @@ const LEER: GruppeInput = {
   bwBetriebsform: null,
   bwAltersmischung: false,
   bwOeffnungszeitStunden: null,
+  bwRandzeitStunden: null,
   nrwGruppenform: null,
   nrwBuchungszeitStunden: null,
 };
@@ -152,6 +154,23 @@ export function GruppeForm({
               required
             />
           </Feld>
+          {werte.bwBetriebsform && hatRandzeitSplit(werte.bwBetriebsform, werte.bwAltersmischung) ? (
+            <Feld
+              id="gruppe-randzeit"
+              label="Randzeit (Stunden)"
+              hinweis={`Anteil der Öffnungszeit mit nur einer statt zwei Fachkräften (§ 1 Abs. 2 KiTaVO). Leer = gesetzlicher Standardwert (${BW_STANDARD_RANDZEIT_STUNDEN} Std.).`}
+            >
+              <Input
+                id="gruppe-randzeit"
+                inputMode="decimal"
+                placeholder={String(BW_STANDARD_RANDZEIT_STUNDEN)}
+                value={werte.bwRandzeitStunden ?? ""}
+                onChange={(e) =>
+                  setze("bwRandzeitStunden", e.target.value.trim() === "" ? null : Number(e.target.value.replace(",", ".")))
+                }
+              />
+            </Feld>
+          ) : null}
           {bwForm?.altersmischungMoeglich ? (
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
               <input type="checkbox" checked={werte.bwAltersmischung} onChange={(e) => setze("bwAltersmischung", e.target.checked)} />

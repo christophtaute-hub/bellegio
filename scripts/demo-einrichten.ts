@@ -104,6 +104,7 @@ async function main() {
           bw_betriebsform: g.bw_betriebsform,
           bw_altersmischung: g.bw_altersmischung,
           bw_oeffnungszeit_stunden: g.bw_oeffnungszeit_stunden,
+          bw_randzeit_stunden: g.bw_randzeit_stunden,
           nrw_gruppenform: g.nrw_gruppenform,
           nrw_buchungszeit_stunden: g.nrw_buchungszeit_stunden,
         })

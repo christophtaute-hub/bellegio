@@ -8,6 +8,7 @@ const basis: GruppeInput = {
   bwBetriebsform: null,
   bwAltersmischung: false,
   bwOeffnungszeitStunden: null,
+  bwRandzeitStunden: null,
   nrwGruppenform: null,
   nrwBuchungszeitStunden: null,
 };
@@ -49,6 +50,39 @@ describe("Gruppen-Validierung", () => {
     expect(regel.felder?.bw_altersmischung).toBe(true);
     const ganztag = pruefeGruppe({ ...basis, bwBetriebsform: "ganztagsgruppe", bwAltersmischung: true, bwOeffnungszeitStunden: 9 }, "bw");
     expect(ganztag.felder?.bw_altersmischung).toBe(false);
+  });
+
+  it("BW: Randzeit nur bei Betriebsformen mit Randzeit-Trennung relevant", () => {
+    // Reine Regelgruppe ohne Altersmischung: keine Randzeit-Trennung, ein gesetzter Wert wird verworfen.
+    const regel = pruefeGruppe(
+      { ...basis, bwBetriebsform: "regelgruppe", bwOeffnungszeitStunden: 6, bwRandzeitStunden: 3 },
+      "bw"
+    );
+    expect(regel.felder?.bw_randzeit_stunden).toBeNull();
+
+    // Ganztagsgruppe: Randzeit-Trennung gilt, ein gültiger Wert wird übernommen.
+    const ganztag = pruefeGruppe(
+      { ...basis, bwBetriebsform: "ganztagsgruppe", bwOeffnungszeitStunden: 9, bwRandzeitStunden: 2 },
+      "bw"
+    );
+    expect(ganztag.felder?.bw_randzeit_stunden).toBe(2);
+
+    // Ohne Angabe (null) bleibt es beim gesetzlichen Standardwert — kein Fehler.
+    const ohneAngabe = pruefeGruppe(
+      { ...basis, bwBetriebsform: "ganztagsgruppe", bwOeffnungszeitStunden: 9, bwRandzeitStunden: null },
+      "bw"
+    );
+    expect(ohneAngabe.fehler).toBeNull();
+    expect(ohneAngabe.felder?.bw_randzeit_stunden).toBeNull();
+  });
+
+  it("BW: Randzeit darf nicht negativ und nicht länger als die Öffnungszeit sein", () => {
+    expect(
+      pruefeGruppe({ ...basis, bwBetriebsform: "ganztagsgruppe", bwOeffnungszeitStunden: 9, bwRandzeitStunden: -1 }, "bw").fehler
+    ).toMatch(/Randzeit/);
+    expect(
+      pruefeGruppe({ ...basis, bwBetriebsform: "ganztagsgruppe", bwOeffnungszeitStunden: 9, bwRandzeitStunden: 10 }, "bw").fehler
+    ).toMatch(/Randzeit/);
   });
 
   it("BW: verwirft NRW-Felder", () => {

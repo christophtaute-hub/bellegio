@@ -54,7 +54,7 @@ export default async function SzenarioPage() {
       einrichtungId
         ? supabase
             .from("gruppen")
-            .select("name, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden")
+            .select("name, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden, bw_randzeit_stunden")
             .eq("einrichtung_id", einrichtungId)
             .is("archived_at", null)
         : Promise.resolve({ data: null }),
@@ -65,6 +65,7 @@ export default async function SzenarioPage() {
       betriebsform: g.bw_betriebsform,
       altersmischung: g.bw_altersmischung,
       oeffnungszeitStunden: g.bw_oeffnungszeit_stunden,
+      randzeitStunden: g.bw_randzeit_stunden,
     }));
     const initialPersonal = teamRows.map((t) => ({ wochenstunden: t.wochenstunden ?? 0 }));
 

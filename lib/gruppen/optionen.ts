@@ -1,4 +1,5 @@
 import { GRUPPENART_LABEL } from "@/lib/constants";
+import { hatRandzeitSplit } from "@/lib/team/personalschluessel-bw";
 
 export const GRUPPENARTEN = Object.keys(GRUPPENART_LABEL);
 
@@ -26,6 +27,9 @@ export type GruppeInput = {
   bwBetriebsform: string | null;
   bwAltersmischung: boolean;
   bwOeffnungszeitStunden: number | null;
+  /** null = gesetzlicher Standardwert (1 Stunde). Nur relevant bei Betriebsformen mit
+   * Randzeit-Trennung, siehe `hatRandzeitSplit`. */
+  bwRandzeitStunden: number | null;
   nrwGruppenform: string | null;
   nrwBuchungszeitStunden: number | null;
 };
@@ -39,6 +43,7 @@ export type GruppeDbFelder = {
   bw_betriebsform: string | null;
   bw_altersmischung: boolean;
   bw_oeffnungszeit_stunden: number | null;
+  bw_randzeit_stunden: number | null;
   nrw_gruppenform: string | null;
   nrw_buchungszeit_stunden: number | null;
 };
@@ -62,6 +67,7 @@ export function pruefeGruppe(
     bw_betriebsform: null,
     bw_altersmischung: false,
     bw_oeffnungszeit_stunden: null,
+    bw_randzeit_stunden: null,
     nrw_gruppenform: null,
     nrw_buchungszeit_stunden: null,
   };
@@ -73,9 +79,16 @@ export function pruefeGruppe(
     if (stunden === null || !(stunden > 0 && stunden <= 14)) {
       return { fehler: "Bitte die tägliche Öffnungszeit in Stunden angeben (z. B. 7 oder 9,5)." };
     }
+    const altersmischung = form.altersmischungMoeglich && input.bwAltersmischung;
+    const randzeitRelevant = hatRandzeitSplit(form.value, altersmischung);
+    const randzeit = input.bwRandzeitStunden;
+    if (randzeitRelevant && randzeit !== null && !(randzeit >= 0 && randzeit <= stunden)) {
+      return { fehler: "Die Randzeit darf nicht negativ und nicht länger als die Öffnungszeit sein." };
+    }
     felder.bw_betriebsform = form.value;
-    felder.bw_altersmischung = form.altersmischungMoeglich && input.bwAltersmischung;
+    felder.bw_altersmischung = altersmischung;
     felder.bw_oeffnungszeit_stunden = stunden;
+    felder.bw_randzeit_stunden = randzeitRelevant ? randzeit : null;
   } else if (bundeslandCode === "nrw") {
     if (!NRW_GRUPPENFORMEN.some((f) => f.value === input.nrwGruppenform)) {
       return { fehler: "Bitte die Gruppenform (I, II oder III) auswählen." };
