@@ -8,10 +8,12 @@ import type { Bereich, Zugriff } from "@/lib/server/current-user-role";
 import {
   darfNutzerVerwalten,
   pruefeNeuenNutzer,
+  zugriffRang,
   type NeueRolle,
   type NeuerNutzerInput,
   type Verwaltungsaktion,
 } from "@/lib/nutzer/verwaltung";
+import { getZugriff } from "@/lib/server/current-user-role";
 import { mitZeitlimit, ZeitlimitFehler } from "@/lib/supabase/mit-zeitlimit";
 
 export type NutzerErgebnis = { ok: true } | { ok: false; error: string };
@@ -96,12 +98,53 @@ export async function setKannRechteVerwalten(userId: string, value: boolean): Pr
   }
 }
 
+/** Macht einen Nutzer zum lokalen Admin einer einzelnen Einrichtung (darf dort Rechte vergeben,
+ * ohne trägerweiten Zugriff zu bekommen) oder nimmt das wieder zurück. Nur die Träger-
+ * Administration darf das (durchgesetzt über RLS auf einrichtung_lokale_admins). */
+export async function setLokalerAdmin(userId: string, einrichtungId: string, value: boolean): Promise<NutzerErgebnis> {
+  try {
+    const supabase = await createClient();
+    if (value) {
+      const { error } = await supabase.from("einrichtung_lokale_admins").insert({ user_id: userId, einrichtung_id: einrichtungId });
+      if (error) return { ok: false, error: NICHT_ERLAUBT };
+    } else {
+      const { error } = await supabase.from("einrichtung_lokale_admins").delete().eq("user_id", userId).eq("einrichtung_id", einrichtungId);
+      if (error) return { ok: false, error: NICHT_ERLAUBT };
+    }
+    revalidatePath("/einstellungen/nutzer");
+    return { ok: true };
+  } catch (fehler) {
+    return alsErgebnis("setLokalerAdmin", fehler);
+  }
+}
+
 /** Legt einen Nutzer an — mit sofort nutzbarem Passwort oder per Einladungs-Mail — samt Rolle und Rechten. */
 export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgebnis> {
   try {
     const aufrufer = await aktuellerAufrufer();
     if (!aufrufer) return { ok: false, error: "Nicht angemeldet." };
-    if (aufrufer.rolle !== "traeger_admin") return { ok: false, error: "Nur die Träger-Administration darf Nutzer anlegen." };
+    const istTraegerAdmin = aufrufer.rolle === "traeger_admin";
+
+    // Wer nicht Träger-Admin ist, darf nur als lokale Administration anlegen: nur Mitarbeiter,
+    // nur für die eigene(n) Einrichtung(en), nie mit mehr Rechten, als man selbst dort hat.
+    if (!istTraegerAdmin) {
+      const { data: lokal } = await aufrufer.supabase.from("einrichtung_lokale_admins").select("einrichtung_id").eq("user_id", aufrufer.id);
+      const lokalAdminIds = new Set((lokal ?? []).map((r) => r.einrichtung_id));
+      if (lokalAdminIds.size === 0) return { ok: false, error: "Du darfst keine Nutzer anlegen." };
+      if (input.rolle !== "mitarbeiter") return { ok: false, error: "Als lokale Administration kannst du nur Mitarbeiter mit Rechten für deine eigene(n) Einrichtung(en) anlegen." };
+      if (input.einrichtungIds.length === 0 || input.einrichtungIds.some((id) => !lokalAdminIds.has(id))) {
+        return { ok: false, error: "Du kannst Rechte nur für deine eigene(n) Einrichtung(en) vergeben." };
+      }
+      for (const einrichtungId of input.einrichtungIds) {
+        for (const [bereich, zugriff] of Object.entries(input.rechte) as [Bereich, Zugriff][]) {
+          const eigenerZugriff = await getZugriff(aufrufer.supabase, einrichtungId, bereich);
+          if (zugriffRang(zugriff) > zugriffRang(eigenerZugriff)) {
+            return { ok: false, error: "Du kannst keine höheren Rechte vergeben, als du selbst hast." };
+          }
+        }
+      }
+    }
+
     const fehler = pruefeNeuenNutzer(input);
     if (fehler) return { ok: false, error: fehler };
 

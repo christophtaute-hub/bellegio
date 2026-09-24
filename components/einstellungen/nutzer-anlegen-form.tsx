@@ -28,8 +28,16 @@ const KEINE_RECHTE: Record<Bereich, Zugriff> = {
 };
 
 /** Legt einen Nutzer an: mit direkt vergebenem Passwort (sofort nutzbar) oder per Einladungs-Mail, dazu Rolle und
- * Rechte je Bereich für die gewählten Einrichtungen. Feinjustierung je Einrichtung bleibt in der Liste darunter. */
-export function NutzerAnlegenForm({ einrichtungen }: { einrichtungen: { id: string; name: string }[] }) {
+ * Rechte je Bereich für die gewählten Einrichtungen. Feinjustierung je Einrichtung bleibt in der Liste darunter.
+ * `nurMitarbeiter`: für lokale Admins (nur Rechte für die eigene(n) Einrichtung(en), Rolle immer Mitarbeiter —
+ * die Rollenauswahl entfällt, `einrichtungen` ist von der aufrufenden Seite bereits auf ihre eigene(n) begrenzt). */
+export function NutzerAnlegenForm({
+  einrichtungen,
+  nurMitarbeiter = false,
+}: {
+  einrichtungen: { id: string; name: string }[];
+  nurMitarbeiter?: boolean;
+}) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -119,17 +127,23 @@ export function NutzerAnlegenForm({ einrichtungen }: { einrichtungen: { id: stri
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="nutzer-rolle">Rolle</Label>
-        <select id="nutzer-rolle" className={`${SELECT_CLASS} w-56`} value={rolle} onChange={(e) => setRolle(e.target.value as NeueRolle)}>
-          {ROLLEN.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </select>
-        <p className="text-xs text-muted-foreground">{ROLLEN.find((r) => r.value === rolle)?.hinweis}</p>
-      </div>
+      {nurMitarbeiter ? (
+        <p className="text-xs text-muted-foreground">
+          Als lokale Administration legst du hier nur Mitarbeiter mit Rechten für deine eigene(n) Einrichtung(en) an.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="nutzer-rolle">Rolle</Label>
+          <select id="nutzer-rolle" className={`${SELECT_CLASS} w-56`} value={rolle} onChange={(e) => setRolle(e.target.value as NeueRolle)}>
+            {ROLLEN.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">{ROLLEN.find((r) => r.value === rolle)?.hinweis}</p>
+        </div>
+      )}
 
       {rolle === "mitarbeiter" ? (
         <div className="flex flex-col gap-3">

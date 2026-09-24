@@ -288,6 +288,39 @@ export type Database = {
           },
         ]
       }
+      einrichtung_lokale_admins: {
+        Row: {
+          created_at: string
+          einrichtung_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          einrichtung_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          einrichtung_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einrichtung_lokale_admins_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einrichtung_lokale_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       einrichtungen: {
         Row: {
           address_city: string | null

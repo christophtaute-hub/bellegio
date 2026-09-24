@@ -6,6 +6,7 @@ import {
   loescheNutzer,
   setEinrichtungBerechtigung,
   setKannRechteVerwalten,
+  setLokalerAdmin,
   setzeNutzerPasswort,
   setzeNutzerRolle,
   sperreNutzer,
@@ -60,6 +61,8 @@ export type BerechtigungRow = {
   zugriff: string;
 };
 
+export type LokalerAdminRow = { user_id: string; einrichtung_id: string };
+
 export function RechteMatrix({
   currentUserId,
   istTraegerAdmin,
@@ -67,6 +70,7 @@ export function RechteMatrix({
   users,
   berechtigungen,
   eigeneZugriffe,
+  lokaleAdmins,
 }: {
   currentUserId: string;
   istTraegerAdmin: boolean;
@@ -74,6 +78,7 @@ export function RechteMatrix({
   users: MatrixUser[];
   berechtigungen: BerechtigungRow[];
   eigeneZugriffe: Record<string, Record<Bereich, Zugriff>>;
+  lokaleAdmins: LokalerAdminRow[];
 }) {
   const [geoeffneterUser, setGeoeffneterUser] = useState<string | null>(null);
 
@@ -86,6 +91,9 @@ export function RechteMatrix({
     );
     return (treffer?.zugriff as Zugriff | undefined) ?? "kein_zugriff";
   };
+
+  const istLokalerAdmin = (userId: string, einrichtungId: string): boolean =>
+    lokaleAdmins.some((r) => r.user_id === userId && r.einrichtung_id === einrichtungId);
 
   return (
     <div className="flex flex-col gap-3">
@@ -137,6 +145,7 @@ export function RechteMatrix({
                           {BEREICHE.map((b) => (
                             <TableHead key={b.key}>{b.label}</TableHead>
                           ))}
+                          {istTraegerAdmin ? <TableHead>Lokaler Admin</TableHead> : null}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -167,6 +176,15 @@ export function RechteMatrix({
                                 </TableCell>
                               );
                             })}
+                            {istTraegerAdmin ? (
+                              <TableCell>
+                                <LokalerAdminToggle
+                                  userId={user.id}
+                                  einrichtungId={einrichtung.id}
+                                  wert={istLokalerAdmin(user.id, einrichtung.id)}
+                                />
+                              </TableCell>
+                            ) : null}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -277,6 +295,45 @@ function KannRechteVerwaltenToggle({
       Niveau)
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </label>
+  );
+}
+
+function LokalerAdminToggle({
+  userId,
+  einrichtungId,
+  wert,
+}: {
+  userId: string;
+  einrichtungId: string;
+  wert: boolean;
+}) {
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="flex w-fit items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          defaultChecked={wert}
+          disabled={isPending}
+          onChange={(event) => {
+            const neuerWert = event.target.checked;
+            setError(null);
+            startTransition(async () => {
+              try {
+                const ergebnis = await setLokalerAdmin(userId, einrichtungId, neuerWert);
+                if (!ergebnis.ok) setError(ergebnis.error);
+              } catch {
+                setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+              }
+            });
+          }}
+        />
+        Darf hier Rechte vergeben
+      </label>
+      {error ? <span className="text-xs text-destructive">{error}</span> : null}
+    </div>
   );
 }
 

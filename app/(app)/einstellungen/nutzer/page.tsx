@@ -23,7 +23,14 @@ export default async function NutzerUndRechtePage() {
     : { data: null };
 
   const istTraegerAdmin = eigenesProfil?.role === "traeger_admin";
-  const darfRechteVerwalten = istTraegerAdmin || Boolean(eigenesProfil?.kann_rechte_verwalten);
+  const kannRechteVerwaltenTraegerweit = Boolean(eigenesProfil?.kann_rechte_verwalten);
+
+  const { data: lokaleAdminZeilenEigene } = eigenesProfil && !istTraegerAdmin
+    ? await supabase.from("einrichtung_lokale_admins").select("einrichtung_id").eq("user_id", eigenesProfil.id)
+    : { data: null };
+  const eigeneLokalAdminIds = new Set((lokaleAdminZeilenEigene ?? []).map((r) => r.einrichtung_id));
+
+  const darfRechteVerwalten = istTraegerAdmin || kannRechteVerwaltenTraegerweit || eigeneLokalAdminIds.size > 0;
 
   if (!eigenesProfil || !darfRechteVerwalten) {
     return (
@@ -34,7 +41,7 @@ export default async function NutzerUndRechtePage() {
     );
   }
 
-  const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }] = await Promise.all([
+  const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }, { data: alleLokalenAdmins }] = await Promise.all([
     supabase
       .from("einrichtungen")
       .select("id, name")
@@ -47,12 +54,19 @@ export default async function NutzerUndRechtePage() {
       .eq("trager_id", eigenesProfil.trager_id)
       .order("full_name"),
     supabase.from("einrichtung_berechtigungen").select("user_id, einrichtung_id, bereich, zugriff"),
+    supabase.from("einrichtung_lokale_admins").select("user_id, einrichtung_id"),
   ]);
 
-  const einrichtungenListe = alleEinrichtungen ?? [];
+  // Eine lokale Administration (nicht trägerweit kann_rechte_verwalten) sieht und bearbeitet nur
+  // ihre eigene(n) Einrichtung(en) — nicht die ganze Trägerstruktur.
+  const sichtbareEinrichtungen =
+    istTraegerAdmin || kannRechteVerwaltenTraegerweit
+      ? alleEinrichtungen ?? []
+      : (alleEinrichtungen ?? []).filter((e) => eigeneLokalAdminIds.has(e.id));
+
   const eigeneZugriffe: Record<string, Record<Bereich, Zugriff>> = {};
   if (!istTraegerAdmin) {
-    for (const e of einrichtungenListe) {
+    for (const e of sichtbareEinrichtungen) {
       eigeneZugriffe[e.id] = {} as Record<Bereich, Zugriff>;
       for (const bereich of ALLE_BEREICHE) {
         eigeneZugriffe[e.id][bereich] = await getZugriff(supabase, e.id, bereich);
@@ -89,15 +103,20 @@ export default async function NutzerUndRechtePage() {
         </p>
       </div>
 
-      {istTraegerAdmin ? <NutzerAnlegenForm einrichtungen={einrichtungenListe} /> : null}
+      {istTraegerAdmin ? (
+        <NutzerAnlegenForm einrichtungen={sichtbareEinrichtungen} />
+      ) : eigeneLokalAdminIds.size > 0 ? (
+        <NutzerAnlegenForm einrichtungen={sichtbareEinrichtungen} nurMitarbeiter />
+      ) : null}
 
       <RechteMatrix
         currentUserId={eigenesProfil.id}
         istTraegerAdmin={istTraegerAdmin}
-        einrichtungen={einrichtungenListe}
+        einrichtungen={sichtbareEinrichtungen}
         users={(alleUsers ?? []).map((u) => ({ ...u, gesperrt: gesperrteIds.has(u.id) }))}
         berechtigungen={alleBerechtigungen ?? []}
         eigeneZugriffe={eigeneZugriffe}
+        lokaleAdmins={alleLokalenAdmins ?? []}
       />
     </div>
   );

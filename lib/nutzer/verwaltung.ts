@@ -17,6 +17,12 @@ export const ZUGRIFFE: { value: Zugriff; label: string }[] = [
   { value: "bearbeiten", label: "Bearbeiten" },
 ];
 
+/** Spiegelt app.zugriff_rang() aus der RLS — für Kappungs-Prüfungen im Anwendungscode (die
+ * eigentliche Durchsetzung passiert weiterhin in der Datenbank). */
+export function zugriffRang(zugriff: Zugriff): number {
+  return zugriff === "bearbeiten" ? 2 : zugriff === "ansehen" ? 1 : 0;
+}
+
 export const ROLLEN: { value: NeueRolle; label: string; hinweis: string }[] = [
   { value: "mitarbeiter", label: "Mitarbeiter", hinweis: "Sieht und bearbeitet nur, was du unten je Einrichtung und Bereich freigibst." },
   {
