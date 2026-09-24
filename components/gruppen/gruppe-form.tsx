@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createGruppe, updateGruppe, archiviereGruppe } from "@/lib/actions/gruppen";
+import { meldeErfolg, meldeFehler } from "@/lib/toast";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import {
   BW_BETRIEBSFORMEN,
@@ -71,8 +72,10 @@ export function GruppeForm({
     setPending(false);
     if (!ergebnis.ok) {
       setError(ergebnis.error);
+      meldeFehler(ergebnis.error);
       return;
     }
+    meldeErfolg(mode === "create" ? "Gruppe angelegt." : "Gruppe gespeichert.");
     router.push(`/gruppen/${ergebnis.id}`);
     router.refresh();
   }
@@ -85,8 +88,10 @@ export function GruppeForm({
     if (!ergebnis.ok) {
       setError(ergebnis.error);
       setBestaetigeArchiv(false);
+      meldeFehler(ergebnis.error);
       return;
     }
+    meldeErfolg("Gruppe archiviert.");
     router.push("/gruppen");
     router.refresh();
   }

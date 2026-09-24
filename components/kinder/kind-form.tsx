@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
+import { meldeFehler } from "@/lib/toast";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
@@ -161,6 +162,7 @@ export function KindForm({
     } catch (error) {
       if (error instanceof Error && error.message !== "NEXT_REDIRECT") {
         setSubmitError(error.message);
+        meldeFehler(error.message);
       } else if (!(error instanceof Error)) {
         throw error;
       }

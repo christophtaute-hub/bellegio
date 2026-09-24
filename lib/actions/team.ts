@@ -55,7 +55,7 @@ export async function createTeamMitglied(input: TeamInput) {
 
   revalidatePath("/team");
   revalidatePath("/controlling");
-  redirect(`/team/${mitglied.id}`);
+  redirect(`/team/${mitglied.id}?gespeichert=1`);
 }
 
 export async function updateTeamMitglied(teamId: string, input: TeamInput) {
@@ -82,7 +82,7 @@ export async function updateTeamMitglied(teamId: string, input: TeamInput) {
   revalidatePath("/team");
   revalidatePath(`/team/${teamId}`);
   revalidatePath("/controlling");
-  redirect(`/team/${teamId}`);
+  redirect(`/team/${teamId}?gespeichert=1`);
 }
 
 export async function updateTeamGruppe(teamId: string, gruppeId: string | null) {

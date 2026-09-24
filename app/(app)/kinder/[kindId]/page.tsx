@@ -8,6 +8,7 @@ import { DatenschutzAktionen } from "@/components/datenschutz/datenschutz-aktion
 import { istAnonymisiert, istEntfernbar } from "@/lib/datenschutz/loeschfrist";
 import { buttonVariants } from "@/components/ui/button";
 import { KindForm } from "@/components/kinder/kind-form";
+import { ErfolgsToast } from "@/components/shared/erfolgs-toast";
 import {
   Aenderungshistorie,
   type AenderungsEintrag,
@@ -158,6 +159,7 @@ export default async function KindDetailPage({
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
+      <ErfolgsToast text="Kind gespeichert." />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="font-heading text-2xl text-primary">
           {kind.vorname} {kind.nachname}

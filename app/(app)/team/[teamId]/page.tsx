@@ -18,6 +18,7 @@ import {
   type AenderungsEintrag,
 } from "@/components/kinder/aenderungshistorie";
 import { TEAM_FELDER } from "@/lib/datenschutz/auskunft";
+import { ErfolgsToast } from "@/components/shared/erfolgs-toast";
 
 export default async function TeamDetailPage({
   params,
@@ -75,6 +76,7 @@ export default async function TeamDetailPage({
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
+      <ErfolgsToast text="Personal gespeichert." />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="font-heading text-2xl text-primary">
           {mitglied.vorname} {mitglied.nachname}

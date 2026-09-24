@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { legeNutzerAn } from "@/lib/actions/berechtigungen";
+import { meldeErfolg, meldeFehler } from "@/lib/toast";
 import {
   BEREICHE,
   ROLLEN,
@@ -61,6 +62,7 @@ export function NutzerAnlegenForm({ einrichtungen }: { einrichtungen: { id: stri
       });
       if (!ergebnis.ok) {
         setError(ergebnis.error);
+        meldeFehler(ergebnis.error);
         return;
       }
       setZugangsdaten({ email: email.trim().toLowerCase(), passwort: zugang === "passwort" ? passwort : null });
@@ -68,9 +70,11 @@ export function NutzerAnlegenForm({ einrichtungen }: { einrichtungen: { id: stri
       setName("");
       setEmail("");
       setPasswort("");
+      meldeErfolg(zugang === "passwort" ? "Nutzer angelegt." : "Einladung verschickt.");
       router.refresh();
     } catch {
       setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+      meldeFehler("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
     } finally {
       setPending(false);
     }

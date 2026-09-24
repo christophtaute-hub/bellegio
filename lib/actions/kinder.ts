@@ -142,7 +142,7 @@ export async function createKind(input: KindInput) {
 
   revalidatePath("/kinder");
   revalidatePath("/gruppen");
-  redirect(`/kinder/${kind.id}`);
+  redirect(`/kinder/${kind.id}?gespeichert=1`);
 }
 
 export async function updateKind(kindId: string, input: KindInput) {
@@ -194,7 +194,7 @@ export async function updateKind(kindId: string, input: KindInput) {
   revalidatePath("/kinder");
   revalidatePath(`/kinder/${kindId}`);
   revalidatePath("/gruppen");
-  redirect(`/kinder/${kindId}`);
+  redirect(`/kinder/${kindId}?gespeichert=1`);
 }
 
 /** Fügt dem historischen Notizen-Verlauf eines Kindes einen neuen, datierten Eintrag hinzu — ersetzt das frühere,

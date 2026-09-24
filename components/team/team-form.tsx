@@ -13,6 +13,7 @@ import {
   type TeamInput,
 } from "@/lib/actions/team";
 import { TEAM_ROLLE_OPTIONS, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
+import { meldeFehler } from "@/lib/toast";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -107,6 +108,7 @@ export function TeamForm({
     } catch (error) {
       if (error instanceof Error && error.message !== "NEXT_REDIRECT") {
         setSubmitError(error.message);
+        meldeFehler(error.message);
       } else if (!(error instanceof Error)) {
         throw error;
       }
