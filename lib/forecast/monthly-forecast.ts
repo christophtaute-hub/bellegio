@@ -6,9 +6,11 @@ import {
   buildKpis,
   buildBelegungKennzahlen,
   buildCompositionMatrix,
+  buildKpisByGruppenart,
   type KpiSummary,
   type BelegungKennzahlen,
   type CompositionMatrix,
+  type KpisByGruppenart,
 } from "@/lib/dashboard/presence";
 import { getTeamPresenceForMonth } from "@/lib/team/anstellungsschluessel";
 import {
@@ -31,6 +33,9 @@ export type ZeitkategorieMonat =
 export type ForecastMonth = {
   month: string;
   kpis: KpiSummary;
+  /** Ungewichtete/gewichtete Kennzahlen je Gruppenart (Krippe/Kindergarten/…) — bislang
+   * nur in der Bayern-Ansicht ausgewertet, da "gewichtet" in BW/NRW kein Konzept ist. */
+  kpisByGruppenart: KpisByGruppenart[];
   belegung: BelegungKennzahlen;
   /** Bundesland-abhängig: Bayern (Anstellungsschlüssel), BW (VZÄ-Soll), NRW (Fachkraft-/Ergänzungskraft-Stunden). */
   personal: PersonalplanungErgebnis;
@@ -51,7 +56,7 @@ export async function buildForecastMonths(
   const [{ data: gruppen }, { data: einrichtung }, personalKontext] = await Promise.all([
     supabase
       .from("gruppen")
-      .select("sollplatze")
+      .select("id, gruppenart, sollplatze")
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null),
     supabase
@@ -101,6 +106,7 @@ export async function buildForecastMonths(
       ]);
 
       const kpis = buildKpis(kinderRows);
+      const kpisByGruppenart = buildKpisByGruppenart(kinderRows, gruppen ?? []);
       const belegung = buildBelegungKennzahlen(kinderRows, gruppenSollplatzeSumme);
       const personal = berechnePersonalplanung(personalKontext, teamRows, {
         gewichteteKinderzahl: kpis.gewichteteKinderzahl,
@@ -128,7 +134,7 @@ export async function buildForecastMonths(
               }
             : { modell: "bayern", matrix: buildCompositionMatrix(kinderRows) };
 
-      return { month, kpis, belegung, personal, zeitkategorie };
+      return { month, kpis, kpisByGruppenart, belegung, personal, zeitkategorie };
     })
   );
 }

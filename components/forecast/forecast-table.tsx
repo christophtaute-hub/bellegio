@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "cn";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import { parseIsoDate } from "@/lib/kita-datum";
+import { GRUPPENART_LABEL } from "@/lib/constants";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
 
 function formatMonthLabel(month: string): string {
@@ -75,6 +76,14 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
     return (
       <>
         <TableRow>
+          <LabelCell>Kinderzahl</LabelCell>
+          {months.map((m) => (
+            <TableCell key={m.month} className="text-right tabular-nums">
+              {formatNumber(m.kpis.kinderGesamt, 0)}
+            </TableCell>
+          ))}
+        </TableRow>
+        <TableRow>
           <LabelCell>Ist-VZÄ / Soll-VZÄ</LabelCell>
           {months.map((m) => (
             <TableCell key={m.month} className="text-right tabular-nums">
@@ -115,6 +124,14 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
   if (modell === "nrw") {
     return (
       <>
+        <TableRow>
+          <LabelCell>Kinderzahl</LabelCell>
+          {months.map((m) => (
+            <TableCell key={m.month} className="text-right tabular-nums">
+              {formatNumber(m.kpis.kinderGesamt, 0)}
+            </TableCell>
+          ))}
+        </TableRow>
         <TableRow>
           <LabelCell>Ist-FK / Soll-FK (Std./Woche)</LabelCell>
           {months.map((m) => (
@@ -161,15 +178,38 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
     );
   }
 
+  // Welche Gruppenarten (Krippe/Kindergarten/…) über den Zeitraum vorkommen, anhand des
+  // ersten Monats — spätere Monate lesen denselben Satz an Zeilen, fehlende Werte werden 0.
+  const gruppenarten = (months[0]?.kpisByGruppenart ?? [])
+    .filter((g) => g.gruppenart !== "unbekannt")
+    .map((g) => g.gruppenart);
+  const gruppenartKpis = (m: ForecastMonth, gruppenart: string) =>
+    m.kpisByGruppenart.find((g) => g.gruppenart === gruppenart)?.kpis;
+
   return (
     <>
+          {gruppenarten.map((gruppenart) => (
+            <TableRow key={gruppenart}>
+              <TableCell className="sticky left-0 z-10 bg-card font-medium">
+                {GRUPPENART_LABEL[gruppenart] ?? gruppenart}: Ungewichtet / Gewichtet
+              </TableCell>
+              {months.map((m) => {
+                const kpis = gruppenartKpis(m, gruppenart);
+                return (
+                  <TableCell key={m.month} className="text-right tabular-nums">
+                    {kpis ? `${formatNumber(kpis.ungewichteteSumme)} / ${formatNumber(kpis.gewichteteSumme)}` : "0,0 / 0,0"}
+                  </TableCell>
+                );
+              })}
+            </TableRow>
+          ))}
           <TableRow>
             <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Gewichtete Kinderzahl
+              Ungewichtete / Gewichtete Kinderzahl
             </TableCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(bayernDaten(m).gewichteteKinderzahl)}
+                {formatNumber(m.kpis.kinderGesamt, 0)} / {formatNumber(bayernDaten(m).gewichteteKinderzahl)}
               </TableCell>
             ))}
           </TableRow>

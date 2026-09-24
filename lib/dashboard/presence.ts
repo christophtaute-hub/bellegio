@@ -200,6 +200,34 @@ export function buildGruppenartAufteilung(
   return Array.from(zeilen.values()).sort((a, b) => b.sollplaetze - a.sollplaetze);
 }
 
+export type KpisByGruppenart = {
+  gruppenart: string;
+  kpis: KpiSummary;
+};
+
+/** Wie buildKpis, aber je Gruppenart (Krippe/Kindergarten/…) getrennt — für eine
+ * Forecast-Darstellung, die ungewichtete/gewichtete Stunden nicht nur einrichtungsweit,
+ * sondern auch je Gruppenart zeigt. Reine Aufteilung der bereits geladenen Zeilen, kein
+ * neuer Datenladevorgang. */
+export function buildKpisByGruppenart(
+  rows: PresenceRow[],
+  gruppen: { id: string; gruppenart: string | null }[]
+): KpisByGruppenart[] {
+  const gruppenartByGruppeId = new Map(gruppen.map((g) => [g.id, g.gruppenart ?? "unbekannt"]));
+  const rowsByGruppenart = new Map<string, PresenceRow[]>();
+
+  for (const row of rows) {
+    const gruppenart = row.gruppe_id ? (gruppenartByGruppeId.get(row.gruppe_id) ?? "unbekannt") : "unbekannt";
+    const bucket = rowsByGruppenart.get(gruppenart);
+    if (bucket) bucket.push(row);
+    else rowsByGruppenart.set(gruppenart, [row]);
+  }
+
+  return Array.from(rowsByGruppenart.entries())
+    .map(([gruppenart, gruppenRows]) => ({ gruppenart, kpis: buildKpis(gruppenRows) }))
+    .sort((a, b) => b.kpis.kinderGesamt - a.kpis.kinderGesamt);
+}
+
 export type BelegungKennzahlen = {
   belegteOhneI: number;
   belegteMitI: number;

@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
 import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
+import { GRUPPENART_LABEL } from "@/lib/constants";
 
 const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
@@ -45,6 +46,7 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
       return m.personal.daten;
     };
     return [
+      { label: "Kinderzahl", values: months.map((m) => m.kpis.kinderGesamt) },
       { label: "Ist-VZÄ", values: months.map((m) => runde(d(m).istVzaeGesamt, 2)) },
       { label: "Soll-VZÄ", values: months.map((m) => runde(d(m).sollVzaeGesamt, 2)) },
       { label: "Differenz VZÄ", values: months.map((m) => runde(d(m).istVzaeGesamt - d(m).sollVzaeGesamt, 2)) },
@@ -58,6 +60,7 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
       return m.personal.daten;
     };
     return [
+      { label: "Kinderzahl", values: months.map((m) => m.kpis.kinderGesamt) },
       { label: "Ist-FK (Std.)", values: months.map((m) => runde(d(m).istFk, 1)) },
       { label: "Soll-FK (Std.)", values: months.map((m) => runde(d(m).sollFachkraftStundenGesamt, 1)) },
       { label: "Ist-EK (Std.)", values: months.map((m) => runde(d(m).istEk, 1)) },
@@ -70,7 +73,20 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
     if (m.personal.modell !== "bayern") throw new Error("Bayern-Modell erwartet");
     return m.personal.daten;
   };
+  const gruppenarten = (months[0]?.kpisByGruppenart ?? [])
+    .filter((g) => g.gruppenart !== "unbekannt")
+    .map((g) => g.gruppenart);
+  const gruppenartRows = gruppenarten.flatMap((gruppenart) => {
+    const kpisFuer = (m: ForecastMonth) => m.kpisByGruppenart.find((g) => g.gruppenart === gruppenart)?.kpis;
+    const label = GRUPPENART_LABEL[gruppenart] ?? gruppenart;
+    return [
+      { label: `${label}: Ungewichtete Std.`, values: months.map((m) => runde(kpisFuer(m)?.ungewichteteSumme ?? 0, 1)) },
+      { label: `${label}: Gewichtete Std.`, values: months.map((m) => runde(kpisFuer(m)?.gewichteteSumme ?? 0, 1)) },
+    ];
+  });
   return [
+    ...gruppenartRows,
+    { label: "Ungewichtete Kinderzahl", values: months.map((m) => m.kpis.kinderGesamt) },
     { label: "Gewichtete Kinderzahl", values: months.map((m) => runde(d(m).gewichteteKinderzahl, 1)) },
     { label: "Ist-VZÄ", values: months.map((m) => runde(d(m).vzaeIst, 2)) },
     { label: "Soll-VZÄ", values: months.map((m) => runde(d(m).vzaeSoll, 2)) },
