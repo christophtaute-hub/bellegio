@@ -143,3 +143,27 @@ export async function deleteAusfallzeit(ausfallzeitId: string, teamId: string) {
   revalidatePath(`/team/${teamId}`);
   revalidatePath("/controlling");
 }
+
+/** `wochenstunden = null` löscht den Eintrag wieder — der Monat fällt dadurch zurück auf den
+ * Fallback `team.wochenstunden`, den `team_presence_for_month` ohnehin schon anwendet. */
+export async function setzeMonatsstunden(teamId: string, month: string, wochenstunden: number | null) {
+  const supabase = await createClient();
+
+  if (wochenstunden === null) {
+    const { error } = await supabase
+      .from("team_monthly_hours")
+      .delete()
+      .eq("team_id", teamId)
+      .eq("month", month);
+    if (error) throw new Error(error.message);
+  } else {
+    const { error } = await supabase
+      .from("team_monthly_hours")
+      .upsert({ team_id: teamId, month, wochenstunden }, { onConflict: "team_id,month" });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/team");
+  revalidatePath("/team/jahresuebersicht");
+  revalidatePath("/controlling");
+}
