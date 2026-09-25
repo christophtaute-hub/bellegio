@@ -16,8 +16,12 @@ export default async function TeamNeuPage() {
   return (
     <div className="flex max-w-2xl flex-col gap-6">
       <h1 className="font-heading text-2xl text-primary">Personal anlegen</h1>
+      <p className="text-sm text-muted-foreground">
+        Vergütung lässt sich nach dem Anlegen auf der Personal-Seite ergänzen.
+      </p>
       <TeamForm
         mode="create"
+        einrichtungId={einrichtungId ?? ""}
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
       />
     </div>

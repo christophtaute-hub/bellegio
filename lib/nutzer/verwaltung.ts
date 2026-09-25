@@ -1,7 +1,7 @@
 import { pruefePasswort } from "@/lib/passwort";
 
 export type NeueRolle = "mitarbeiter" | "einrichtungsleitung";
-export type Bereich = "belegung" | "personal" | "controlling" | "szenario";
+export type Bereich = "belegung" | "personal" | "controlling" | "szenario" | "finanzen";
 export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
 
 export const BEREICHE: { key: Bereich; label: string }[] = [
@@ -9,6 +9,7 @@ export const BEREICHE: { key: Bereich; label: string }[] = [
   { key: "personal", label: "Personal" },
   { key: "controlling", label: "Controlling" },
   { key: "szenario", label: "Szenario-Rechner" },
+  { key: "finanzen", label: "Finanzen" },
 ];
 
 export const ZUGRIFFE: { value: Zugriff; label: string }[] = [

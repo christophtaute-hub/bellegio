@@ -41,6 +41,11 @@ export const TEAM_ROLLE_OPTIONS = [
   "Sonstige",
 ] as const;
 
+/** TVöD-SuE-Entgeltgruppen, Kita-relevante Teilmenge (Milestone 29c, siehe tvoed_sue_entgelt). */
+export const TVOED_SUE_ENTGELTGRUPPEN = [
+  "S3", "S4", "S8a", "S8b", "S9", "S11a", "S11b", "S13", "S15", "S16", "S17", "S18",
+] as const;
+
 export const TEAM_STATUS_LABEL: Record<string, string> = {
   aktiv: "Aktiv",
   inaktiv: "Inaktiv",

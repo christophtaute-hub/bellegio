@@ -25,6 +25,7 @@ const KEINE_RECHTE: Record<Bereich, Zugriff> = {
   personal: "kein_zugriff",
   controlling: "kein_zugriff",
   szenario: "kein_zugriff",
+  finanzen: "kein_zugriff",
 };
 
 /** Legt einen Nutzer an: mit direkt vergebenem Passwort (sofort nutzbar) oder per Einladungs-Mail, dazu Rolle und

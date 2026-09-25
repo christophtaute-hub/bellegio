@@ -10,7 +10,7 @@ export type UserRole =
   | "controlling"
   | "mitarbeiter";
 
-export type Bereich = "belegung" | "personal" | "controlling" | "szenario";
+export type Bereich = "belegung" | "personal" | "controlling" | "szenario" | "finanzen";
 export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
 
 export async function getCurrentUserRole(): Promise<UserRole | null> {
@@ -81,7 +81,12 @@ export async function getZugriff(
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "traeger_admin" || profile?.role === "einrichtungsleitung") {
+  if (profile?.role === "traeger_admin") return "bearbeiten";
+  // finanzen bekommt bewusst keinen Blanko-Zugriff für einrichtungsleitung — "Führung sieht
+  // mehrere Einrichtungen ohne Finanzsicht" (Milestone 29, Rückfrage d). Ohne diesen Ausschluss
+  // würde die UI hier fälschlich etwas anzeigen, das die RLS dahinter (current_user_zugriff)
+  // bereits korrekt blockiert.
+  if (bereich !== "finanzen" && profile?.role === "einrichtungsleitung") {
     return "bearbeiten";
   }
 
@@ -122,4 +127,18 @@ export async function canViewControlling(
   einrichtungId: string
 ): Promise<boolean> {
   return (await getZugriff(supabase, einrichtungId, "controlling")) !== "kein_zugriff";
+}
+
+export async function canWriteFinanzen(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "finanzen")) === "bearbeiten";
+}
+
+export async function canViewFinanzen(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "finanzen")) !== "kein_zugriff";
 }

@@ -134,6 +134,60 @@ export async function updateEmpfohlenerAnstellungsschluessel(
   revalidatePath("/szenario");
 }
 
+/** Manueller Fördererlös-Überschreib. Hat in lib/finanzen/foerdererloese.ts immer Vorrang vor der
+ * berechneten Formel; für Baden-Württemberg faktisch Pflichtfeld (keine Landesformel existiert).
+ * RLS: einrichtungen_update_finanzen erlaubt dies zusätzlich zu traeger_admin auch einem Nutzer mit
+ * finanzen-bearbeiten-Recht — der Spalten-Guard-Trigger sorgt dafür, dass dabei nur diese und die
+ * beiden folgenden Finanzspalten geändert werden können. */
+export async function updateFoerderungManuell(einrichtungId: string, betrag: number | null) {
+  if (betrag !== null && betrag < 0) throw new Error("Bitte einen gültigen Betrag angeben.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ foerderung_monatlich_manuell: betrag })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+  revalidatePath("/controlling");
+}
+
+export async function updateLohnnebenkostenProzent(einrichtungId: string, prozent: number) {
+  if (!(prozent >= 0 && prozent <= 100)) {
+    throw new Error("Bitte einen Prozentsatz zwischen 0 und 100 angeben.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ lohnnebenkosten_prozent: prozent })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+  revalidatePath("/controlling");
+}
+
+export async function updateJahressonderzahlungProzent(einrichtungId: string, prozent: number) {
+  if (!(prozent >= 0 && prozent <= 100)) {
+    throw new Error("Bitte einen Prozentsatz zwischen 0 und 100 angeben.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ jahressonderzahlung_prozent: prozent })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+  revalidatePath("/controlling");
+}
+
 export type EinrichtungErgebnis = { ok: true; id: string } | { ok: false; error: string };
 
 export type NeueEinrichtungInput = {

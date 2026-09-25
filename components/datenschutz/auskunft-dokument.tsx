@@ -24,13 +24,13 @@ export function AuskunftDokument({
   verantwortlicher: { trager: string; einrichtung: string; anschrift: string };
   stand: string;
   felder: { label: string; wert: string }[];
-  weitere?: { titel: string; zeilen: string[] };
+  weitere?: { titel: string; zeilen: string[] }[];
   verlauf: AuskunftEintrag[];
   loeschfristMonate: number | null;
 }) {
   const excelBlaetter = [
     { name: "Gespeicherte Daten", zeilen: [["Angabe", "Wert"], ...felder.map((f) => [f.label, f.wert || "–"])] },
-    ...(weitere ? [{ name: weitere.titel.slice(0, 30), zeilen: [[weitere.titel], ...weitere.zeilen.map((z) => [z])] }] : []),
+    ...(weitere ?? []).map((w) => ({ name: w.titel.slice(0, 30), zeilen: [[w.titel], ...w.zeilen.map((z) => [z])] })),
     {
       name: "Änderungsverlauf",
       zeilen: [
@@ -84,12 +84,12 @@ export function AuskunftDokument({
         </dl>
       </section>
 
-      {weitere ? (
-        <section className="flex flex-col gap-2 text-sm">
-          <h3 className="font-heading text-base text-primary print:text-black">{weitere.titel}</h3>
-          {weitere.zeilen.length > 0 ? (
+      {(weitere ?? []).map((w) => (
+        <section key={w.titel} className="flex flex-col gap-2 text-sm">
+          <h3 className="font-heading text-base text-primary print:text-black">{w.titel}</h3>
+          {w.zeilen.length > 0 ? (
             <ul className="flex list-disc flex-col gap-0.5 pl-5">
-              {weitere.zeilen.map((z) => (
+              {w.zeilen.map((z) => (
                 <li key={z}>{z}</li>
               ))}
             </ul>
@@ -97,7 +97,7 @@ export function AuskunftDokument({
             <p className="text-muted-foreground">Keine Einträge.</p>
           )}
         </section>
-      ) : null}
+      ))}
 
       <section className="flex flex-col gap-2 text-sm">
         <h3 className="font-heading text-base text-primary print:text-black">Änderungsverlauf</h3>

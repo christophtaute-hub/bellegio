@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import Link from "next/link";
 import { FileText } from "lucide-react";
-import { canWritePersonal, getCurrentUserRole } from "@/lib/server/current-user-role";
+import { canWritePersonal, canViewFinanzen, canWriteFinanzen, getCurrentUserRole } from "@/lib/server/current-user-role";
 import { DatenschutzAktionen } from "@/components/datenschutz/datenschutz-aktionen";
 import { istAnonymisiert, istEntfernbar } from "@/lib/datenschutz/loeschfrist";
 import { buttonVariants } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export default async function TeamDetailPage({
     notFound();
   }
 
-  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal, { data: auditLog }, { data: einrichtung }] =
+  const [{ data: gruppen }, { data: ausfallzeiten }, canEditPersonal, zeigeFinanzen, bearbeiteFinanzen, { data: auditLog }, { data: einrichtung }] =
     await Promise.all([
       supabase
         .from("gruppen")
@@ -55,6 +55,8 @@ export default async function TeamDetailPage({
         .eq("team_id", teamId)
         .order("von", { ascending: false }),
       einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
+      einrichtungId ? canViewFinanzen(supabase, einrichtungId) : false,
+      einrichtungId ? canWriteFinanzen(supabase, einrichtungId) : false,
       supabase
         .from("team_audit_log")
         .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
@@ -62,6 +64,13 @@ export default async function TeamDetailPage({
         .order("changed_at", { ascending: false }),
       supabase.from("einrichtungen").select("name").eq("id", einrichtungId ?? "").single(),
     ]);
+
+  // team_verguetung nur laden, wenn der Aufrufer überhaupt Finanzen-Zugriff hat — die primäre
+  // Absicherung, dass Gehaltsdaten nie an TeamForm/den Client gereicht werden, wenn sie dort nicht
+  // hingehören (RLS auf team_verguetung ist das Backstop, nicht der einzige Schutz).
+  const { data: verguetung } = zeigeFinanzen
+    ? await supabase.from("team_verguetung").select("entgeltgruppe, stufe, monatsgehalt_manuell").eq("team_id", teamId).maybeSingle()
+    : { data: null };
 
   const rolle = await getCurrentUserRole();
   const heuteIso = toIsoDateString(new Date());
@@ -109,6 +118,7 @@ export default async function TeamDetailPage({
       <TeamForm
         mode="edit"
         teamId={mitglied.id}
+        einrichtungId={einrichtungId ?? ""}
         defaultValues={{
           vorname: mitglied.vorname ?? "",
           nachname: mitglied.nachname ?? "",
@@ -127,8 +137,13 @@ export default async function TeamDetailPage({
           status: mitglied.status as "aktiv" | "inaktiv" | "geplant",
           eintritt: mitglied.eintritt ?? "",
           austritt: mitglied.austritt ?? "",
+          entgeltgruppe: verguetung?.entgeltgruppe ?? "",
+          stufe: verguetung?.stufe !== null && verguetung?.stufe !== undefined ? String(verguetung.stufe) : "",
+          monatsgehalt_manuell: verguetung?.monatsgehalt_manuell !== null && verguetung?.monatsgehalt_manuell !== undefined ? String(verguetung.monatsgehalt_manuell) : "",
         }}
         gruppen={(gruppen ?? []).map((g) => ({ id: g.id, label: g.name }))}
+        canViewFinanzen={zeigeFinanzen}
+        canWriteFinanzen={bearbeiteFinanzen}
       />
       <AusfallzeitenListe
         teamId={mitglied.id}

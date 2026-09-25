@@ -102,7 +102,16 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
 
 const AMPEL_TEXT = { gruen: "Erfüllt", gelb: "Knapp", rot: "Nicht erfüllt" } as const;
 
-export function buildRows(months: ForecastMonth[]) {
+function finanzRows(months: ForecastMonth[]): { label: string; values: (string | number)[] }[] {
+  const runde = (wert: number, stellen: number) => Number(wert.toFixed(stellen));
+  return [
+    { label: "Fördererlöse", values: months.map((m) => (m.finanzen ? runde(m.finanzen.foerdererloeseMonat, 2) : "")) },
+    { label: "Personalkosten", values: months.map((m) => (m.finanzen ? runde(m.finanzen.personalkostenMonat, 2) : "")) },
+    { label: "Ergebnis", values: months.map((m) => (m.finanzen ? runde(m.finanzen.ergebnisMonat, 2) : "")) },
+  ];
+}
+
+export function buildRows(months: ForecastMonth[], zeigeFinanzen = false) {
   const metricRows: { label: string; values: (string | number)[] }[] = [
     {
       label: "Belegte Plätze ohne I-Kind",
@@ -118,6 +127,7 @@ export function buildRows(months: ForecastMonth[]) {
     },
     { label: "Differenz (+/-)", values: months.map((m) => m.belegung.differenz) },
     ...personalRows(months),
+    ...(zeigeFinanzen ? finanzRows(months) : []),
   ];
 
   return metricRows.map((row) => ({
@@ -131,9 +141,11 @@ export function buildRows(months: ForecastMonth[]) {
 export function ExportButtons({
   months,
   kategorisierung,
+  zeigeFinanzen = false,
 }: {
   months: ForecastMonth[];
   kategorisierung?: { jahr: number; monate: KategorisierungsMonat[] };
+  zeigeFinanzen?: boolean;
 }) {
   return (
     <div className="flex gap-2 print:hidden">
@@ -142,7 +154,7 @@ export function ExportButtons({
         variant="secondary"
         size="sm"
         onClick={() => {
-          const sheet = XLSX.utils.json_to_sheet(buildRows(months));
+          const sheet = XLSX.utils.json_to_sheet(buildRows(months, zeigeFinanzen));
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, sheet, "Controlling");
           if (kategorisierung) {

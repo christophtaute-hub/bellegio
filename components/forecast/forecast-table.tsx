@@ -296,7 +296,63 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
   );
 }
 
-export function ForecastTable({ months }: { months: ForecastMonth[] }) {
+function formatEuro(value: number): string {
+  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+}
+
+/** Fördererlöse/Personalkosten/Ergebnis — nur gerendert, wenn der Aufrufer Finanzen-Zugriff hat
+ * (siehe zeigeFinanzen-Prop von ForecastTable); komplett weggelassen statt leer/blass dargestellt,
+ * damit "sieht alles außer Finanzsicht" auch optisch stimmt. */
+function FinanzenZeilen({ months }: { months: Zeitreihe }) {
+  const nichtErfasstMax = Math.max(0, ...months.map((m) => m.finanzen?.personalkostenNichtErfasst ?? 0));
+
+  return (
+    <>
+      <TableRow>
+        <LabelCell>Fördererlöse</LabelCell>
+        {months.map((m) => (
+          <TableCell key={m.month} className="text-right tabular-nums">
+            {m.finanzen ? formatEuro(m.finanzen.foerdererloeseMonat) : "–"}
+          </TableCell>
+        ))}
+      </TableRow>
+      <TableRow>
+        <LabelCell>Personalkosten</LabelCell>
+        {months.map((m) => (
+          <TableCell key={m.month} className="text-right tabular-nums">
+            {m.finanzen ? formatEuro(m.finanzen.personalkostenMonat) : "–"}
+          </TableCell>
+        ))}
+      </TableRow>
+      <TableRow className="bg-secondary/40">
+        <LabelCell stark>Ergebnis</LabelCell>
+        {months.map((m) => {
+          const ergebnis = m.finanzen?.ergebnisMonat;
+          return (
+            <TableCell
+              key={m.month}
+              className={cn(
+                "text-right font-semibold tabular-nums",
+                ergebnis !== undefined && ergebnis >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-destructive"
+              )}
+            >
+              {ergebnis !== undefined ? formatEuro(ergebnis) : "–"}
+            </TableCell>
+          );
+        })}
+      </TableRow>
+      {nichtErfasstMax > 0 ? (
+        <TableRow>
+          <TableCell colSpan={months.length + 1} className="sticky left-0 z-10 bg-card text-xs text-muted-foreground">
+            Bis zu {nichtErfasstMax} Mitarbeitende ohne erfasste Vergütung — fließen nicht in die Personalkosten ein.
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </>
+  );
+}
+
+export function ForecastTable({ months, zeigeFinanzen = false }: { months: ForecastMonth[]; zeigeFinanzen?: boolean }) {
   return (
     <div className="overflow-x-auto rounded-lg border">
       <Table>
@@ -364,6 +420,7 @@ export function ForecastTable({ months }: { months: ForecastMonth[] }) {
           </TableRow>
 
           <PersonalZeilen months={months} />
+          {zeigeFinanzen ? <FinanzenZeilen months={months} /> : null}
         </TableBody>
       </Table>
     </div>

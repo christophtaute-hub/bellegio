@@ -12,7 +12,8 @@ import {
   updateTeamMitglied,
   type TeamInput,
 } from "@/lib/actions/team";
-import { TEAM_ROLLE_OPTIONS, TEAM_ROLE_CATEGORY_LABEL } from "@/lib/constants";
+import { upsertTeamVerguetung } from "@/lib/actions/team-verguetung";
+import { TEAM_ROLLE_OPTIONS, TEAM_ROLE_CATEGORY_LABEL, TVOED_SUE_ENTGELTGRUPPEN } from "@/lib/constants";
 import { meldeFehler } from "@/lib/toast";
 
 const SELECT_CLASS =
@@ -37,6 +38,9 @@ const teamFormSchema = z
     status: z.enum(["aktiv", "inaktiv", "geplant"]),
     eintritt: z.string(),
     austritt: z.string(),
+    entgeltgruppe: z.string().optional(),
+    stufe: z.string().optional(),
+    monatsgehalt_manuell: z.string().optional(),
   })
   .refine(
     (data) =>
@@ -55,13 +59,24 @@ export type TeamFormOption = { id: string; label: string };
 export function TeamForm({
   mode,
   teamId,
+  einrichtungId,
   defaultValues,
   gruppen,
+  canViewFinanzen = false,
+  canWriteFinanzen = false,
 }: {
   mode: "create" | "edit";
   teamId?: string;
+  /** Nur für mode="edit" gebraucht (Vergütung speichern) — im Formular selbst nie angezeigt. */
+  einrichtungId?: string;
   defaultValues?: Partial<TeamFormValues>;
   gruppen: TeamFormOption[];
+  /** Vergütungs-Abschnitt: nur sichtbar mit Finanzen-Zugriff, nur editierbar mit
+   * Finanzen-Bearbeiten-Recht. Bewusst nur in mode="edit" nutzbar — beim Anlegen (mode="create")
+   * leitet der Server nach dem Speichern sofort weiter, ein Vergütungs-Eintrag käme dort ohnehin nie
+   * an (siehe lib/actions/team-verguetung.ts). */
+  canViewFinanzen?: boolean;
+  canWriteFinanzen?: boolean;
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -81,6 +96,9 @@ export function TeamForm({
       status: "geplant",
       eintritt: "",
       austritt: "",
+      entgeltgruppe: "",
+      stufe: "",
+      monatsgehalt_manuell: "",
       ...defaultValues,
     },
   });
@@ -103,6 +121,15 @@ export function TeamForm({
       if (mode === "create") {
         await createTeamMitglied(input);
       } else if (teamId) {
+        // upsertTeamVerguetung muss VOR updateTeamMitglied laufen: updateTeamMitglied leitet am
+        // Ende per redirect() weiter, danach ist der Rest dieser Funktion unerreichbar.
+        if (canWriteFinanzen && einrichtungId) {
+          await upsertTeamVerguetung(teamId, einrichtungId, {
+            entgeltgruppe: values.entgeltgruppe || null,
+            stufe: values.stufe ? Number(values.stufe) : null,
+            monatsgehaltManuell: values.monatsgehalt_manuell ? Number(values.monatsgehalt_manuell) : null,
+          });
+        }
         await updateTeamMitglied(teamId, input);
       }
     } catch (error) {
@@ -188,6 +215,49 @@ export function TeamForm({
           <Input id="austritt" type="date" {...register("austritt")} />
         </Field>
       </div>
+
+      {mode === "edit" && canViewFinanzen ? (
+        <div className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-4">
+          <h3 className="text-sm font-medium">Vergütung</h3>
+          <p className="text-xs text-muted-foreground">
+            TVöD SuE (Entgeltgruppe/Stufe) oder ein manuelles Monatsgehalt — ein gesetztes manuelles
+            Gehalt hat immer Vorrang vor der Tabelle. Teilzeit wird automatisch anteilig gerechnet.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field id="entgeltgruppe" label="Entgeltgruppe (TVöD SuE)">
+              <select id="entgeltgruppe" className={SELECT_CLASS} disabled={!canWriteFinanzen} {...register("entgeltgruppe")}>
+                <option value="">Keine Angabe</option>
+                {TVOED_SUE_ENTGELTGRUPPEN.map((gruppe) => (
+                  <option key={gruppe} value={gruppe}>
+                    {gruppe}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="stufe" label="Stufe">
+              <select id="stufe" className={SELECT_CLASS} disabled={!canWriteFinanzen} {...register("stufe")}>
+                <option value="">Keine Angabe</option>
+                {[1, 2, 3, 4, 5, 6].map((stufe) => (
+                  <option key={stufe} value={stufe}>
+                    {stufe}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field id="monatsgehalt_manuell" label="Manuelles Monatsgehalt (Vollzeit, €)">
+              <Input
+                id="monatsgehalt_manuell"
+                type="number"
+                step="0.01"
+                min="0"
+                disabled={!canWriteFinanzen}
+                placeholder="ersetzt die TVöD-Tabelle, wenn gesetzt"
+                {...register("monatsgehalt_manuell")}
+              />
+            </Field>
+          </div>
+        </div>
+      ) : null}
 
       {submitError ? (
         <p className="text-sm text-destructive">{submitError}</p>

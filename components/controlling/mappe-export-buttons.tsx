@@ -23,11 +23,13 @@ export function MappeExportButtons({
   kategorisierung,
   audit,
   meta,
+  zeigeFinanzen = false,
 }: {
   months: ForecastMonth[];
   kategorisierung: { jahr: number; monate: KategorisierungsMonat[] };
   audit: AuditMonat[];
   meta: MappeMeta;
+  zeigeFinanzen?: boolean;
 }) {
   return (
     <div className="flex gap-2 print:hidden">
@@ -49,7 +51,7 @@ export function MappeExportButtons({
             ]),
             "Deckblatt"
           );
-          XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(buildRows(months)), "Belegung und Personal");
+          XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(buildRows(months, zeigeFinanzen)), "Belegung und Personal");
           XLSX.utils.book_append_sheet(
             workbook,
             XLSX.utils.json_to_sheet(buildKategorisierungRows(kategorisierung.monate)),

@@ -4,7 +4,7 @@ import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { getKinderPresenceAtDate, buildCompositionMatrix } from "@/lib/dashboard/presence";
 import { getKalenderjahrKategorisierung } from "@/lib/controlling/jahreskategorisierung";
-import { canViewControlling } from "@/lib/server/current-user-role";
+import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
 import { ForecastTable } from "@/components/forecast/forecast-table";
 import { ZeitraumPicker } from "@/components/forecast/zeitraum-picker";
 import { ExportButtons } from "@/components/forecast/export-buttons";
@@ -68,6 +68,7 @@ export default async function ControllingPage({
   const erlaubt = einrichtungId
     ? await canViewControlling(supabase, einrichtungId)
     : false;
+  const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
 
   if (!erlaubt) {
     return (
@@ -110,7 +111,7 @@ export default async function ControllingPage({
 
   const [months, budgetReferenz, kategorisierung] = einrichtungId
     ? await Promise.all([
-        buildForecastMonths(supabase, einrichtungId, vonMonth, monthCount),
+        buildForecastMonths(supabase, einrichtungId, vonMonth, monthCount, zeigeFinanzen),
         buildBudgetReferenz(supabase, einrichtungId, letztesKalenderjahrIso),
         getKalenderjahrKategorisierung(supabase, einrichtungId, kategorisierungJahr),
       ])
@@ -130,6 +131,7 @@ export default async function ControllingPage({
           <ExportButtons
             months={months}
             kategorisierung={kategorisierung ? { jahr: kategorisierungJahr, monate: kategorisierung } : undefined}
+            zeigeFinanzen={zeigeFinanzen}
           />
           </div>
         ) : null}
@@ -148,7 +150,7 @@ export default async function ControllingPage({
       />
 
       {months.length > 0 ? (
-        <ForecastTable months={months} />
+        <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} />
       ) : (
         <p className="text-sm text-muted-foreground">
           Keine Daten verfügbar.

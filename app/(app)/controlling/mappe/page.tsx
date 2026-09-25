@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { PLANUNGSHILFE_HINWEIS, RECHENWERTE_STAND } from "@/lib/constants";
-import { canViewControlling } from "@/lib/server/current-user-role";
+import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
 import { addMonthsUtc, formatDate, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { getKalenderjahrKategorisierung } from "@/lib/controlling/jahreskategorisierung";
@@ -48,6 +48,7 @@ export default async function PruefungsmappePage({
   const supabase = await createClient();
 
   const erlaubt = einrichtungId ? await canViewControlling(supabase, einrichtungId) : false;
+  const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
   if (!einrichtungId || !erlaubt) {
     return (
       <div className="flex flex-col gap-2">
@@ -78,7 +79,7 @@ export default async function PruefungsmappePage({
   const jahr = Number(vonMonat.slice(0, 4));
 
   const [months, kategorisierung, { data: auditRows }] = await Promise.all([
-    buildForecastMonths(supabase, einrichtungId, vonMonat, anzahl),
+    buildForecastMonths(supabase, einrichtungId, vonMonat, anzahl, zeigeFinanzen),
     getKalenderjahrKategorisierung(supabase, einrichtungId, jahr),
     supabase.rpc("audit_zusammenfassung", { p_einrichtung_id: einrichtungId, p_von: vonMonat, p_bis: bisMonatsende }),
   ]);
@@ -117,7 +118,7 @@ export default async function PruefungsmappePage({
         </Link>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-heading text-3xl tracking-tight text-primary">Prüfungsmappe</h1>
-          <MappeExportButtons months={months} kategorisierung={{ jahr, monate: kategorisierung }} audit={audit} meta={meta} />
+          <MappeExportButtons months={months} kategorisierung={{ jahr, monate: kategorisierung }} audit={audit} meta={meta} zeigeFinanzen={zeigeFinanzen} />
         </div>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Alles Wesentliche zu Belegung, Personal und Meldewesen in einem Dokument — für Aufsicht, Jugendamt und Träger.
@@ -162,7 +163,7 @@ export default async function PruefungsmappePage({
 
       <section className="flex flex-col gap-3 print:break-after-page">
         <h2 className="font-heading text-xl text-primary">1. Belegung und Personal je Monat</h2>
-        <ForecastTable months={months} />
+        <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} />
       </section>
 
       <section className="flex flex-col gap-3 print:break-after-page">

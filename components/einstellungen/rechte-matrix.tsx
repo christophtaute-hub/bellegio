@@ -31,6 +31,7 @@ const BEREICHE: { key: Bereich; label: string }[] = [
   { key: "personal", label: "Personal" },
   { key: "controlling", label: "Controlling" },
   { key: "szenario", label: "Szenario-Rechner" },
+  { key: "finanzen", label: "Finanzen" },
 ];
 
 const ZUGRIFF_OPTIONS: { value: Zugriff; label: string; rang: number }[] = [

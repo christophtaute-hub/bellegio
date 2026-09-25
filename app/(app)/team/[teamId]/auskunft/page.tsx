@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { canWritePersonal } from "@/lib/server/current-user-role";
+import { canWritePersonal, canViewFinanzen } from "@/lib/server/current-user-role";
 import { AuskunftDokument, type AuskunftEintrag } from "@/components/datenschutz/auskunft-dokument";
 import { berechneAenderungen, TEAM_FELDER } from "@/lib/datenschutz/auskunft";
 import { AUSFALLZEIT_ART_LABEL, TEAM_ROLE_CATEGORY_LABEL, TEAM_STATUS_LABEL } from "@/lib/constants";
@@ -17,7 +17,9 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
   const { data: person } = await supabase.from("team").select("*").eq("id", teamId).single();
   if (!person || person.einrichtung_id !== einrichtungId) notFound();
 
-  const [{ data: einrichtung }, { data: gruppen }, { data: ausfall }, { data: auditLog }] = await Promise.all([
+  const zeigeFinanzen = await canViewFinanzen(supabase, einrichtungId);
+
+  const [{ data: einrichtung }, { data: gruppen }, { data: ausfall }, { data: auditLog }, { data: verguetung }] = await Promise.all([
     supabase
       .from("einrichtungen")
       .select("name, address_street, address_zip, address_city, loeschfrist_monate, trager(name)")
@@ -30,6 +32,9 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
       .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
       .eq("team_id", teamId)
       .order("changed_at", { ascending: true }),
+    zeigeFinanzen
+      ? supabase.from("team_verguetung").select("entgeltgruppe, stufe, monatsgehalt_manuell").eq("team_id", teamId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const gruppeName = (id: unknown) => (gruppen ?? []).find((g) => g.id === id)?.name ?? null;
@@ -63,12 +68,29 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
         { label: "Eintritt", wert: formatDate(person.eintritt) },
         { label: "Austritt", wert: formatDate(person.austritt) },
       ]}
-      weitere={{
-        titel: "Ausfallzeiten",
-        zeilen: (ausfall ?? []).map(
-          (a) => `${AUSFALLZEIT_ART_LABEL[a.art] ?? a.art}: ${formatDate(a.von)} – ${a.bis ? formatDate(a.bis) : "offen"}${a.notizen ? ` (${a.notizen})` : ""}`
-        ),
-      }}
+      weitere={[
+        {
+          titel: "Ausfallzeiten",
+          zeilen: (ausfall ?? []).map(
+            (a) => `${AUSFALLZEIT_ART_LABEL[a.art] ?? a.art}: ${formatDate(a.von)} – ${a.bis ? formatDate(a.bis) : "offen"}${a.notizen ? ` (${a.notizen})` : ""}`
+          ),
+        },
+        zeigeFinanzen
+          ? {
+              titel: "Vergütung",
+              zeilen: verguetung
+                ? [
+                    `Entgeltgruppe: ${verguetung.entgeltgruppe ?? "–"}`,
+                    `Stufe: ${verguetung.stufe ?? "–"}`,
+                    `Manuelles Monatsgehalt: ${verguetung.monatsgehalt_manuell !== null ? `${verguetung.monatsgehalt_manuell} €` : "–"}`,
+                  ]
+                : ["Keine Vergütungsdaten erfasst."],
+            }
+          : {
+              titel: "Vergütung",
+              zeilen: ["Für diese Auskunft ohne Finanzen-Zugriff erstellt — Vergütungsdaten sind hier nicht enthalten und müssen von einer Person mit Finanzen-Zugriff ergänzt werden."],
+            },
+      ]}
       verlauf={verlauf}
     />
   );

@@ -14,6 +14,85 @@ export type Database = {
   }
   public: {
     Tables: {
+      bayern_foerderung_basiswert: {
+        Row: {
+          basiswert: number
+          bundesland_code: string
+          created_at: string
+          gueltig_ab: string
+          id: string
+          qualitaetsbonus: number
+          updated_at: string
+        }
+        Insert: {
+          basiswert: number
+          bundesland_code?: string
+          created_at?: string
+          gueltig_ab: string
+          id?: string
+          qualitaetsbonus: number
+          updated_at?: string
+        }
+        Update: {
+          basiswert?: number
+          bundesland_code?: string
+          created_at?: string
+          gueltig_ab?: string
+          id?: string
+          qualitaetsbonus?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bayern_foerderung_basiswert_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      bayern_foerderung_basiswert_historie: {
+        Row: {
+          basiswert: number
+          bundesland_code: string
+          created_at: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          qualitaetsbonus: number
+          quelle_id: string
+        }
+        Insert: {
+          basiswert: number
+          bundesland_code: string
+          created_at?: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          qualitaetsbonus: number
+          quelle_id: string
+        }
+        Update: {
+          basiswert?: number
+          bundesland_code?: string
+          created_at?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          qualitaetsbonus?: number
+          quelle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bayern_foerderung_basiswert_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "bayern_foerderung_basiswert"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       betreiber_einstellungen: {
         Row: {
           anschrift: string
@@ -438,10 +517,13 @@ export type Database = {
           cluster: string | null
           created_at: string
           empfohlener_anstellungsschluessel: number
+          foerderung_monatlich_manuell: number | null
           id: string
+          jahressonderzahlung_prozent: number
           kita_year_start_month: number
           kostenstelle: string | null
           loeschfrist_monate: number | null
+          lohnnebenkosten_prozent: number
           name: string
           standort_gemeinde: string | null
           trager_id: string
@@ -458,10 +540,13 @@ export type Database = {
           cluster?: string | null
           created_at?: string
           empfohlener_anstellungsschluessel?: number
+          foerderung_monatlich_manuell?: number | null
           id?: string
+          jahressonderzahlung_prozent?: number
           kita_year_start_month?: number
           kostenstelle?: string | null
           loeschfrist_monate?: number | null
+          lohnnebenkosten_prozent?: number
           name: string
           standort_gemeinde?: string | null
           trager_id: string
@@ -478,10 +563,13 @@ export type Database = {
           cluster?: string | null
           created_at?: string
           empfohlener_anstellungsschluessel?: number
+          foerderung_monatlich_manuell?: number | null
           id?: string
+          jahressonderzahlung_prozent?: number
           kita_year_start_month?: number
           kostenstelle?: string | null
           loeschfrist_monate?: number | null
+          lohnnebenkosten_prozent?: number
           name?: string
           standort_gemeinde?: string | null
           trager_id?: string
@@ -933,6 +1021,91 @@ export type Database = {
             columns: ["trager_id"]
             isOneToOne: false
             referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nrw_kindpauschalen: {
+        Row: {
+          betrag_jahr: number
+          buchungszeit_stunden: number
+          bundesland_code: string
+          created_at: string
+          gruppenform: string
+          gueltig_ab: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          betrag_jahr: number
+          buchungszeit_stunden: number
+          bundesland_code?: string
+          created_at?: string
+          gruppenform: string
+          gueltig_ab: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          betrag_jahr?: number
+          buchungszeit_stunden?: number
+          bundesland_code?: string
+          created_at?: string
+          gruppenform?: string
+          gueltig_ab?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nrw_kindpauschalen_bundesland_code_fkey"
+            columns: ["bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "bundeslaender"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      nrw_kindpauschalen_historie: {
+        Row: {
+          betrag_jahr: number
+          buchungszeit_stunden: number
+          bundesland_code: string
+          created_at: string
+          gruppenform: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          quelle_id: string
+        }
+        Insert: {
+          betrag_jahr: number
+          buchungszeit_stunden: number
+          bundesland_code: string
+          created_at?: string
+          gruppenform: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          quelle_id: string
+        }
+        Update: {
+          betrag_jahr?: number
+          buchungszeit_stunden?: number
+          bundesland_code?: string
+          created_at?: string
+          gruppenform?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          quelle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nrw_kindpauschalen_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "nrw_kindpauschalen"
             referencedColumns: ["id"]
           },
         ]
@@ -1535,6 +1708,96 @@ export type Database = {
           },
         ]
       }
+      team_verguetung: {
+        Row: {
+          created_at: string
+          einrichtung_id: string
+          entgeltgruppe: string | null
+          monatsgehalt_manuell: number | null
+          stufe: number | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          einrichtung_id: string
+          entgeltgruppe?: string | null
+          monatsgehalt_manuell?: number | null
+          stufe?: number | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          einrichtung_id?: string
+          entgeltgruppe?: string | null
+          monatsgehalt_manuell?: number | null
+          stufe?: number | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_verguetung_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_verguetung_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_verguetung_audit_log: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          einrichtung_id: string
+          id: string
+          new_data: Json
+          old_data: Json | null
+          team_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          einrichtung_id: string
+          id?: string
+          new_data: Json
+          old_data?: Json | null
+          team_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          einrichtung_id?: string
+          id?: string
+          new_data?: Json
+          old_data?: Json | null
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_verguetung_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_verguetung_audit_log_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "team"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trager: {
         Row: {
           created_at: string
@@ -1599,6 +1862,77 @@ export type Database = {
             columns: ["trager_id"]
             isOneToOne: true
             referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tvoed_sue_entgelt: {
+        Row: {
+          created_at: string
+          entgeltgruppe: string
+          gueltig_ab: string
+          id: string
+          monatsbetrag: number
+          stufe: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entgeltgruppe: string
+          gueltig_ab: string
+          id?: string
+          monatsbetrag: number
+          stufe: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entgeltgruppe?: string
+          gueltig_ab?: string
+          id?: string
+          monatsbetrag?: number
+          stufe?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tvoed_sue_entgelt_historie: {
+        Row: {
+          created_at: string
+          entgeltgruppe: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          monatsbetrag: number
+          quelle_id: string
+          stufe: number
+        }
+        Insert: {
+          created_at?: string
+          entgeltgruppe: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          monatsbetrag: number
+          quelle_id: string
+          stufe: number
+        }
+        Update: {
+          created_at?: string
+          entgeltgruppe?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          monatsbetrag?: number
+          quelle_id?: string
+          stufe?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tvoed_sue_entgelt_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "tvoed_sue_entgelt"
             referencedColumns: ["id"]
           },
         ]

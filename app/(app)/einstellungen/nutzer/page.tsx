@@ -4,7 +4,7 @@ import { getZugriff, type Bereich, type Zugriff } from "@/lib/server/current-use
 import { RechteMatrix } from "@/components/einstellungen/rechte-matrix";
 import { NutzerAnlegenForm } from "@/components/einstellungen/nutzer-anlegen-form";
 
-const ALLE_BEREICHE: Bereich[] = ["belegung", "personal", "controlling", "szenario"];
+const ALLE_BEREICHE: Bereich[] = ["belegung", "personal", "controlling", "szenario", "finanzen"];
 
 /** Eigener Bereich "Nutzer & Rechte", unabhängig vom Menüpunkt "Einrichtung" (/einstellungen) —
  * dort geht es nur noch um Einrichtungs-/Trägerstammdaten. */
