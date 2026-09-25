@@ -3,8 +3,10 @@ import {
   berechneSollVzaeBW,
   buildBWPersonalplanung,
   hatRandzeitSplit,
+  resolveBWPersonalschluesselTabelleAmStichtag,
   type BWGruppe,
   type BWPersonalschluesselRow,
+  type BWPersonalschluesselVersion,
 } from "@/lib/team/personalschluessel-bw";
 
 // Reale Referenzwerte aus § 1 KiTaVO / der KVJS-Berechnungshilfe (siehe lib/team/personalschluessel-bw.ts).
@@ -132,5 +134,54 @@ describe("Baden-Württemberg: Gesamtplanung", () => {
 
   it("ohne Soll ist die Ampel grün", () => {
     expect(buildBWPersonalplanung([], tabelle, 0, 39).ampel).toBe("gruen");
+  });
+});
+
+describe("resolveBWPersonalschluesselTabelleAmStichtag (Milestone 29b, Regelwerk-Historie)", () => {
+  const gruppenReihe = tabelle[1]; // ganztagsgruppe
+
+  it("eine Gruppe ganz ohne Historie liefert exakt den heutigen Wert unverändert (Regressionsschutz)", () => {
+    const versionenByGroup = new Map<string, BWPersonalschluesselVersion[]>([
+      ["ganztagsgruppe::false", [{ ...gruppenReihe, gueltigAb: "2000-01-01", gueltigBis: null }]],
+    ]);
+    const ergebnis = resolveBWPersonalschluesselTabelleAmStichtag(versionenByGroup, "2026-09-24");
+    expect(ergebnis).toEqual([gruppenReihe]);
+  });
+
+  it("liefert vor einer Reform den alten, ab dem Inkrafttreten den neuen Wert", () => {
+    const alt = { ...gruppenReihe, stellenProStunde: 0.3 };
+    const neu = { ...gruppenReihe, stellenProStunde: 0.35 };
+    const versionenByGroup = new Map<string, BWPersonalschluesselVersion[]>([
+      [
+        "ganztagsgruppe::false",
+        [
+          { ...alt, gueltigAb: "2020-01-01", gueltigBis: "2027-09-01" },
+          { ...neu, gueltigAb: "2027-09-01", gueltigBis: null },
+        ],
+      ],
+    ]);
+    const vorReform = resolveBWPersonalschluesselTabelleAmStichtag(versionenByGroup, "2027-01-01");
+    expect(vorReform[0].stellenProStunde).toBe(0.3);
+    const nachReform = resolveBWPersonalschluesselTabelleAmStichtag(versionenByGroup, "2027-09-01");
+    expect(nachReform[0].stellenProStunde).toBe(0.35);
+  });
+
+  it("zwei verschiedene Gruppen kontaminieren sich nicht gegenseitig", () => {
+    const versionenByGroup = new Map<string, BWPersonalschluesselVersion[]>([
+      ["ganztagsgruppe::false", [{ ...tabelle[1], gueltigAb: "2000-01-01", gueltigBis: null }]],
+      ["kinderkrippe::false", [{ ...tabelle[2], gueltigAb: "2000-01-01", gueltigBis: null }]],
+    ]);
+    const ergebnis = resolveBWPersonalschluesselTabelleAmStichtag(versionenByGroup, "2026-09-24");
+    expect(ergebnis).toHaveLength(2);
+    expect(ergebnis.find((r) => r.betriebsform === "ganztagsgruppe")).toEqual(tabelle[1]);
+    expect(ergebnis.find((r) => r.betriebsform === "kinderkrippe")).toEqual(tabelle[2]);
+  });
+
+  it("fällt bei einem Stichtag vor der ersten erfassten Fassung auf die älteste bekannte zurück", () => {
+    const versionenByGroup = new Map<string, BWPersonalschluesselVersion[]>([
+      ["ganztagsgruppe::false", [{ ...gruppenReihe, gueltigAb: "2025-01-01", gueltigBis: null }]],
+    ]);
+    const ergebnis = resolveBWPersonalschluesselTabelleAmStichtag(versionenByGroup, "2015-01-01");
+    expect(ergebnis).toEqual([gruppenReihe]);
   });
 });

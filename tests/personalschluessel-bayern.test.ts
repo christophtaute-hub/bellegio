@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildPersonalplanung, type TeamPresenceRow } from "@/lib/team/anstellungsschluessel";
+import {
+  buildPersonalplanung,
+  resolveStaffingRulesAmStichtag,
+  BAYERN_MINDESTSCHLUESSEL,
+  BAYERN_FACHKRAFTQUOTE_ANTEIL,
+  type StaffingRulesVersion,
+  type TeamPresenceRow,
+} from "@/lib/team/anstellungsschluessel";
 
 function team(fk: number, ek: number): TeamPresenceRow[] {
   return [
@@ -62,5 +69,28 @@ describe("Bayern: Anstellungsschlüssel (§17 AVBayKiBiG, 1:11,0)", () => {
     const p = buildPersonalplanung(team(39, 39), 22, 22, 39, 10);
     expect(p.mindestschluesselOk).toBe(true);
     expect(p.empfohlenerSchluesselOk).toBe(false);
+  });
+});
+
+describe("resolveStaffingRulesAmStichtag (Milestone 29b, Regelwerk-Historie)", () => {
+  it("liefert vor einer Reform den alten, ab dem Inkrafttreten den neuen Mindestschlüssel", () => {
+    const versionen: StaffingRulesVersion[] = [
+      { mindestschluessel: 11.0, fachkraftquoteAnteil: 0.5, gueltigAb: "2020-01-01", gueltigBis: "2027-09-01" },
+      { mindestschluessel: 10.5, fachkraftquoteAnteil: 0.5, gueltigAb: "2027-09-01", gueltigBis: null },
+    ];
+    expect(resolveStaffingRulesAmStichtag(versionen, "2027-01-01").mindestschluessel).toBe(11.0);
+    expect(resolveStaffingRulesAmStichtag(versionen, "2027-09-01").mindestschluessel).toBe(10.5);
+  });
+
+  it("ohne jede erfasste Version fällt es auf die Bayern-Konstanten zurück", () => {
+    const ergebnis = resolveStaffingRulesAmStichtag([], "2026-09-24");
+    expect(ergebnis).toEqual({ mindestschluessel: BAYERN_MINDESTSCHLUESSEL, fachkraftquoteAnteil: BAYERN_FACHKRAFTQUOTE_ANTEIL });
+  });
+
+  it("fällt bei einem Stichtag vor der ersten erfassten Fassung auf die älteste bekannte zurück (nie 'keine Regel')", () => {
+    const versionen: StaffingRulesVersion[] = [
+      { mindestschluessel: 11.0, fachkraftquoteAnteil: 0.5, gueltigAb: "2025-01-01", gueltigBis: null },
+    ];
+    expect(resolveStaffingRulesAmStichtag(versionen, "2015-01-01").mindestschluessel).toBe(11.0);
   });
 });

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { versionAmStichtagMitFallback, type Versioniert } from "@/lib/regelwerk/verlauf";
 
 /**
  * NRW (KiBiz) rechnet strukturell anders als Bayern und anders als
@@ -41,6 +42,86 @@ export async function getNRWPersonalstundenTabelle(
     ergaenzungskraftStunden: row.ergaenzungskraft_stunden,
     leitungsfreistellungStunden: row.leitungsfreistellung_stunden,
   }));
+}
+
+export type NRWPersonalstundenVersion = NRWPersonalstundenRow & Versioniert;
+
+function gruppenSchluessel(gruppenform: string, buchungszeitStunden: number): string {
+  return `${gruppenform}::${buchungszeitStunden}`;
+}
+
+/** Lädt alle je erfassten Fassungen (aktuelle Zeile + Historie), gruppiert nach Gruppenform ×
+ * Buchungszeit-Stunden — Milestone 29b, zentrales versioniertes Bundesland-Regelwerk. Wird
+ * stichtagsunabhängig einmal geladen; welche Fassung je Gruppe am Stichtag galt, löst
+ * resolveNRWPersonalstundenTabelleAmStichtag rein in-memory auf. */
+export async function getNRWPersonalstundenVersionen(
+  supabase: SupabaseClient<Database>
+): Promise<Map<string, NRWPersonalstundenVersion[]>> {
+  const [{ data: live }, { data: historie }] = await Promise.all([
+    supabase
+      .from("nrw_personalstunden")
+      .select("gruppenform, buchungszeit_stunden, fachkraft_stunden, ergaenzungskraft_stunden, leitungsfreistellung_stunden, gueltig_ab")
+      .eq("bundesland_code", "nrw"),
+    supabase
+      .from("nrw_personalstunden_historie")
+      .select("gruppenform, buchungszeit_stunden, fachkraft_stunden, ergaenzungskraft_stunden, leitungsfreistellung_stunden, gueltig_ab, gueltig_bis")
+      .eq("bundesland_code", "nrw"),
+  ]);
+
+  const versionenByGroup = new Map<string, NRWPersonalstundenVersion[]>();
+  const anhaengen = (schluessel: string, version: NRWPersonalstundenVersion) => {
+    const liste = versionenByGroup.get(schluessel);
+    if (liste) liste.push(version);
+    else versionenByGroup.set(schluessel, [version]);
+  };
+
+  for (const h of historie ?? []) {
+    anhaengen(gruppenSchluessel(h.gruppenform, h.buchungszeit_stunden), {
+      gruppenform: h.gruppenform,
+      buchungszeitStunden: h.buchungszeit_stunden,
+      fachkraftStunden: h.fachkraft_stunden,
+      ergaenzungskraftStunden: h.ergaenzungskraft_stunden,
+      leitungsfreistellungStunden: h.leitungsfreistellung_stunden,
+      gueltigAb: h.gueltig_ab,
+      gueltigBis: h.gueltig_bis,
+    });
+  }
+  for (const row of live ?? []) {
+    anhaengen(gruppenSchluessel(row.gruppenform, row.buchungszeit_stunden), {
+      gruppenform: row.gruppenform,
+      buchungszeitStunden: row.buchungszeit_stunden,
+      fachkraftStunden: row.fachkraft_stunden,
+      ergaenzungskraftStunden: row.ergaenzungskraft_stunden,
+      leitungsfreistellungStunden: row.leitungsfreistellung_stunden,
+      gueltigAb: row.gueltig_ab,
+      gueltigBis: null,
+    });
+  }
+  return versionenByGroup;
+}
+
+/** Reine Funktion: löst je Gruppe (Gruppenform × Buchungszeit) die zum Stichtag gültige Fassung auf
+ * und liefert wieder die bestehende NRWPersonalstundenRow[]-Form, die findeNRWZeile schon kennt.
+ * Fällt bei einer Lücke auf die älteste bekannte Fassung zurück (siehe anstellungsschluessel.ts für
+ * die Begründung) — eine leere Gruppe würde sonst in der Ampel-Berechnung als 0 Std. Soll gelesen. */
+export function resolveNRWPersonalstundenTabelleAmStichtag(
+  versionenByGroup: Map<string, NRWPersonalstundenVersion[]>,
+  stichtag: string
+): NRWPersonalstundenRow[] {
+  const zeilen: NRWPersonalstundenRow[] = [];
+  for (const versionen of versionenByGroup.values()) {
+    const treffer = versionAmStichtagMitFallback(versionen, stichtag);
+    if (treffer) {
+      zeilen.push({
+        gruppenform: treffer.gruppenform,
+        buchungszeitStunden: treffer.buchungszeitStunden,
+        fachkraftStunden: treffer.fachkraftStunden,
+        ergaenzungskraftStunden: treffer.ergaenzungskraftStunden,
+        leitungsfreistellungStunden: treffer.leitungsfreistellungStunden,
+      });
+    }
+  }
+  return zeilen;
 }
 
 export type NRWGruppe = {

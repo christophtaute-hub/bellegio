@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { versionAmStichtagMitFallback, type Versioniert } from "@/lib/regelwerk/verlauf";
 
 export type TeamPresenceRow = {
   team_id: string;
@@ -24,6 +25,56 @@ export async function getStaffingRules(
     mindestschluessel: data?.mindestschluessel ?? BAYERN_MINDESTSCHLUESSEL,
     fachkraftquoteAnteil: data?.fachkraftquote_anteil ?? BAYERN_FACHKRAFTQUOTE_ANTEIL,
   };
+}
+
+export type StaffingRulesVersion = StaffingRules & Versioniert;
+
+/** Lädt alle je erfassten Fassungen (aktuelle Zeile + Historie) — Milestone 29b, zentrales
+ * versioniertes Bundesland-Regelwerk. Wird stichtagsunabhängig einmal geladen, die Auflösung "welche
+ * Fassung galt am Stichtag X" passiert danach rein in resolveStaffingRulesAmStichtag. */
+export async function getStaffingRulesVersionen(
+  supabase: SupabaseClient<Database>,
+  bundeslandCode: string
+): Promise<StaffingRulesVersion[]> {
+  const [{ data: live }, { data: historie }] = await Promise.all([
+    supabase
+      .from("staffing_rules")
+      .select("mindestschluessel, fachkraftquote_anteil, gueltig_ab")
+      .eq("bundesland_code", bundeslandCode)
+      .maybeSingle(),
+    supabase
+      .from("staffing_rules_historie")
+      .select("mindestschluessel, fachkraftquote_anteil, gueltig_ab, gueltig_bis")
+      .eq("quelle_bundesland_code", bundeslandCode),
+  ]);
+
+  const versionen: StaffingRulesVersion[] = (historie ?? []).map((h) => ({
+    mindestschluessel: h.mindestschluessel,
+    fachkraftquoteAnteil: h.fachkraftquote_anteil,
+    gueltigAb: h.gueltig_ab,
+    gueltigBis: h.gueltig_bis,
+  }));
+  if (live) {
+    versionen.push({
+      mindestschluessel: live.mindestschluessel,
+      fachkraftquoteAnteil: live.fachkraftquote_anteil,
+      gueltigAb: live.gueltig_ab,
+      gueltigBis: null,
+    });
+  }
+  return versionen;
+}
+
+/** Reine Funktion: löst die zum Stichtag gültige Fassung auf. Fällt bei einer Lücke (z.B. Stichtag
+ * vor der ersten erfassten Fassung) auf die älteste bekannte Fassung zurück statt auf null — ein
+ * gesetzlicher Mindestschlüssel gilt faktisch immer, ein leeres Ergebnis würde in der Ampel-Berechnung
+ * als fälschliches "erfüllt" gelesen. Ganz ohne jede Version (z.B. BW/NRW ohne staffing_rules-Zeile)
+ * bleibt der bisherige Bayern-Fallback bestehen. */
+export function resolveStaffingRulesAmStichtag(versionen: StaffingRulesVersion[], stichtag: string): StaffingRules {
+  const treffer = versionAmStichtagMitFallback(versionen, stichtag);
+  return treffer
+    ? { mindestschluessel: treffer.mindestschluessel, fachkraftquoteAnteil: treffer.fachkraftquoteAnteil }
+    : { mindestschluessel: BAYERN_MINDESTSCHLUESSEL, fachkraftquoteAnteil: BAYERN_FACHKRAFTQUOTE_ANTEIL };
 }
 
 export async function getTeamPresenceForMonth(

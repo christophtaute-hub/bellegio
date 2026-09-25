@@ -14,7 +14,8 @@ import {
 } from "@/lib/dashboard/presence";
 import { getTeamPresenceForMonth } from "@/lib/team/anstellungsschluessel";
 import {
-  ladePersonalplanungKontext,
+  ladePersonalplanungBasis,
+  resolvePersonalplanungKontext,
   berechnePersonalplanung,
   type PersonalplanungErgebnis,
 } from "@/lib/team/personalplanung";
@@ -53,7 +54,7 @@ export async function buildForecastMonths(
   startMonth: string,
   monthCount: number
 ): Promise<ForecastMonth[]> {
-  const [{ data: gruppen }, { data: einrichtung }, personalKontext] = await Promise.all([
+  const [{ data: gruppen }, { data: einrichtung }, personalBasis] = await Promise.all([
     supabase
       .from("gruppen")
       .select("id, gruppenart, sollplatze")
@@ -64,7 +65,7 @@ export async function buildForecastMonths(
       .select("bundesland_code")
       .eq("id", einrichtungId)
       .single(),
-    ladePersonalplanungKontext(supabase, einrichtungId),
+    ladePersonalplanungBasis(supabase, einrichtungId),
   ]);
 
   const gruppenSollplatzeSumme = (gruppen ?? []).reduce(
@@ -108,6 +109,7 @@ export async function buildForecastMonths(
       const kpis = buildKpis(kinderRows);
       const kpisByGruppenart = buildKpisByGruppenart(kinderRows, gruppen ?? []);
       const belegung = buildBelegungKennzahlen(kinderRows, gruppenSollplatzeSumme);
+      const personalKontext = resolvePersonalplanungKontext(personalBasis, month);
       const personal = berechnePersonalplanung(personalKontext, teamRows, {
         gewichteteKinderzahl: kpis.gewichteteKinderzahl,
         gewichteteKinderzahlFachkraftquote: kpis.gewichteteKinderzahlFachkraftquote,

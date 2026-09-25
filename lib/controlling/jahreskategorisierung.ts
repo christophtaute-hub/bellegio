@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { resolveBandAmStichtag, type HistorieEintrag } from "@/lib/kinder/buchungszeit-historie";
+import { versionAmStichtag, type Versioniert } from "@/lib/regelwerk/verlauf";
 
 /**
  * Jährliche Kategorisierung aller Kinder nach vertraglich vereinbarter
@@ -148,11 +149,16 @@ export type KategorisierungsMonat = {
 function bandAmStichtagAufloesen(
   kindId: string,
   historieByKind: Map<string, HistorieEintrag[]>,
-  baenderById: Map<string, BandSpanne>,
+  bandVersionenById: Map<string, (BandSpanne & Versioniert)[]>,
   stichtag: string
 ): BandSpanne | null {
   const bandId = resolveBandAmStichtag(historieByKind.get(kindId) ?? [], stichtag);
-  return bandId ? (baenderById.get(bandId) ?? null) : null;
+  if (!bandId) return null;
+  // Nicht nur WELCHES Band ein Kind hatte wird zum Stichtag aufgelöst, sondern auch die WERTE
+  // (min_hours/max_hours) dieses Bandes selbst — Milestone 29b, zentrales versioniertes
+  // Bundesland-Regelwerk. Bewusst ohne Fallback-auf-älteste-Fassung: eine Lücke landet im
+  // bereits vorhandenen "nicht zugeordnet"-Zähler statt eine mutmaßliche Fassung zu raten.
+  return versionAmStichtag(bandVersionenById.get(bandId) ?? [], stichtag);
 }
 
 /**
@@ -191,11 +197,15 @@ export async function getKalenderjahrKategorisierung(
   const kinder = data ?? [];
   const kindIds = kinder.map((k) => k.id);
 
-  const [{ data: historieRows }, { data: baender }] = await Promise.all([
+  const [{ data: historieRows }, { data: baender }, { data: baenderHistorie }] = await Promise.all([
     kindIds.length > 0
       ? supabase.from("kind_buchungszeit_historie").select("kind_id, buchungszeit_band_id, gueltig_ab").in("kind_id", kindIds)
       : Promise.resolve({ data: [] as { kind_id: string; buchungszeit_band_id: string | null; gueltig_ab: string }[] }),
-    supabase.from("booking_time_bands").select("id, min_hours, max_hours").eq("bundesland_code", bundeslandCode),
+    supabase.from("booking_time_bands").select("id, min_hours, max_hours, gueltig_ab").eq("bundesland_code", bundeslandCode),
+    supabase
+      .from("booking_time_bands_historie")
+      .select("quelle_id, min_hours, max_hours, gueltig_ab, gueltig_bis")
+      .eq("bundesland_code", bundeslandCode),
   ]);
 
   const historieByKind = new Map<string, HistorieEintrag[]>();
@@ -204,7 +214,21 @@ export async function getKalenderjahrKategorisierung(
     liste.push({ gueltig_ab: row.gueltig_ab, buchungszeit_band_id: row.buchungszeit_band_id });
     historieByKind.set(row.kind_id, liste);
   }
-  const baenderById = new Map((baender ?? []).map((b) => [b.id, { min_hours: b.min_hours, max_hours: b.max_hours }]));
+
+  // Milestone 29b: welche WERTE (min_hours/max_hours) ein Band zu einem Stichtag hatte — nicht nur
+  // welches Band einem Kind zugeordnet war (das löst weiterhin kind_buchungszeit_historie auf).
+  const bandVersionenById = new Map<string, (BandSpanne & Versioniert)[]>();
+  const anhaengen = (id: string, version: BandSpanne & Versioniert) => {
+    const liste = bandVersionenById.get(id);
+    if (liste) liste.push(version);
+    else bandVersionenById.set(id, [version]);
+  };
+  for (const h of baenderHistorie ?? []) {
+    anhaengen(h.quelle_id, { min_hours: h.min_hours, max_hours: h.max_hours, gueltigAb: h.gueltig_ab, gueltigBis: h.gueltig_bis });
+  }
+  for (const b of baender ?? []) {
+    anhaengen(b.id, { min_hours: b.min_hours, max_hours: b.max_hours, gueltigAb: b.gueltig_ab, gueltigBis: null });
+  }
 
   return Array.from({ length: 12 }, (_, i) => {
     const monat = `${jahr}-${String(i + 1).padStart(2, "0")}-01`;
@@ -218,7 +242,7 @@ export async function getKalenderjahrKategorisierung(
         (kind.austritt === null || kind.austritt > monat);
       if (!istAnwesend) continue;
 
-      const band = bandAmStichtagAufloesen(kind.id, historieByKind, baenderById, monat);
+      const band = bandAmStichtagAufloesen(kind.id, historieByKind, bandVersionenById, monat);
       const wochenstunden = wochenstundenFuerKind({ booking_time_bands: band, gruppen: kind.gruppen }, bundeslandCode);
       if (wochenstunden === null) {
         nichtZugeordnet += 1;

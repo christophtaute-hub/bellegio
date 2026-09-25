@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
+import { versionAmStichtagMitFallback, type Versioniert } from "@/lib/regelwerk/verlauf";
 
 /**
  * Baden-Württemberg rechnet strukturell anders als Bayern: kein
@@ -52,6 +53,86 @@ export async function getBWPersonalschluesselTabelle(
     referenzVzae: row.referenz_vzae,
     stellenProStunde: row.stellen_pro_stunde,
   }));
+}
+
+export type BWPersonalschluesselVersion = BWPersonalschluesselRow & Versioniert;
+
+function gruppenSchluessel(betriebsform: string, altersmischung: boolean): string {
+  return `${betriebsform}::${altersmischung}`;
+}
+
+/** Lädt alle je erfassten Fassungen (aktuelle Zeile + Historie), gruppiert nach Betriebsform ×
+ * Altersmischung — Milestone 29b, zentrales versioniertes Bundesland-Regelwerk. Wird
+ * stichtagsunabhängig einmal geladen; welche Fassung je Gruppe am Stichtag galt, löst
+ * resolveBWPersonalschluesselTabelleAmStichtag rein in-memory auf. */
+export async function getBWPersonalschluesselVersionen(
+  supabase: SupabaseClient<Database>
+): Promise<Map<string, BWPersonalschluesselVersion[]>> {
+  const [{ data: live }, { data: historie }] = await Promise.all([
+    supabase
+      .from("bw_personalschluessel")
+      .select("betriebsform, altersmischung, referenz_oeffnungszeit_stunden, referenz_vzae, stellen_pro_stunde, gueltig_ab")
+      .eq("bundesland_code", "bw"),
+    supabase
+      .from("bw_personalschluessel_historie")
+      .select("betriebsform, altersmischung, referenz_oeffnungszeit_stunden, referenz_vzae, stellen_pro_stunde, gueltig_ab, gueltig_bis")
+      .eq("bundesland_code", "bw"),
+  ]);
+
+  const versionenByGroup = new Map<string, BWPersonalschluesselVersion[]>();
+  const anhaengen = (schluessel: string, version: BWPersonalschluesselVersion) => {
+    const liste = versionenByGroup.get(schluessel);
+    if (liste) liste.push(version);
+    else versionenByGroup.set(schluessel, [version]);
+  };
+
+  for (const h of historie ?? []) {
+    anhaengen(gruppenSchluessel(h.betriebsform, h.altersmischung), {
+      betriebsform: h.betriebsform,
+      altersmischung: h.altersmischung,
+      referenzOeffnungszeitStunden: h.referenz_oeffnungszeit_stunden,
+      referenzVzae: h.referenz_vzae,
+      stellenProStunde: h.stellen_pro_stunde,
+      gueltigAb: h.gueltig_ab,
+      gueltigBis: h.gueltig_bis,
+    });
+  }
+  for (const row of live ?? []) {
+    anhaengen(gruppenSchluessel(row.betriebsform, row.altersmischung), {
+      betriebsform: row.betriebsform,
+      altersmischung: row.altersmischung,
+      referenzOeffnungszeitStunden: row.referenz_oeffnungszeit_stunden,
+      referenzVzae: row.referenz_vzae,
+      stellenProStunde: row.stellen_pro_stunde,
+      gueltigAb: row.gueltig_ab,
+      gueltigBis: null,
+    });
+  }
+  return versionenByGroup;
+}
+
+/** Reine Funktion: löst je Gruppe (Betriebsform × Altersmischung) die zum Stichtag gültige Fassung
+ * auf und liefert wieder die bestehende BWPersonalschluesselRow[]-Form, die berechneSollVzaeBW schon
+ * kennt. Fällt bei einer Lücke auf die älteste bekannte Fassung zurück (siehe anstellungsschluessel.ts
+ * für die Begründung) — eine leere Gruppe würde sonst in der Ampel-Berechnung als 0 VZÄ Soll gelesen. */
+export function resolveBWPersonalschluesselTabelleAmStichtag(
+  versionenByGroup: Map<string, BWPersonalschluesselVersion[]>,
+  stichtag: string
+): BWPersonalschluesselRow[] {
+  const zeilen: BWPersonalschluesselRow[] = [];
+  for (const versionen of versionenByGroup.values()) {
+    const treffer = versionAmStichtagMitFallback(versionen, stichtag);
+    if (treffer) {
+      zeilen.push({
+        betriebsform: treffer.betriebsform,
+        altersmischung: treffer.altersmischung,
+        referenzOeffnungszeitStunden: treffer.referenzOeffnungszeitStunden,
+        referenzVzae: treffer.referenzVzae,
+        stellenProStunde: treffer.stellenProStunde,
+      });
+    }
+  }
+  return zeilen;
 }
 
 export type BWGruppe = {

@@ -123,6 +123,7 @@ export type Database = {
         Row: {
           bundesland_code: string
           factor: number
+          gueltig_ab: string
           id: string
           label: string
           max_hours: number | null
@@ -132,6 +133,7 @@ export type Database = {
         Insert: {
           bundesland_code?: string
           factor: number
+          gueltig_ab?: string
           id?: string
           label: string
           max_hours?: number | null
@@ -141,6 +143,7 @@ export type Database = {
         Update: {
           bundesland_code?: string
           factor?: number
+          gueltig_ab?: string
           id?: string
           label?: string
           max_hours?: number | null
@@ -154,6 +157,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      booking_time_bands_historie: {
+        Row: {
+          bundesland_code: string
+          created_at: string
+          factor: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          label: string
+          max_hours: number | null
+          min_hours: number
+          quelle_id: string
+          sort_order: number
+        }
+        Insert: {
+          bundesland_code: string
+          created_at?: string
+          factor: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          label: string
+          max_hours?: number | null
+          min_hours: number
+          quelle_id: string
+          sort_order?: number
+        }
+        Update: {
+          bundesland_code?: string
+          created_at?: string
+          factor?: number
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          label?: string
+          max_hours?: number | null
+          min_hours?: number
+          quelle_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_time_bands_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "booking_time_bands"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -177,6 +230,7 @@ export type Database = {
           altersmischung: boolean
           betriebsform: string
           bundesland_code: string
+          gueltig_ab: string
           id: string
           referenz_oeffnungszeit_stunden: number
           referenz_vzae: number
@@ -186,6 +240,7 @@ export type Database = {
           altersmischung?: boolean
           betriebsform: string
           bundesland_code?: string
+          gueltig_ab?: string
           id?: string
           referenz_oeffnungszeit_stunden: number
           referenz_vzae: number
@@ -195,6 +250,7 @@ export type Database = {
           altersmischung?: boolean
           betriebsform?: string
           bundesland_code?: string
+          gueltig_ab?: string
           id?: string
           referenz_oeffnungszeit_stunden?: number
           referenz_vzae?: number
@@ -207,6 +263,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      bw_personalschluessel_historie: {
+        Row: {
+          altersmischung: boolean
+          betriebsform: string
+          bundesland_code: string
+          created_at: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          quelle_id: string
+          referenz_oeffnungszeit_stunden: number
+          referenz_vzae: number
+          stellen_pro_stunde: number
+        }
+        Insert: {
+          altersmischung?: boolean
+          betriebsform: string
+          bundesland_code: string
+          created_at?: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          quelle_id: string
+          referenz_oeffnungszeit_stunden: number
+          referenz_vzae: number
+          stellen_pro_stunde: number
+        }
+        Update: {
+          altersmischung?: boolean
+          betriebsform?: string
+          bundesland_code?: string
+          created_at?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          quelle_id?: string
+          referenz_oeffnungszeit_stunden?: number
+          referenz_vzae?: number
+          stellen_pro_stunde?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bw_personalschluessel_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "bw_personalschluessel"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -838,6 +944,7 @@ export type Database = {
           ergaenzungskraft_stunden: number
           fachkraft_stunden: number
           gruppenform: string
+          gueltig_ab: string
           id: string
           leitungsfreistellung_stunden: number
         }
@@ -847,6 +954,7 @@ export type Database = {
           ergaenzungskraft_stunden: number
           fachkraft_stunden: number
           gruppenform: string
+          gueltig_ab?: string
           id?: string
           leitungsfreistellung_stunden: number
         }
@@ -856,6 +964,7 @@ export type Database = {
           ergaenzungskraft_stunden?: number
           fachkraft_stunden?: number
           gruppenform?: string
+          gueltig_ab?: string
           id?: string
           leitungsfreistellung_stunden?: number
         }
@@ -866,6 +975,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      nrw_personalstunden_historie: {
+        Row: {
+          buchungszeit_stunden: number
+          bundesland_code: string
+          created_at: string
+          ergaenzungskraft_stunden: number
+          fachkraft_stunden: number
+          gruppenform: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          leitungsfreistellung_stunden: number
+          quelle_id: string
+        }
+        Insert: {
+          buchungszeit_stunden: number
+          bundesland_code: string
+          created_at?: string
+          ergaenzungskraft_stunden: number
+          fachkraft_stunden: number
+          gruppenform: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          leitungsfreistellung_stunden: number
+          quelle_id: string
+        }
+        Update: {
+          buchungszeit_stunden?: number
+          bundesland_code?: string
+          created_at?: string
+          ergaenzungskraft_stunden?: number
+          fachkraft_stunden?: number
+          gruppenform?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          leitungsfreistellung_stunden?: number
+          quelle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nrw_personalstunden_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "nrw_personalstunden"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -889,6 +1048,7 @@ export type Database = {
           age_matches_expected: boolean
           bundesland_code: string
           gruppenart: string
+          gueltig_ab: string
           id: string
           platzwert: number
         }
@@ -896,6 +1056,7 @@ export type Database = {
           age_matches_expected: boolean
           bundesland_code?: string
           gruppenart: string
+          gueltig_ab?: string
           id?: string
           platzwert: number
         }
@@ -903,6 +1064,7 @@ export type Database = {
           age_matches_expected?: boolean
           bundesland_code?: string
           gruppenart?: string
+          gueltig_ab?: string
           id?: string
           platzwert?: number
         }
@@ -913,6 +1075,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      platzwert_rules_historie: {
+        Row: {
+          age_matches_expected: boolean
+          bundesland_code: string
+          created_at: string
+          gruppenart: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          platzwert: number
+          quelle_id: string
+        }
+        Insert: {
+          age_matches_expected: boolean
+          bundesland_code: string
+          created_at?: string
+          gruppenart: string
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          platzwert: number
+          quelle_id: string
+        }
+        Update: {
+          age_matches_expected?: boolean
+          bundesland_code?: string
+          created_at?: string
+          gruppenart?: string
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          platzwert?: number
+          quelle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platzwert_rules_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "platzwert_rules"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1076,16 +1282,19 @@ export type Database = {
         Row: {
           bundesland_code: string
           fachkraftquote_anteil: number
+          gueltig_ab: string
           mindestschluessel: number
         }
         Insert: {
           bundesland_code: string
           fachkraftquote_anteil: number
+          gueltig_ab?: string
           mindestschluessel: number
         }
         Update: {
           bundesland_code?: string
           fachkraftquote_anteil?: number
+          gueltig_ab?: string
           mindestschluessel?: number
         }
         Relationships: [
@@ -1095,6 +1304,47 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      staffing_rules_historie: {
+        Row: {
+          bundesland_code: string
+          created_at: string
+          fachkraftquote_anteil: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          mindestschluessel: number
+          quelle_bundesland_code: string
+        }
+        Insert: {
+          bundesland_code: string
+          created_at?: string
+          fachkraftquote_anteil: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          mindestschluessel: number
+          quelle_bundesland_code: string
+        }
+        Update: {
+          bundesland_code?: string
+          created_at?: string
+          fachkraftquote_anteil?: number
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          mindestschluessel?: number
+          quelle_bundesland_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staffing_rules_historie_quelle_bundesland_code_fkey"
+            columns: ["quelle_bundesland_code"]
+            isOneToOne: false
+            referencedRelation: "staffing_rules"
+            referencedColumns: ["bundesland_code"]
           },
         ]
       }
@@ -1473,6 +1723,7 @@ export type Database = {
           bundesland_code: string
           code: string
           factor: number
+          gueltig_ab: string
           id: string
           label: string
         }
@@ -1480,6 +1731,7 @@ export type Database = {
           bundesland_code?: string
           code: string
           factor: number
+          gueltig_ab?: string
           id?: string
           label: string
         }
@@ -1487,6 +1739,7 @@ export type Database = {
           bundesland_code?: string
           code?: string
           factor?: number
+          gueltig_ab?: string
           id?: string
           label?: string
         }
@@ -1497,6 +1750,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bundeslaender"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      weighting_factors_historie: {
+        Row: {
+          bundesland_code: string
+          code: string
+          created_at: string
+          factor: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id: string
+          label: string
+          quelle_id: string
+        }
+        Insert: {
+          bundesland_code: string
+          code: string
+          created_at?: string
+          factor: number
+          gueltig_ab: string
+          gueltig_bis: string
+          id?: string
+          label: string
+          quelle_id: string
+        }
+        Update: {
+          bundesland_code?: string
+          code?: string
+          created_at?: string
+          factor?: number
+          gueltig_ab?: string
+          gueltig_bis?: string
+          id?: string
+          label?: string
+          quelle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weighting_factors_historie_quelle_id_fkey"
+            columns: ["quelle_id"]
+            isOneToOne: false
+            referencedRelation: "weighting_factors"
+            referencedColumns: ["id"]
           },
         ]
       }
