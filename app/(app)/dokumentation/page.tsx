@@ -242,6 +242,28 @@ export default async function DokumentationPage() {
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Fördererlöse (Milestone 29c)
+          </h3>
+          <p className="font-mono text-sm font-semibold text-primary">
+            Fördererlös je Kind = Basiswert × Buchungszeitfaktor × Gewichtungsfaktor + Qualitätsbonus
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Nach Art. 21 BayKiBiG, amtlich veröffentlicht im BayMBl.: 2026-Basiswert 1.563,88 €, Qualitätsbonus
+            268,01 €. Beide Werte ändern sich jährlich und sind in Bellegio versioniert hinterlegt (gleiche Technik
+            wie bei den Personalschlüssel-Werten).
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Nicht abschließend geklärt:</strong> ob der Qualitätsbonus pauschal
+            je belegtem Platz gilt oder ebenfalls mit dem Buchungszeitfaktor skaliert — Bellegio rechnet aktuell mit
+            der pauschalen Variante. Zum 01.01.2027 tritt außerdem eine Reform in Kraft, die Teile dieser Berechnung
+            (u.a. eine Teamkräftepauschale) neu strukturiert; diese ist hier noch nicht abgebildet. Der berechnete
+            Wert ersetzt keinen Blick in den eigenen Zuwendungsbescheid — bei Abweichung lässt sich unter
+            Einrichtung → Finanzen ein manueller Förderbetrag hinterlegen, der die Formel überschreibt.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">Quellen</h3>
           <ul className="flex flex-col gap-1 text-sm">
             {BAYERN_QUELLEN.map((q) => (
@@ -487,6 +509,19 @@ export default async function DokumentationPage() {
           </p>
         </div>
 
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Fördererlöse (Milestone 29c)
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Für Baden-Württemberg gibt es keine landesweite Förderformel — §8 KiTaG regelt nur Mindestanteile an
+            den Betriebsausgaben der Standortgemeinde, der tatsächliche Förderbetrag wird individuell zwischen
+            Kita und Gemeinde vereinbart. Bellegio rechnet hier deshalb nichts vor: unter Einrichtung → Finanzen
+            lässt sich der vereinbarte monatliche Förderbetrag von Hand eintragen, er fließt direkt ins Ergebnis
+            in Controlling ein. Ohne Eintrag zeigt Controlling 0 €.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">Quellen</h3>
           <ul className="flex flex-col gap-1 text-sm">
@@ -667,6 +702,25 @@ export default async function DokumentationPage() {
           </p>
         </div>
 
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Fördererlöse — Wichtiger Hinweis zur Quellenlage (Milestone 29c)
+          </h3>
+          <p className="font-mono text-sm font-semibold text-primary">
+            Fördererlös je Kind/Jahr = Kindpauschale nach Gruppenform × Buchungszeitband (§§32–34, §37 KiBiz)
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Hinterlegt ist aktuell nur die Kindpauschale für <strong className="text-foreground">Gruppenform I</strong>
+            {" "}(25/35/45 Std./Woche, Stand 2025/26). Gruppenform II und III fehlen bewusst — sie wurden noch nicht
+            verlässlich recherchiert und deshalb nicht erfunden. Kinder in diesen Gruppenformen zeigen aktuell 0 €
+            Fördererlös in Controlling, was das Ergebnis unterschätzt. Auch die Werte für Gruppenform I stammen aus
+            einer Praktiker-Quelle, nicht aus einem direkten Abgleich mit KiBiz.web — vor Produktivbetrieb gegen die
+            dort hinterlegten aktuellen Beträge prüfen. Zudem ändert sich die Kindpauschale jährlich über die
+            Fortschreibungsrate nach §37 KiBiz. Bis zur Nachbesserung lässt sich unter Einrichtung → Finanzen ein
+            manueller Förderbetrag hinterlegen, der die Formel komplett ersetzt.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">Quellen</h3>
           <ul className="flex flex-col gap-1 text-sm">
@@ -746,6 +800,45 @@ export default async function DokumentationPage() {
             bestätigt — vor der ersten echten Meldung unbedingt mit dem
             eigenen Jugendamt bzw. Statistischen Landesamt abgleichen, ob
             diese Bänder dem tatsächlich verwendeten Meldebogen entsprechen.
+          </p>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <h2 className="font-heading text-2xl text-primary">
+          Personalkosten (Milestone 29c)
+        </h2>
+
+        <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
+          <h3 className="font-heading text-lg text-primary">Formel</h3>
+          <p className="font-mono text-sm font-semibold text-primary">
+            Personalkosten gesamt = Σ Bruttogehalt je Mitarbeiter + Lohnnebenkosten % + Jahressonderzahlung % ÷ 12
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Bruttogehalt je Mitarbeiter kommt aus der TVöD-SuE-Entgelttabelle (Entgeltgruppe × Stufe, linear
+            anteilig nach Wochenstunden ÷ Vollzeit-Referenz) oder aus einem manuell hinterlegten Monatsgehalt, das
+            die Tabelle immer ersetzt, wenn gesetzt. Ohne beides zählt der Mitarbeiter als &bdquo;nicht
+            erfasst&ldquo; und trägt 0 € bei — Controlling weist das aus, statt es zu verschweigen.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
+          <h3 className="font-heading text-lg text-primary">
+            Wichtiger Hinweis zur Quellenlage
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Die hinterlegte TVöD-SuE-Tabelle (Entgeltgruppen S3–S18, Stufen 1–6, Stand 01.05.2026) stammt aus einer
+            Sekundärquelle (öffentlicher-dienst.info) und wurde nicht direkt gegen die primäre VKA/dbb-Entgelttabelle
+            geprüft — vor Produktivbetrieb einmal gegenchecken. TVöD ist außerdem kein Universal-Tarif: kirchliche
+            Träger (Caritas/Diakonie) zahlen meist nach AVR, private Träger frei — für diese Fälle das manuelle
+            Monatsgehalt je Mitarbeiter nutzen statt Entgeltgruppe/Stufe.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Lohnnebenkosten (Standard 28 %) und Jahressonderzahlung (Standard 85 %) sind eigene Schätzwerte aus
+            mehreren Quellen zusammengesetzt, keine einzelne belegbare Zahl — beide Prozentsätze lassen sich unter
+            Einrichtung → Finanzen an die eigene Situation anpassen. Die Jahressonderzahlung wird technisch
+            gleichmäßig auf alle 12 Monate verteilt statt einmalig im November berücksichtigt, damit der
+            Monats-Forecast keinen einzelnen künstlichen Ausschlag zeigt.
           </p>
         </div>
       </section>
