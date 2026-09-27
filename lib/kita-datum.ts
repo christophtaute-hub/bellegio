@@ -125,6 +125,39 @@ export function krippenUebergangWarnung(geburtsdatum: string, today = new Date()
   return dritterGeburtstag <= in3Monaten ? "rot" : null;
 }
 
+/** Nächster 1. September auf oder nach dem übergebenen Datum. */
+function naechsterSeptember(date: Date): Date {
+  const jahr = date.getUTCFullYear();
+  const sept1DiesesJahr = new Date(Date.UTC(jahr, 8, 1));
+  if (date <= sept1DiesesJahr) return sept1DiesesJahr;
+  return new Date(Date.UTC(jahr + 1, 8, 1));
+}
+
+/**
+ * Vorschlag für ein Austrittsdatum, wenn ein Kind aktiv wird und noch keins gesetzt ist: Krippenkinder
+ * verlassen die Krippe mit 3 Jahren, Kindergarten-Kinder werden mit 6 Jahren eingeschult — jeweils auf
+ * den nächsten 1. September gerundet (Kitajahr-Wechsel). Liegt das rechnerische Datum bereits in der
+ * Vergangenheit (z.B. weil das Kind altersmäßig die Übergangsstufe schon überschritten hat), wird
+ * schrittweise auf den nächsten künftigen Übergangszyklus (+1 Kitajahr) weitergerückt. Gleiche
+ * Heuristik wie der einmalige Backfill bestehender Demo-Kinder (Milestone 10/30).
+ */
+export function vorgeschlagenerAustritt(
+  geburtsdatum: string,
+  istKrippe: boolean,
+  today = new Date()
+): string {
+  let jahre = istKrippe ? 3 : 6;
+  let uebergang: Date;
+  let vorschlag: Date;
+  do {
+    uebergang = parseIsoDate(geburtsdatum);
+    uebergang.setUTCFullYear(uebergang.getUTCFullYear() + jahre);
+    vorschlag = naechsterSeptember(uebergang);
+    jahre += 1;
+  } while (vorschlag <= today);
+  return toIsoDateString(vorschlag);
+}
+
 export function addMonthsUtc(date: Date, months: number): Date {
   const result = new Date(date);
   result.setUTCMonth(result.getUTCMonth() + months);

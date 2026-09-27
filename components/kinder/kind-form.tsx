@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinwe
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
 import { KrippenUebergangHinweis } from "@/components/kinder/krippen-uebergang-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
-import { toIsoDateString } from "@/lib/kita-datum";
+import { toIsoDateString, vorgeschlagenerAustritt } from "@/lib/kita-datum";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -53,6 +53,10 @@ const kindFormSchema = z
   .refine((data) => data.status !== "nachruecker" || data.eintritt !== "", {
     message: "Nachrücker brauchen ein geplantes Eintrittsdatum.",
     path: ["eintritt"],
+  })
+  .refine((data) => data.status !== "aktiv" || data.austritt !== "", {
+    message: "Aktive Kinder brauchen ein Austrittsdatum.",
+    path: ["austritt"],
   });
 
 type KindFormValues = z.infer<typeof kindFormSchema>;
@@ -126,6 +130,17 @@ export function KindForm({
   const watchedGeschlecht = watch("geschlecht");
   const watchedGruppeId = watch("gruppe_id");
   const watchedWohnort = watch("wohnort");
+  const watchedAustritt = watch("austritt");
+
+  // Vorschlägt ein Austrittsdatum, sobald ein Kind aktiv wird und noch keins gesetzt ist — Krippenkinder
+  // zum 3., Kindergarten-Kinder zum 6. Geburtstag, auf den nächsten 1. September gerundet (gleiche
+  // Heuristik wie der einmalige Backfill für bestehende Demo-Kinder). Greift nur, solange das Feld leer
+  // ist, überschreibt also nie eine bereits gesetzte oder gerade manuell eingetragene Auswahl.
+  useEffect(() => {
+    if (watchedStatus !== "aktiv" || watchedAustritt || !watchedGeburtsdatum) return;
+    const istKrippe = gruppenArtById[watchedGruppeId] === "krippe";
+    setValue("austritt", vorgeschlagenerAustritt(watchedGeburtsdatum, istKrippe));
+  }, [watchedStatus, watchedGruppeId, watchedGeburtsdatum, watchedAustritt, gruppenArtById, setValue]);
   const integrationsfaktorId = weightingFactors.find(
     (f) => f.code === "integrationskinder"
   )?.id;
@@ -223,8 +238,13 @@ export function KindForm({
         <Field id="eintritt" label="Eintritt" error={errors.eintritt?.message}>
           <Input id="eintritt" type="date" {...register("eintritt")} />
         </Field>
-        <Field id="austritt" label="Austritt">
+        <Field id="austritt" label="Austritt" error={errors.austritt?.message}>
           <Input id="austritt" type="date" {...register("austritt")} />
+          {watchedStatus === "aktiv" ? (
+            <p className="text-xs text-muted-foreground">
+              Vorschlag automatisch berechnet (3./6. Geburtstag, 1. September) — bei Bedarf anpassen.
+            </p>
+          ) : null}
         </Field>
         <Field
           id="vertrag_gueltig_bis"
@@ -279,7 +299,10 @@ export function KindForm({
       ) : null}
 
       {watchedStatus === "aktiv" && gruppenArtById[watchedGruppeId] === "krippe" ? (
-        <KrippenUebergangHinweis geburtsdatum={watchedGeburtsdatum} />
+        <KrippenUebergangHinweis
+          geburtsdatum={watchedGeburtsdatum}
+          gruppenMitKindern={gruppenMitKindern}
+        />
       ) : null}
 
       {watchedStatus === "nachruecker" ? (
