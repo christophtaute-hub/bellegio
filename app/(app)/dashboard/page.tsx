@@ -10,6 +10,7 @@ import {
   buildKpis,
   buildBelegungKennzahlen,
   buildGruppenartAufteilung,
+  buildKpisByGruppenart,
 } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
@@ -103,6 +104,10 @@ export default async function DashboardPage({
   const freiePlaetze = Math.max(0, sollplaetzeSumme - kpis.kinderGesamt);
   const belegung = buildBelegungKennzahlen(rows, sollplaetzeSumme);
   const gruppenartAufteilung = buildGruppenartAufteilung(rows, gruppen ?? []);
+  const kpisByGruppenart =
+    modell === "bayern"
+      ? buildKpisByGruppenart(rows, gruppen ?? []).filter((g) => g.gruppenart !== "unbekannt")
+      : [];
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
     toIsoDateString(addMonthsUtc(parseIsoDate(stichtag), i))
@@ -209,6 +214,18 @@ export default async function DashboardPage({
           />
         ))}
       </div>
+
+      {kpisByGruppenart.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {kpisByGruppenart.map((g) => (
+            <StatTile
+              key={g.gruppenart}
+              label={`${GRUPPENART_LABEL[g.gruppenart] ?? g.gruppenart}: Ungew. / Gew.`}
+              value={`${formatGewichtet(g.kpis.ungewichteteSumme)} / ${formatGewichtet(g.kpis.gewichteteSumme)}`}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {einrichtungId ? (
         <Suspense fallback={<PersonalAusblickSkeleton />}>
