@@ -1451,6 +1451,27 @@ export type Database = {
           },
         ]
       }
+      server_fehler_protokoll: {
+        Row: {
+          erstellt_am: string
+          fehler: string
+          id: string
+          kontext: string
+        }
+        Insert: {
+          erstellt_am?: string
+          fehler: string
+          id?: string
+          kontext: string
+        }
+        Update: {
+          erstellt_am?: string
+          fehler?: string
+          id?: string
+          kontext?: string
+        }
+        Relationships: []
+      }
       staffing_rules: {
         Row: {
           bundesland_code: string

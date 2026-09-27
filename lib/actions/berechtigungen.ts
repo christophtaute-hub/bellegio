@@ -25,10 +25,21 @@ const UNERWARTETER_FEHLER = "Unerwarteter Fehler. Bitte erneut versuchen.";
 /** Verwandelt eine geworfene Ausnahme in eine deutsche Fehlermeldung statt sie durchzureichen — eine Server
  * Action, die wirft statt {ok:false} zurückzugeben, lässt den aufrufenden Button sonst für immer im
  * „lädt…“-Zustand hängen (kein try/catch auf der Client-Seite fängt das ab, siehe NutzerAnlegenForm).
- * Protokolliert die eigentliche Ausnahme serverseitig (Terminal/`preview_logs`) — die Meldung an den Client
- * bleibt bewusst allgemein, sonst wäre ein Fehler sonst nirgends mehr nachvollziehbar. */
-function alsErgebnis(kontext: string, fehler: unknown): NutzerErgebnis {
+ * Protokolliert die eigentliche Ausnahme serverseitig — sowohl per `console.error` (Terminal/`preview_logs`,
+ * lokal einsehbar) als auch in `server_fehler_protokoll` (per SQL einsehbar, unabhängig davon, in welcher
+ * Hosting-Umgebung die Server Action lief und ob dort Server-Logs zugänglich sind). Die Meldung an den
+ * Client bleibt bewusst allgemein, sonst wäre ein Fehler sonst nirgends mehr nachvollziehbar. */
+async function alsErgebnis(kontext: string, fehler: unknown): Promise<NutzerErgebnis> {
   console.error(`[berechtigungen:${kontext}]`, fehler);
+  try {
+    const supabase = await createClient();
+    await supabase.from("server_fehler_protokoll").insert({
+      kontext,
+      fehler: fehler instanceof Error ? `${fehler.name}: ${fehler.message}` : String(fehler),
+    });
+  } catch {
+    // Das Protokollieren selbst darf nie einen zweiten Fehler auslösen — bewusst verschluckt.
+  }
   if (fehler instanceof ZeitlimitFehler) return { ok: false, error: ZEITLIMIT_MELDUNG };
   return { ok: false, error: UNERWARTETER_FEHLER };
 }
