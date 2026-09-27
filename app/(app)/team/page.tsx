@@ -8,7 +8,7 @@ import { PersonalplanungBayern } from "@/components/team/personalplanung-bayern"
 import { PersonalplanungBW } from "@/components/team/personalplanung-bw";
 import { PersonalplanungNRW } from "@/components/team/personalplanung-nrw";
 import { GruppeQuickSelect } from "@/components/team/gruppe-quick-select";
-import { canWritePersonal } from "@/lib/server/current-user-role";
+import { canWritePersonal, canViewFinanzen } from "@/lib/server/current-user-role";
 import {
   Table,
   TableBody,
@@ -23,6 +23,24 @@ import { Input } from "@/components/ui/input";
 
 const SELECT_CLASS =
   "h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
+
+function formatEuro(value: number): string {
+  return value.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+/** Zeigt manuelles Gehalt vor TVöD-Einstufung, sonst "nicht erfasst" — dieselbe Priorität wie
+ * berechnePersonalkostenProMitarbeiter in lib/finanzen/personalkosten.ts, hier aber nur für die
+ * Anzeige (keine Berechnung), daher keine Wiederverwendung der Berechnungsfunktion nötig. */
+function formatTarif(row: {
+  entgeltgruppe: string | null;
+  stufe: number | null;
+  monatsgehalt_manuell: number | null;
+} | undefined): string {
+  if (!row) return "nicht erfasst";
+  if (row.monatsgehalt_manuell !== null) return `${formatEuro(row.monatsgehalt_manuell)}/Monat`;
+  if (row.entgeltgruppe && row.stufe !== null) return `${row.entgeltgruppe}/${row.stufe}`;
+  return "nicht erfasst";
+}
 
 export default async function TeamPage({
   searchParams,
@@ -44,20 +62,29 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, canEditPersonal, personalplanung] = await Promise.all([
-    einrichtungId
-      ? supabase
-          .from("gruppen")
-          .select("id, name")
-          .eq("einrichtung_id", einrichtungId)
-          .is("archived_at", null)
-          .order("name")
-      : Promise.resolve({ data: null }),
-    einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
-    einrichtungId
-      ? getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag)
-      : null,
-  ]);
+  const [{ data: gruppen }, canEditPersonal, personalplanung, zeigeFinanzen, { data: verguetung }] =
+    await Promise.all([
+      einrichtungId
+        ? supabase
+            .from("gruppen")
+            .select("id, name")
+            .eq("einrichtung_id", einrichtungId)
+            .is("archived_at", null)
+            .order("name")
+        : Promise.resolve({ data: null }),
+      einrichtungId ? canWritePersonal(supabase, einrichtungId) : false,
+      einrichtungId
+        ? getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag)
+        : null,
+      einrichtungId ? canViewFinanzen(supabase, einrichtungId) : false,
+      einrichtungId
+        ? supabase
+            .from("team_verguetung")
+            .select("team_id, entgeltgruppe, stufe, monatsgehalt_manuell")
+            .eq("einrichtung_id", einrichtungId)
+        : Promise.resolve({ data: null }),
+    ]);
+  const verguetungByTeamId = new Map((verguetung ?? []).map((v) => [v.team_id, v]));
 
   let query = supabase
     .from("team")
@@ -185,6 +212,7 @@ export default async function TeamPage({
                 <TableHead>Wochenstunden</TableHead>
                 <TableHead>Kategorie</TableHead>
                 <TableHead>Status</TableHead>
+                {zeigeFinanzen ? <TableHead>Tarif</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -221,6 +249,11 @@ export default async function TeamPage({
                       {TEAM_STATUS_LABEL[mitglied.status] ?? mitglied.status}
                     </Badge>
                   </TableCell>
+                  {zeigeFinanzen ? (
+                    <TableCell className="text-muted-foreground">
+                      {formatTarif(verguetungByTeamId.get(mitglied.id))}
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>
