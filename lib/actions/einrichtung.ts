@@ -188,6 +188,26 @@ export async function updateJahressonderzahlungProzent(einrichtungId: string, pr
   revalidatePath("/controlling");
 }
 
+/** Kostenstelle/Cluster zentral aus der "Einrichtungen des Trägers"-Übersicht pflegbar, statt nur
+ * über die einzelne Einrichtungs-Grunddaten-Seite (Rückmeldung: bei mehreren Einrichtungen sonst
+ * mühsam einzeln durchzuklicken). Bewusst frei befüllbares Freitext-Feld, keine Formatprüfung — soll
+ * für jeden Träger nutzbar sein (z.B. "Bayern 1", eigene Kostenstellen-Systematik). */
+export async function updateEinrichtungKostenstelleCluster(
+  einrichtungId: string,
+  kostenstelle: string | null,
+  cluster: string | null
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({ kostenstelle, cluster })
+    .eq("id", einrichtungId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+}
+
 export type EinrichtungErgebnis = { ok: true; id: string } | { ok: false; error: string };
 
 export type NeueEinrichtungInput = {

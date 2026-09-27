@@ -18,7 +18,7 @@ async function ladeEinrichtungenFuerVerwaltung(
 ) {
   const { data } = await supabase
     .from("einrichtungen")
-    .select("id, name, address_city, bundesland_code")
+    .select("id, name, address_city, bundesland_code, kostenstelle, cluster")
     .eq("trager_id", tragerId)
     .is("archived_at", null)
     .order("name");
@@ -27,6 +27,8 @@ async function ladeEinrichtungenFuerVerwaltung(
     name: e.name,
     ort: e.address_city,
     bundeslandLabel: BUNDESLAENDER.find((b) => b.code === e.bundesland_code)?.label ?? e.bundesland_code,
+    kostenstelle: e.kostenstelle,
+    cluster: e.cluster,
   }));
 }
 
