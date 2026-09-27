@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   loescheNutzer,
@@ -11,7 +11,7 @@ import {
   setzeNutzerRolle,
   sperreNutzer,
 } from "@/lib/actions/berechtigungen";
-import { erzeugePasswort, ROLLEN, type NeueRolle } from "@/lib/nutzer/verwaltung";
+import { erzeugePasswort, gruppiereNachCluster, ROLLEN, type NeueRolle } from "@/lib/nutzer/verwaltung";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,7 +53,7 @@ export type MatrixUser = {
   gesperrt?: boolean;
 };
 
-export type MatrixEinrichtung = { id: string; name: string };
+export type MatrixEinrichtung = { id: string; name: string; cluster: string | null };
 
 export type BerechtigungRow = {
   user_id: string;
@@ -95,6 +95,9 @@ export function RechteMatrix({
 
   const istLokalerAdmin = (userId: string, einrichtungId: string): boolean =>
     lokaleAdmins.some((r) => r.user_id === userId && r.einrichtung_id === einrichtungId);
+
+  const clusterGruppen = gruppiereNachCluster(einrichtungen);
+  const colSpanGesamt = 1 + BEREICHE.length + (istTraegerAdmin ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -150,43 +153,63 @@ export function RechteMatrix({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {einrichtungen.map((einrichtung) => (
-                          <TableRow key={einrichtung.id}>
-                            <TableCell className="font-medium">
-                              {einrichtung.name}
-                            </TableCell>
-                            {BEREICHE.map((b) => {
-                              const eigenerRang =
-                                istTraegerAdmin
-                                  ? 2
-                                  : ZUGRIFF_OPTIONS.find(
-                                      (o) =>
-                                        o.value ===
-                                        (eigeneZugriffe[einrichtung.id]?.[b.key] ??
-                                          "kein_zugriff")
-                                    )?.rang ?? 0;
-                              return (
-                                <TableCell key={b.key}>
-                                  <ZugriffSelect
-                                    userId={user.id}
-                                    einrichtungId={einrichtung.id}
-                                    bereich={b.key}
-                                    wert={zugriffFuer(user.id, einrichtung.id, b.key)}
-                                    maxRang={eigenerRang}
-                                  />
+                        {clusterGruppen.map((gruppe) => (
+                          <Fragment key={gruppe.label}>
+                            {clusterGruppen.length > 1 ? (
+                              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                                <TableCell colSpan={colSpanGesamt} className="text-xs font-semibold text-muted-foreground">
+                                  {gruppe.label}
                                 </TableCell>
-                              );
-                            })}
-                            {istTraegerAdmin ? (
-                              <TableCell>
-                                <LokalerAdminToggle
-                                  userId={user.id}
-                                  einrichtungId={einrichtung.id}
-                                  wert={istLokalerAdmin(user.id, einrichtung.id)}
-                                />
-                              </TableCell>
+                              </TableRow>
                             ) : null}
-                          </TableRow>
+                            {gruppe.einrichtungen.length > 1 ? (
+                              <ClusterBulkZeile
+                                userId={user.id}
+                                einrichtungenImCluster={gruppe.einrichtungen}
+                                istTraegerAdmin={istTraegerAdmin}
+                                eigeneZugriffe={eigeneZugriffe}
+                                zeigeLokalerAdminSpalte={istTraegerAdmin}
+                              />
+                            ) : null}
+                            {gruppe.einrichtungen.map((einrichtung) => (
+                              <TableRow key={einrichtung.id}>
+                                <TableCell className="font-medium">
+                                  {einrichtung.name}
+                                </TableCell>
+                                {BEREICHE.map((b) => {
+                                  const eigenerRang =
+                                    istTraegerAdmin
+                                      ? 2
+                                      : ZUGRIFF_OPTIONS.find(
+                                          (o) =>
+                                            o.value ===
+                                            (eigeneZugriffe[einrichtung.id]?.[b.key] ??
+                                              "kein_zugriff")
+                                        )?.rang ?? 0;
+                                  return (
+                                    <TableCell key={b.key}>
+                                      <ZugriffSelect
+                                        userId={user.id}
+                                        einrichtungId={einrichtung.id}
+                                        bereich={b.key}
+                                        wert={zugriffFuer(user.id, einrichtung.id, b.key)}
+                                        maxRang={eigenerRang}
+                                      />
+                                    </TableCell>
+                                  );
+                                })}
+                                {istTraegerAdmin ? (
+                                  <TableCell>
+                                    <LokalerAdminToggle
+                                      userId={user.id}
+                                      einrichtungId={einrichtung.id}
+                                      wert={istLokalerAdmin(user.id, einrichtung.id)}
+                                    />
+                                  </TableCell>
+                                ) : null}
+                              </TableRow>
+                            ))}
+                          </Fragment>
                         ))}
                       </TableBody>
                     </Table>
@@ -260,6 +283,85 @@ function ZugriffSelect({
       </select>
       {error ? <span className="text-xs text-destructive">{error}</span> : null}
     </div>
+  );
+}
+
+/** Setzt einen Zugriffswert für alle Einrichtungen eines Clusters auf einmal, statt jede Zeile einzeln
+ * durchzuklicken (Rückmeldung: bei mehreren Einrichtungen pro Cluster mühsam). Einrichtungen, für die der
+ * gewählte Wert das eigene Niveau überschreiten würde, werden übersprungen statt einen Fehler zu zeigen —
+ * gleiche Kappung wie das disabled-Verhalten der einzelnen ZugriffSelect-Dropdowns. */
+function ClusterBulkZeile({
+  userId,
+  einrichtungenImCluster,
+  istTraegerAdmin,
+  eigeneZugriffe,
+  zeigeLokalerAdminSpalte,
+}: {
+  userId: string;
+  einrichtungenImCluster: MatrixEinrichtung[];
+  istTraegerAdmin: boolean;
+  eigeneZugriffe: Record<string, Record<Bereich, Zugriff>>;
+  zeigeLokalerAdminSpalte: boolean;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <>
+      <TableRow className="bg-secondary/20 hover:bg-secondary/20">
+        <TableCell className="text-xs text-muted-foreground">Für ganzes Cluster setzen</TableCell>
+        {BEREICHE.map((b) => (
+          <TableCell key={b.key}>
+            <select
+              defaultValue=""
+              disabled={isPending}
+              className={SELECT_CLASS}
+              onChange={(event) => {
+                const neuerWert = event.target.value as Zugriff | "";
+                if (!neuerWert) return;
+                const zielRang = ZUGRIFF_OPTIONS.find((o) => o.value === neuerWert)?.rang ?? 0;
+                setError(null);
+                startTransition(async () => {
+                  for (const einrichtung of einrichtungenImCluster) {
+                    const eigenerRang =
+                      istTraegerAdmin
+                        ? 2
+                        : ZUGRIFF_OPTIONS.find(
+                            (o) => o.value === (eigeneZugriffe[einrichtung.id]?.[b.key] ?? "kein_zugriff")
+                          )?.rang ?? 0;
+                    if (zielRang > eigenerRang) continue;
+                    try {
+                      const ergebnis = await setEinrichtungBerechtigung(userId, einrichtung.id, b.key, neuerWert);
+                      if (!ergebnis.ok) setError(ergebnis.error);
+                    } catch {
+                      setError("Die Verbindung ist abgebrochen. Bitte erneut versuchen.");
+                    }
+                  }
+                  event.target.value = "";
+                  router.refresh();
+                });
+              }}
+            >
+              <option value="">— für alle setzen —</option>
+              {ZUGRIFF_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </TableCell>
+        ))}
+        {zeigeLokalerAdminSpalte ? <TableCell /> : null}
+      </TableRow>
+      {error ? (
+        <TableRow className="bg-secondary/20 hover:bg-secondary/20">
+          <TableCell colSpan={1 + BEREICHE.length + (zeigeLokalerAdminSpalte ? 1 : 0)}>
+            <span className="text-xs text-destructive">{error}</span>
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </>
   );
 }
 

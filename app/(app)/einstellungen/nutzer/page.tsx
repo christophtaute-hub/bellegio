@@ -44,7 +44,7 @@ export default async function NutzerUndRechtePage() {
   const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }, { data: alleLokalenAdmins }] = await Promise.all([
     supabase
       .from("einrichtungen")
-      .select("id, name")
+      .select("id, name, cluster")
       .eq("trager_id", eigenesProfil.trager_id)
       .is("archived_at", null)
       .order("name"),

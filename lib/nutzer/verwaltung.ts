@@ -77,6 +77,39 @@ export function darfNutzerVerwalten(aufrufer: Beteiligter, ziel: Beteiligter, ak
   return null;
 }
 
+export type EinrichtungMitCluster = { id: string; cluster: string | null };
+export type ClusterGruppe<T extends EinrichtungMitCluster> = {
+  cluster: string | null;
+  label: string;
+  einrichtungen: T[];
+};
+
+const OHNE_CLUSTER_LABEL = "Ohne Cluster";
+
+/** Gruppiert Einrichtungen nach ihrem Cluster-Feld (Milestone 27/30), alphabetisch sortiert —
+ * Einrichtungen ohne Cluster landen gesammelt in einer eigenen Gruppe am Ende. Grundlage für die
+ * Cluster-Bulk-Auswahl bei der Nutzerverwaltung (z.B. "Bayern 1" auf einen Klick auswählen). */
+export function gruppiereNachCluster<T extends EinrichtungMitCluster>(einrichtungen: T[]): ClusterGruppe<T>[] {
+  const gruppen = new Map<string, T[]>();
+  for (const e of einrichtungen) {
+    const schluessel = e.cluster?.trim() || "";
+    const liste = gruppen.get(schluessel);
+    if (liste) liste.push(e);
+    else gruppen.set(schluessel, [e]);
+  }
+  return Array.from(gruppen.entries())
+    .map(([cluster, liste]) => ({
+      cluster: cluster || null,
+      label: cluster || OHNE_CLUSTER_LABEL,
+      einrichtungen: liste,
+    }))
+    .sort((a, b) => {
+      if (a.cluster === null) return 1;
+      if (b.cluster === null) return -1;
+      return a.cluster.localeCompare(b.cluster, "de");
+    });
+}
+
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
 
 /** Zufälliges, gut tippbares Passwort (ohne verwechselbare Zeichen wie 0/O oder 1/l/I). */

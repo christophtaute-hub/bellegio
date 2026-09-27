@@ -12,6 +12,7 @@ import {
   ROLLEN,
   ZUGRIFFE,
   erzeugePasswort,
+  gruppiereNachCluster,
   type Bereich,
   type NeueRolle,
   type Zugriff,
@@ -36,7 +37,7 @@ export function NutzerAnlegenForm({
   einrichtungen,
   nurMitarbeiter = false,
 }: {
-  einrichtungen: { id: string; name: string }[];
+  einrichtungen: { id: string; name: string; cluster: string | null }[];
   nurMitarbeiter?: boolean;
 }) {
   const router = useRouter();
@@ -51,6 +52,7 @@ export function NutzerAnlegenForm({
   const [error, setError] = useState<string | null>(null);
   const [zugangsdaten, setZugangsdaten] = useState<{ email: string; passwort: string | null } | null>(null);
   const [kopiert, setKopiert] = useState(false);
+  const clusterGruppen = gruppiereNachCluster(einrichtungen);
 
   async function anlegen(event: React.FormEvent) {
     event.preventDefault();
@@ -149,18 +151,63 @@ export function NutzerAnlegenForm({
       {rolle === "mitarbeiter" ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">Für diese Einrichtungen</span>
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
-              {einrichtungen.map((e) => (
-                <label key={e.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={gewaehlt.includes(e.id)}
-                    onChange={(ev) => setGewaehlt((alt) => (ev.target.checked ? [...alt, e.id] : alt.filter((id) => id !== e.id)))}
-                  />
-                  {e.name}
-                </label>
-              ))}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground">Für diese Einrichtungen</span>
+              {einrichtungen.length > 1 ? (
+                <button
+                  type="button"
+                  className="text-xs text-primary underline-offset-2 hover:underline"
+                  onClick={() =>
+                    setGewaehlt(
+                      einrichtungen.every((e) => gewaehlt.includes(e.id))
+                        ? []
+                        : einrichtungen.map((e) => e.id)
+                    )
+                  }
+                >
+                  {einrichtungen.every((e) => gewaehlt.includes(e.id)) ? "Alle abwählen" : "Alle auswählen"}
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-col gap-2">
+              {clusterGruppen.map((gruppe) => {
+                const idsImCluster = gruppe.einrichtungen.map((e) => e.id);
+                const clusterAusgewaehlt = idsImCluster.every((id) => gewaehlt.includes(id));
+                return (
+                  <div key={gruppe.label} className="flex flex-col gap-1">
+                    {clusterGruppen.length > 1 && gruppe.einrichtungen.length > 1 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground">{gruppe.label}</span>
+                        <button
+                          type="button"
+                          className="text-xs text-primary underline-offset-2 hover:underline"
+                          onClick={() =>
+                            setGewaehlt((alt) =>
+                              clusterAusgewaehlt
+                                ? alt.filter((id) => !idsImCluster.includes(id))
+                                : Array.from(new Set([...alt, ...idsImCluster]))
+                            )
+                          }
+                        >
+                          {clusterAusgewaehlt ? "Cluster abwählen" : "Cluster auswählen"}
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
+                      {gruppe.einrichtungen.map((e) => (
+                        <label key={e.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={gewaehlt.includes(e.id)}
+                            onChange={(ev) => setGewaehlt((alt) => (ev.target.checked ? [...alt, e.id] : alt.filter((id) => id !== e.id)))}
+                          />
+                          {e.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

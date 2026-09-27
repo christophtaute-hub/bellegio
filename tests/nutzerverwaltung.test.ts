@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { darfNutzerVerwalten, erzeugePasswort, pruefeNeuenNutzer, type NeuerNutzerInput } from "@/lib/nutzer/verwaltung";
+import {
+  darfNutzerVerwalten,
+  erzeugePasswort,
+  gruppiereNachCluster,
+  pruefeNeuenNutzer,
+  type NeuerNutzerInput,
+} from "@/lib/nutzer/verwaltung";
 import { pruefePasswort } from "@/lib/passwort";
 
 const admin = { id: "a", rolle: "traeger_admin", tragerId: "t1" };
@@ -77,5 +83,37 @@ describe("Passwort erzeugen", () => {
 
   it("liefert unterschiedliche Werte", () => {
     expect(new Set(Array.from({ length: 20 }, () => erzeugePasswort())).size).toBe(20);
+  });
+});
+
+describe("Einrichtungen nach Cluster gruppieren", () => {
+  it("gruppiert nach Cluster-Wert und sortiert alphabetisch", () => {
+    const gruppen = gruppiereNachCluster([
+      { id: "1", cluster: "NRW 1" },
+      { id: "2", cluster: "Bayern 1" },
+      { id: "3", cluster: "Bayern 1" },
+    ]);
+    expect(gruppen.map((g) => g.label)).toEqual(["Bayern 1", "NRW 1"]);
+    expect(gruppen[0].einrichtungen.map((e) => e.id)).toEqual(["2", "3"]);
+  });
+
+  it("sammelt Einrichtungen ohne Cluster (null oder leer) in einer eigenen Gruppe am Ende", () => {
+    const gruppen = gruppiereNachCluster([
+      { id: "1", cluster: "Bayern 1" },
+      { id: "2", cluster: null },
+      { id: "3", cluster: "  " },
+    ]);
+    expect(gruppen.map((g) => g.label)).toEqual(["Bayern 1", "Ohne Cluster"]);
+    expect(gruppen[1].einrichtungen.map((e) => e.id)).toEqual(["2", "3"]);
+  });
+
+  it("liefert eine einzige Gruppe, wenn kein Cluster gesetzt ist", () => {
+    const gruppen = gruppiereNachCluster([{ id: "1", cluster: null }, { id: "2", cluster: null }]);
+    expect(gruppen).toHaveLength(1);
+    expect(gruppen[0].cluster).toBeNull();
+  });
+
+  it("leere Liste ergibt leere Gruppenliste", () => {
+    expect(gruppiereNachCluster([])).toEqual([]);
   });
 });
