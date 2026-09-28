@@ -13,6 +13,8 @@ import {
   type BWGruppe,
   type BWPersonalschluesselRow,
 } from "@/lib/team/personalschluessel-bw";
+import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
+import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
 const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
   halbtagsgruppe: "Halbtagsgruppe",
@@ -56,6 +58,7 @@ export function SzenarioRechnerBW({
   initialGruppen,
   initialPersonal,
   vollzeitWochenstunden,
+  finanzenHeute,
 }: {
   tabelle: BWPersonalschluesselRow[];
   initialGruppen: {
@@ -67,6 +70,7 @@ export function SzenarioRechnerBW({
   }[];
   initialPersonal: { wochenstunden: number }[];
   vollzeitWochenstunden: number;
+  finanzenHeute?: Ergebnis;
 }) {
   const ersteZeile = tabelle[0];
   const [gruppen, setGruppen] = useState<GruppeState[]>(
@@ -82,6 +86,9 @@ export function SzenarioRechnerBW({
   );
   const [personal, setPersonal] = useState<PersonalState[]>(
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
+  );
+  const [initialPersonalStundenGesamt] = useState(() =>
+    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const ergebnis = useMemo(() => {
@@ -332,6 +339,16 @@ export function SzenarioRechnerBW({
           siehe Dokumentation.
         </p>
       </section>
+
+      {finanzenHeute ? (
+        <FinanzenSektion
+          finanzenHeute={finanzenHeute}
+          vollzeitWochenstunden={vollzeitWochenstunden}
+          deltaStunden={
+            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
+          }
+        />
+      ) : null}
     </div>
   );
 }

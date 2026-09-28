@@ -18,6 +18,8 @@ import {
   type TeamPresenceRow,
   type StaffingRules,
 } from "@/lib/team/anstellungsschluessel";
+import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
+import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
 type BandOption = { id: string; label: string; factor: number };
 type CategoryOption = { id: string; code: string; label: string; factor: number };
@@ -40,6 +42,7 @@ export function SzenarioRechner({
   empfohlenerSchluesselWert,
   vollzeitWochenstunden,
   staffingRules,
+  finanzenHeute,
 }: {
   bands: BandOption[];
   categories: CategoryOption[];
@@ -49,6 +52,7 @@ export function SzenarioRechner({
   empfohlenerSchluesselWert: number;
   vollzeitWochenstunden: number;
   staffingRules: StaffingRules;
+  finanzenHeute?: Ergebnis;
 }) {
   const [matrix, setMatrix] = useState(initialMatrix);
   const [personal, setPersonal] = useState(
@@ -56,6 +60,9 @@ export function SzenarioRechner({
   );
   const [sollplaetzeSumme, setSollplaetzeSumme] = useState(
     initialSollplaetzeSumme
+  );
+  const [initialPersonalStundenGesamt] = useState(() =>
+    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const { kpis, belegung, personalplanung } = useMemo(() => {
@@ -298,6 +305,16 @@ export function SzenarioRechner({
           </Badge>
         </div>
       </section>
+
+      {finanzenHeute ? (
+        <FinanzenSektion
+          finanzenHeute={finanzenHeute}
+          vollzeitWochenstunden={vollzeitWochenstunden}
+          deltaStunden={
+            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
+          }
+        />
+      ) : null}
     </div>
   );
 }

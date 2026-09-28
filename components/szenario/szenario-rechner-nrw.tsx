@@ -11,6 +11,8 @@ import {
   type NRWGruppe,
   type NRWPersonalstundenRow,
 } from "@/lib/team/personalschluessel-nrw";
+import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
+import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
 const AMPEL_LABELS = {
   gruen: "Personalstunden erfüllt",
@@ -43,6 +45,8 @@ export function SzenarioRechnerNRW({
   tabelle,
   initialGruppen,
   initialPersonal,
+  vollzeitWochenstunden,
+  finanzenHeute,
 }: {
   tabelle: NRWPersonalstundenRow[];
   initialGruppen: {
@@ -51,6 +55,8 @@ export function SzenarioRechnerNRW({
     buchungszeitStunden: number | null;
   }[];
   initialPersonal: { roleCategory: "fk" | "ek"; wochenstunden: number }[];
+  vollzeitWochenstunden: number;
+  finanzenHeute?: Ergebnis;
 }) {
   const ersteZeile = tabelle[0];
   const [gruppen, setGruppen] = useState<GruppeState[]>(
@@ -63,6 +69,9 @@ export function SzenarioRechnerNRW({
   );
   const [personal, setPersonal] = useState<PersonalState[]>(
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
+  );
+  const [initialPersonalStundenGesamt] = useState(() =>
+    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const ergebnis = useMemo(() => {
@@ -289,6 +298,16 @@ export function SzenarioRechnerNRW({
           inkl. Leitungsfreistellung. Details siehe Dokumentation.
         </p>
       </section>
+
+      {finanzenHeute ? (
+        <FinanzenSektion
+          finanzenHeute={finanzenHeute}
+          vollzeitWochenstunden={vollzeitWochenstunden}
+          deltaStunden={
+            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
+          }
+        />
+      ) : null}
     </div>
   );
 }

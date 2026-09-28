@@ -67,7 +67,7 @@ export type ForecastMonth = {
   finanzen?: Ergebnis;
 };
 
-type FinanzenBasis = {
+export type FinanzenBasis = {
   bundeslandCode: string;
   foerderungManuell: number | null;
   lohnnebenkostenProzent: number;
@@ -80,7 +80,9 @@ type FinanzenBasis = {
   teamVerguetungByTeamId: Map<string, { entgeltgruppe: string | null; stufe: number | null; monatsgehaltManuell: number | null }>;
 };
 
-async function ladeFinanzenBasis(
+/** Exportiert, damit der Szenario-Rechner (Milestone 30, Phase H) dieselbe Finanzen-Basis für "heute"
+ * laden kann, statt die Fördererlöse-/Personalkosten-Verdrahtung ein zweites Mal nachzubauen. */
+export async function ladeFinanzenBasis(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
   bundeslandCode: string,
@@ -121,8 +123,9 @@ async function ladeFinanzenBasis(
 
 /** Reine Funktion: löst die noch stichtags-freie Finanzen-Basis für einen konkreten Monat auf.
  * Fördererlöse: manueller Überschreib > Bundesland-Formel (Bayern/NRW) > 0 (BW ohne Formel).
- * Personalkosten: aus den bereits für "personal" geladenen teamRows + der geladenen Vergütung. */
-function resolveFinanzenMonat(
+ * Personalkosten: aus den bereits für "personal" geladenen teamRows + der geladenen Vergütung.
+ * Exportiert, siehe ladeFinanzenBasis. */
+export function resolveFinanzenMonat(
   basis: FinanzenBasis,
   stichtag: string,
   kinderRows: PresenceRow[],
