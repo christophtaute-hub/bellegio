@@ -191,7 +191,7 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
           {gruppenarten.map((gruppenart) => (
             <TableRow key={gruppenart}>
               <TableCell className="sticky left-0 z-10 bg-card font-medium">
-                {GRUPPENART_LABEL[gruppenart] ?? gruppenart}: Ungewichtet / Gewichtet
+                {GRUPPENART_LABEL[gruppenart] ?? gruppenart}: Ungewichtete / Gewichtete Buchungsstunden
               </TableCell>
               {months.map((m) => {
                 const kpis = gruppenartKpis(m, gruppenart);

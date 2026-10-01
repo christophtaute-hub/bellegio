@@ -220,7 +220,7 @@ export default async function DashboardPage({
           {kpisByGruppenart.map((g) => (
             <StatTile
               key={g.gruppenart}
-              label={`${GRUPPENART_LABEL[g.gruppenart] ?? g.gruppenart}: Ungew. / Gew.`}
+              label={`${GRUPPENART_LABEL[g.gruppenart] ?? g.gruppenart}: Ungew./Gew. Buchungsstd.`}
               value={`${formatGewichtet(g.kpis.ungewichteteSumme)} / ${formatGewichtet(g.kpis.gewichteteSumme)}`}
             />
           ))}
