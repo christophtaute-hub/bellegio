@@ -43,16 +43,20 @@ export function SzenarioRechner({
   vollzeitWochenstunden,
   staffingRules,
   finanzenHeute,
+  lohnnebenkostenProzent,
+  jahressonderzahlungProzent,
 }: {
   bands: BandOption[];
   categories: CategoryOption[];
   initialMatrix: Record<string, Record<string, number>>;
-  initialPersonal: { role_category: string; wochenstunden: number }[];
+  initialPersonal: { role_category: string; wochenstunden: number; gehaltVollzeit: number }[];
   initialSollplaetzeSumme: number;
   empfohlenerSchluesselWert: number;
   vollzeitWochenstunden: number;
   staffingRules: StaffingRules;
   finanzenHeute?: Ergebnis;
+  lohnnebenkostenProzent: number;
+  jahressonderzahlungProzent: number;
 }) {
   const [matrix, setMatrix] = useState(initialMatrix);
   const [personal, setPersonal] = useState(
@@ -60,9 +64,6 @@ export function SzenarioRechner({
   );
   const [sollplaetzeSumme, setSollplaetzeSumme] = useState(
     initialSollplaetzeSumme
-  );
-  const [initialPersonalStundenGesamt] = useState(() =>
-    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const { kpis, belegung, personalplanung } = useMemo(() => {
@@ -227,6 +228,27 @@ export function SzenarioRechner({
                 }
               />
               <span className="text-sm text-muted-foreground">Std./Woche</span>
+              {finanzenHeute ? (
+                <>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={50}
+                    className="h-8 w-28"
+                    value={p.gehaltVollzeit}
+                    onChange={(e) =>
+                      setPersonal((prev) =>
+                        prev.map((row) =>
+                          row.id === p.id
+                            ? { ...row, gehaltVollzeit: Math.max(0, Number(e.target.value) || 0) }
+                            : row
+                        )
+                      )
+                    }
+                  />
+                  <span className="text-sm text-muted-foreground">€/Monat bei Vollzeit</span>
+                </>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
@@ -248,7 +270,7 @@ export function SzenarioRechner({
           onClick={() =>
             setPersonal((prev) => [
               ...prev,
-              { id: nextId++, role_category: "fk", wochenstunden: 30 },
+              { id: nextId++, role_category: "fk", wochenstunden: 30, gehaltVollzeit: 0 },
             ])
           }
         >
@@ -309,10 +331,10 @@ export function SzenarioRechner({
       {finanzenHeute ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
+          personal={personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
-          deltaStunden={
-            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
-          }
+          lohnnebenkostenProzent={lohnnebenkostenProzent}
+          jahressonderzahlungProzent={jahressonderzahlungProzent}
         />
       ) : null}
     </div>

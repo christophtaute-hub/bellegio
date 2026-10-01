@@ -1,4 +1,8 @@
-import type { PersonalkostenGesamt } from "@/lib/finanzen/personalkosten";
+import {
+  berechnePersonalkostenGesamt,
+  type PersonalkostenErgebnisProMitarbeiter,
+  type PersonalkostenGesamt,
+} from "@/lib/finanzen/personalkosten";
 
 export type Ergebnis = {
   foerdererloeseMonat: number;
@@ -18,25 +22,44 @@ export function berechneErgebnis(foerdererloeseMonat: number, personalkosten: Pe
   };
 }
 
-export type SzenarioErgebnis = { personalkostenSimuliert: number; ergebnisSimuliert: number };
+export type SzenarioPersonalZeile = { wochenstunden: number; gehaltVollzeit: number };
 
-/** Reine Funktion für den Szenario-Rechner (Milestone 30, Phase H): Fördererlöse bleiben auf dem
- * heutigen realen Wert fixiert (die Rechner-Varianten kennen keine simulierbare Kinderzahl-Formel für
- * BW/NRW, und Bayern hält zwar eine editierbare Matrix, aber ein einheitliches Verhalten über alle drei
- * Bundesländer ist ehrlicher als ein Bayern-Sonderfall). Personalkosten skalieren linear mit der im
- * jeweiligen Rechner simulierten Stundenänderung (deltaStunden) über ein einzelnes Gehalt/Monat-bei-
- * Vollzeit-Eingabefeld. */
+export type SzenarioErgebnis = {
+  personalkostenSimuliert: number;
+  ergebnisSimuliert: number;
+  personalkostenNichtErfasst: number;
+};
+
+/** Reine Funktion für den Szenario-Rechner (Milestone 31, Punkt D — ersetzt das Delta-Modell aus
+ * Milestone 30, Phase H): Fördererlöse bleiben auf dem heutigen realen Wert fixiert (die Rechner-
+ * Varianten kennen keine simulierbare Kinderzahl-Formel für BW/NRW, und Bayern hält zwar eine
+ * editierbare Matrix, aber ein einheitliches Verhalten über alle drei Bundesländer ist ehrlicher als ein
+ * Bayern-Sonderfall). Personalkosten sind jetzt eine echte Summe: jede Personal-Zeile trägt ihr eigenes
+ * Vollzeit-Monatsgehalt (bei echten Teammitgliedern vorbefüllt, bei neuen Zeilen frei editierbar), linear
+ * auf ihre simulierten Wochenstunden skaliert — exakte Wiederverwendung von berechnePersonalkostenGesamt,
+ * damit Lohnnebenkosten/Jahressonderzahlung und "nicht erfasst" genauso wie in der echten Berechnung
+ * gezählt werden. */
 export function berechneSzenarioErgebnis(
-  finanzenHeute: Ergebnis,
-  deltaStunden: number,
+  foerdererloeseMonat: number,
+  personal: SzenarioPersonalZeile[],
   vollzeitWochenstunden: number,
-  gehaltMonatVollzeit: number
+  lohnnebenkostenProzent: number,
+  jahressonderzahlungProzent: number
 ): SzenarioErgebnis {
-  const deltaKosten =
-    vollzeitWochenstunden > 0 ? (deltaStunden / vollzeitWochenstunden) * gehaltMonatVollzeit : 0;
-  const personalkostenSimuliert = finanzenHeute.personalkostenMonat + deltaKosten;
+  const ergebnisse: PersonalkostenErgebnisProMitarbeiter[] = personal.map((p, i) =>
+    p.gehaltVollzeit > 0
+      ? {
+          teamId: String(i),
+          status: "berechnet",
+          bruttoMonat: p.gehaltVollzeit * (vollzeitWochenstunden > 0 ? p.wochenstunden / vollzeitWochenstunden : 0),
+          quelle: "manuell",
+        }
+      : { teamId: String(i), status: "nicht_erfasst" }
+  );
+  const personalkosten = berechnePersonalkostenGesamt(ergebnisse, lohnnebenkostenProzent, jahressonderzahlungProzent);
   return {
-    personalkostenSimuliert,
-    ergebnisSimuliert: finanzenHeute.foerdererloeseMonat - personalkostenSimuliert,
+    personalkostenSimuliert: personalkosten.personalkostenGesamtMonat,
+    ergebnisSimuliert: foerdererloeseMonat - personalkosten.personalkostenGesamtMonat,
+    personalkostenNichtErfasst: personalkosten.nichtErfasst,
   };
 }

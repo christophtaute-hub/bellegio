@@ -51,7 +51,7 @@ type GruppeState = {
   oeffnungszeitStunden: number;
   randzeitStunden: number;
 };
-type PersonalState = { id: number; wochenstunden: number };
+type PersonalState = { id: number; wochenstunden: number; gehaltVollzeit: number };
 
 export function SzenarioRechnerBW({
   tabelle,
@@ -59,6 +59,8 @@ export function SzenarioRechnerBW({
   initialPersonal,
   vollzeitWochenstunden,
   finanzenHeute,
+  lohnnebenkostenProzent,
+  jahressonderzahlungProzent,
 }: {
   tabelle: BWPersonalschluesselRow[];
   initialGruppen: {
@@ -68,9 +70,11 @@ export function SzenarioRechnerBW({
     oeffnungszeitStunden: number | null;
     randzeitStunden?: number | null;
   }[];
-  initialPersonal: { wochenstunden: number }[];
+  initialPersonal: { wochenstunden: number; gehaltVollzeit: number }[];
   vollzeitWochenstunden: number;
   finanzenHeute?: Ergebnis;
+  lohnnebenkostenProzent: number;
+  jahressonderzahlungProzent: number;
 }) {
   const ersteZeile = tabelle[0];
   const [gruppen, setGruppen] = useState<GruppeState[]>(
@@ -86,9 +90,6 @@ export function SzenarioRechnerBW({
   );
   const [personal, setPersonal] = useState<PersonalState[]>(
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
-  );
-  const [initialPersonalStundenGesamt] = useState(() =>
-    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const ergebnis = useMemo(() => {
@@ -289,6 +290,27 @@ export function SzenarioRechnerBW({
                 }
               />
               <span className="text-sm text-muted-foreground">Std./Woche</span>
+              {finanzenHeute ? (
+                <>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={50}
+                    className="h-8 w-28"
+                    value={p.gehaltVollzeit}
+                    onChange={(e) =>
+                      setPersonal((prev) =>
+                        prev.map((row) =>
+                          row.id === p.id
+                            ? { ...row, gehaltVollzeit: Math.max(0, Number(e.target.value) || 0) }
+                            : row
+                        )
+                      )
+                    }
+                  />
+                  <span className="text-sm text-muted-foreground">€/Monat bei Vollzeit</span>
+                </>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
@@ -308,7 +330,7 @@ export function SzenarioRechnerBW({
           size="sm"
           className="self-start"
           onClick={() =>
-            setPersonal((prev) => [...prev, { id: nextId++, wochenstunden: 30 }])
+            setPersonal((prev) => [...prev, { id: nextId++, wochenstunden: 30, gehaltVollzeit: 0 }])
           }
         >
           Personal hinzufügen
@@ -343,10 +365,10 @@ export function SzenarioRechnerBW({
       {finanzenHeute ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
+          personal={personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
-          deltaStunden={
-            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
-          }
+          lohnnebenkostenProzent={lohnnebenkostenProzent}
+          jahressonderzahlungProzent={jahressonderzahlungProzent}
         />
       ) : null}
     </div>

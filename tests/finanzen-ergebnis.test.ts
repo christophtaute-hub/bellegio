@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { berechneErgebnis, berechneSzenarioErgebnis, type Ergebnis } from "@/lib/finanzen/ergebnis";
+import { berechneErgebnis, berechneSzenarioErgebnis } from "@/lib/finanzen/ergebnis";
 import type { PersonalkostenGesamt } from "@/lib/finanzen/personalkosten";
 
 function personalkosten(partial: Partial<PersonalkostenGesamt>): PersonalkostenGesamt {
@@ -36,42 +36,67 @@ describe("berechneErgebnis", () => {
 });
 
 describe("berechneSzenarioErgebnis", () => {
-  const heute: Ergebnis = {
-    foerdererloeseMonat: 100000,
-    personalkostenMonat: 20000,
-    ergebnisMonat: 80000,
-    personalkostenNichtErfasst: 0,
-  };
+  const foerdererloeseMonat = 100000;
 
-  it("ohne simulierte Stundenänderung bleiben Personalkosten und Ergebnis beim heutigen Wert", () => {
-    const ergebnis = berechneSzenarioErgebnis(heute, 0, 40, 4000);
-    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(20000, 10);
-    expect(ergebnis.ergebnisSimuliert).toBeCloseTo(80000, 10);
+  it("ohne Personal sind die Personalkosten 0 und das Ergebnis gleich den Fördererlösen", () => {
+    const ergebnis = berechneSzenarioErgebnis(foerdererloeseMonat, [], 40, 28, 85);
+    expect(ergebnis.personalkostenSimuliert).toBe(0);
+    expect(ergebnis.ergebnisSimuliert).toBeCloseTo(foerdererloeseMonat, 10);
+    expect(ergebnis.personalkostenNichtErfasst).toBe(0);
   });
 
-  it("mehr simulierte Stunden erhöhen die Personalkosten anteilig zur Vollzeit-Referenz und senken das Ergebnis", () => {
-    // +30 Std./Woche bei 40 Std. Vollzeit-Referenz und 4.000 €/Monat Vollzeitgehalt -> 3.000 € mehr Kosten.
-    const ergebnis = berechneSzenarioErgebnis(heute, 30, 40, 4000);
-    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(23000, 10);
-    expect(ergebnis.ergebnisSimuliert).toBeCloseTo(77000, 10);
+  it("eine Vollzeit-Zeile zählt mit ihrem vollen Gehalt plus Lohnnebenkosten/Jahressonderzahlung", () => {
+    // 4.000 € brutto, 28 % Lohnnebenkosten (1.120 €), 85 % Jahressonderzahlung / 12 (283,33 €).
+    const ergebnis = berechneSzenarioErgebnis(foerdererloeseMonat, [{ wochenstunden: 40, gehaltVollzeit: 4000 }], 40, 28, 85);
+    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(4000 + 1120 + (4000 * 0.85) / 12, 10);
+    expect(ergebnis.personalkostenNichtErfasst).toBe(0);
   });
 
-  it("weniger simulierte Stunden (negatives Delta) senken die Personalkosten und erhöhen das Ergebnis", () => {
-    const ergebnis = berechneSzenarioErgebnis(heute, -20, 40, 4000);
-    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(18000, 10);
-    expect(ergebnis.ergebnisSimuliert).toBeCloseTo(82000, 10);
+  it("Teilzeit skaliert das Vollzeit-Gehalt linear", () => {
+    // 20 von 40 Std. -> halbes Gehalt als Brutto-Basis.
+    const ergebnis = berechneSzenarioErgebnis(foerdererloeseMonat, [{ wochenstunden: 20, gehaltVollzeit: 4000 }], 40, 0, 0);
+    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(2000, 10);
+  });
+
+  it("summiert mehrere Personal-Zeilen", () => {
+    const ergebnis = berechneSzenarioErgebnis(
+      foerdererloeseMonat,
+      [
+        { wochenstunden: 40, gehaltVollzeit: 3000 },
+        { wochenstunden: 20, gehaltVollzeit: 4000 },
+      ],
+      40,
+      0,
+      0
+    );
+    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(3000 + 2000, 10);
+  });
+
+  it("eine Zeile ohne Gehalt-Angabe (0) zählt als nicht erfasst und trägt nichts zur Summe bei", () => {
+    const ergebnis = berechneSzenarioErgebnis(
+      foerdererloeseMonat,
+      [
+        { wochenstunden: 40, gehaltVollzeit: 3000 },
+        { wochenstunden: 30, gehaltVollzeit: 0 },
+      ],
+      40,
+      0,
+      0
+    );
+    expect(ergebnis.personalkostenSimuliert).toBeCloseTo(3000, 10);
+    expect(ergebnis.personalkostenNichtErfasst).toBe(1);
   });
 
   it("Fördererlöse bleiben in jedem Fall auf dem heutigen realen Wert fixiert", () => {
-    const ohneAenderung = berechneSzenarioErgebnis(heute, 0, 40, 0);
-    const mitAenderung = berechneSzenarioErgebnis(heute, 50, 40, 5000);
-    expect(ohneAenderung.ergebnisSimuliert + ohneAenderung.personalkostenSimuliert).toBeCloseTo(heute.foerdererloeseMonat, 10);
-    expect(mitAenderung.ergebnisSimuliert + mitAenderung.personalkostenSimuliert).toBeCloseTo(heute.foerdererloeseMonat, 10);
+    const ohnePersonal = berechneSzenarioErgebnis(foerdererloeseMonat, [], 40, 28, 85);
+    const mitPersonal = berechneSzenarioErgebnis(foerdererloeseMonat, [{ wochenstunden: 40, gehaltVollzeit: 5000 }], 40, 28, 85);
+    expect(ohnePersonal.ergebnisSimuliert + ohnePersonal.personalkostenSimuliert).toBeCloseTo(foerdererloeseMonat, 10);
+    expect(mitPersonal.ergebnisSimuliert + mitPersonal.personalkostenSimuliert).toBeCloseTo(foerdererloeseMonat, 10);
   });
 
   it("vollzeitWochenstunden von 0 führt nicht zur Division durch Null", () => {
-    const ergebnis = berechneSzenarioErgebnis(heute, 10, 0, 3000);
-    expect(ergebnis.personalkostenSimuliert).toBe(20000);
+    const ergebnis = berechneSzenarioErgebnis(foerdererloeseMonat, [{ wochenstunden: 10, gehaltVollzeit: 3000 }], 0, 0, 0);
+    expect(ergebnis.personalkostenSimuliert).toBe(0);
     expect(Number.isFinite(ergebnis.ergebnisSimuliert)).toBe(true);
   });
 });

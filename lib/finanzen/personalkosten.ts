@@ -92,6 +92,42 @@ export function berechnePersonalkostenProMitarbeiter(
   return { teamId: row.teamId, status: "nicht_erfasst" };
 }
 
+export type TeamVerguetungLookup = {
+  entgeltgruppe: string | null;
+  stufe: number | null;
+  monatsgehaltManuell: number | null;
+};
+
+/** Löst je Teammitglied das Vollzeit-Monatsgehalt auf (TVöD-Tabelle oder manueller Wert, 0 falls nicht
+ * erfasst) — unabhängig von der tatsächlichen Teilzeit der Person (wochenstunden wird dafür auf
+ * vollzeitWochenstunden gesetzt, sodass berechnePersonalkostenProMitarbeiter den vollen Satz statt des
+ * teilzeit-skalierten Betrags liefert). Grundlage für die editierbaren Pro-Zeile-Gehaltsfelder im
+ * Szenario-Rechner (Milestone 31, Punkt D) — dieselbe Tabelle/Vergütung wie die reale Berechnung. */
+export function resolveGehaltVollzeitProTeamId(
+  teamIds: string[],
+  teamVerguetungByTeamId: Map<string, TeamVerguetungLookup>,
+  tvoedTabelle: Map<string, number>,
+  vollzeitWochenstunden: number
+): Map<string, number> {
+  const ergebnis = new Map<string, number>();
+  for (const teamId of teamIds) {
+    const verguetung = teamVerguetungByTeamId.get(teamId);
+    const berechnet = berechnePersonalkostenProMitarbeiter(
+      {
+        teamId,
+        wochenstunden: vollzeitWochenstunden,
+        entgeltgruppe: verguetung?.entgeltgruppe ?? null,
+        stufe: verguetung?.stufe ?? null,
+        monatsgehaltManuell: verguetung?.monatsgehaltManuell ?? null,
+      },
+      tvoedTabelle,
+      vollzeitWochenstunden
+    );
+    ergebnis.set(teamId, berechnet.status === "berechnet" ? berechnet.bruttoMonat : 0);
+  }
+  return ergebnis;
+}
+
 export type PersonalkostenGesamt = {
   bruttoSummeMonat: number;
   lohnnebenkostenBetrag: number;

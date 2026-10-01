@@ -2,15 +2,53 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { canUseSzenarioRechner, canViewFinanzen } from "@/lib/server/current-user-role";
-import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
-import { getTeamPresenceForMonth, getStaffingRules } from "@/lib/team/anstellungsschluessel";
+import { getKinderPresenceAtDate, type PresenceRow } from "@/lib/dashboard/presence";
+import { getTeamPresenceForMonth, getStaffingRules, type TeamPresenceRow } from "@/lib/team/anstellungsschluessel";
 import { getBWPersonalschluesselTabelle } from "@/lib/team/personalschluessel-bw";
 import { getNRWPersonalstundenTabelle } from "@/lib/team/personalschluessel-nrw";
 import { ladeFinanzenBasis, resolveFinanzenMonat } from "@/lib/forecast/monthly-forecast";
+import { resolveTVoedTabelleAmStichtag, resolveGehaltVollzeitProTeamId } from "@/lib/finanzen/personalkosten";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 import { SzenarioRechner } from "@/components/szenario/szenario-rechner";
 import { SzenarioRechnerBW } from "@/components/szenario/szenario-rechner-bw";
 import { SzenarioRechnerNRW } from "@/components/szenario/szenario-rechner-nrw";
+
+type FinanzenFuerSzenario = {
+  finanzenHeute: Ergebnis;
+  gehaltVollzeitByTeamId: Map<string, number>;
+  lohnnebenkostenProzent: number;
+  jahressonderzahlungProzent: number;
+};
+
+/** Lädt die Finanzen-Basis einmal und leitet daraus sowohl den fixen "heute"-Ergebniswert als auch das
+ * Vollzeit-Monatsgehalt je Teammitglied ab (für die editierbaren Pro-Zeile-Gehaltsfelder im Rechner,
+ * Milestone 31, Punkt D) — eine Basis für beides statt zweier getrennter Ladevorgänge. */
+async function ladeFinanzenFuerSzenario(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string,
+  bundeslandCode: string,
+  vollzeitWochenstunden: number,
+  nrwGruppenById: Map<string, { nrwGruppenform: string | null; nrwBuchungszeitStunden: number | null }>,
+  today: string,
+  kinderRows: PresenceRow[],
+  teamRows: TeamPresenceRow[]
+): Promise<FinanzenFuerSzenario> {
+  const basis = await ladeFinanzenBasis(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, nrwGruppenById);
+  const tvoedTabelle = resolveTVoedTabelleAmStichtag(basis.tvoedVersionenByGroup, today);
+  return {
+    finanzenHeute: resolveFinanzenMonat(basis, today, kinderRows, teamRows),
+    gehaltVollzeitByTeamId: resolveGehaltVollzeitProTeamId(
+      teamRows.map((t) => t.team_id),
+      basis.teamVerguetungByTeamId,
+      tvoedTabelle,
+      vollzeitWochenstunden
+    ),
+    lohnnebenkostenProzent: basis.lohnnebenkostenProzent,
+    jahressonderzahlungProzent: basis.jahressonderzahlungProzent,
+  };
+}
 
 export default async function SzenarioPage() {
   const einrichtungId = await getActiveEinrichtungId();
@@ -70,19 +108,16 @@ export default async function SzenarioPage() {
       oeffnungszeitStunden: g.bw_oeffnungszeit_stunden,
       randzeitStunden: g.bw_randzeit_stunden,
     }));
-    const initialPersonal = teamRows.map((t) => ({ wochenstunden: t.wochenstunden ?? 0 }));
-
     // BW hat keine Fördererlöse-Formel — die Finanzen-Basis liefert dafür immer nur den manuellen
     // Förderbetrag (oder 0, falls keiner gesetzt ist), kinderRows bleibt deshalb ungenutzt.
-    const finanzenHeute: Ergebnis | undefined =
+    const finanzenBw =
       zeigeFinanzen && einrichtungId
-        ? resolveFinanzenMonat(
-            await ladeFinanzenBasis(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map()),
-            today,
-            [],
-            teamRows
-          )
-        : undefined;
+        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, [], teamRows)
+        : null;
+    const initialPersonal = teamRows.map((t) => ({
+      wochenstunden: t.wochenstunden ?? 0,
+      gehaltVollzeit: finanzenBw?.gehaltVollzeitByTeamId.get(t.team_id) ?? 0,
+    }));
 
     inhalt = (
       <SzenarioRechnerBW
@@ -90,7 +125,9 @@ export default async function SzenarioPage() {
         initialGruppen={initialGruppen}
         initialPersonal={initialPersonal}
         vollzeitWochenstunden={vollzeitWochenstunden}
-        finanzenHeute={finanzenHeute}
+        finanzenHeute={finanzenBw?.finanzenHeute}
+        lohnnebenkostenProzent={finanzenBw?.lohnnebenkostenProzent ?? 0}
+        jahressonderzahlungProzent={finanzenBw?.jahressonderzahlungProzent ?? 0}
       />
     );
   } else if (bundeslandCode === "nrw") {
@@ -109,14 +146,8 @@ export default async function SzenarioPage() {
       gruppenform: g.nrw_gruppenform,
       buchungszeitStunden: g.nrw_buchungszeit_stunden,
     }));
-    const initialPersonal = teamRows
-      .filter((t) => t.role_category === "fk" || t.role_category === "ek")
-      .map((t) => ({
-        roleCategory: t.role_category as "fk" | "ek",
-        wochenstunden: t.wochenstunden ?? 0,
-      }));
 
-    let finanzenHeute: Ergebnis | undefined;
+    let finanzenNrw: FinanzenFuerSzenario | null = null;
     if (zeigeFinanzen && einrichtungId) {
       const nrwGruppenById = new Map(
         (gruppenRows ?? []).map((g) => [
@@ -125,13 +156,25 @@ export default async function SzenarioPage() {
         ])
       );
       const kinderRows = await getKinderPresenceAtDate(supabase, einrichtungId, today);
-      finanzenHeute = resolveFinanzenMonat(
-        await ladeFinanzenBasis(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, nrwGruppenById),
+      finanzenNrw = await ladeFinanzenFuerSzenario(
+        supabase,
+        einrichtungId,
+        bundeslandCode,
+        vollzeitWochenstunden,
+        nrwGruppenById,
         today,
         kinderRows,
         teamRows
       );
     }
+
+    const initialPersonal = teamRows
+      .filter((t) => t.role_category === "fk" || t.role_category === "ek")
+      .map((t) => ({
+        roleCategory: t.role_category as "fk" | "ek",
+        wochenstunden: t.wochenstunden ?? 0,
+        gehaltVollzeit: finanzenNrw?.gehaltVollzeitByTeamId.get(t.team_id) ?? 0,
+      }));
 
     inhalt = (
       <SzenarioRechnerNRW
@@ -139,7 +182,9 @@ export default async function SzenarioPage() {
         initialGruppen={initialGruppen}
         initialPersonal={initialPersonal}
         vollzeitWochenstunden={vollzeitWochenstunden}
-        finanzenHeute={finanzenHeute}
+        finanzenHeute={finanzenNrw?.finanzenHeute}
+        lohnnebenkostenProzent={finanzenNrw?.lohnnebenkostenProzent ?? 0}
+        jahressonderzahlungProzent={finanzenNrw?.jahressonderzahlungProzent ?? 0}
       />
     );
   } else {
@@ -195,11 +240,6 @@ export default async function SzenarioPage() {
       }
     }
 
-    const initialPersonal = teamRows.map((t) => ({
-      role_category: t.role_category ?? "ek",
-      wochenstunden: t.wochenstunden ?? 0,
-    }));
-
     const initialSollplaetzeSumme = (gruppen ?? []).reduce(
       (sum, g) => sum + Number(g.sollplatze),
       0
@@ -207,15 +247,16 @@ export default async function SzenarioPage() {
     const empfohlenerSchluesselWert =
       einrichtung?.empfohlener_anstellungsschluessel ?? 10.0;
 
-    const finanzenHeute: Ergebnis | undefined =
+    const finanzenBayern =
       zeigeFinanzen && einrichtungId
-        ? resolveFinanzenMonat(
-            await ladeFinanzenBasis(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map()),
-            today,
-            kinderRows,
-            teamRows
-          )
-        : undefined;
+        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, kinderRows, teamRows)
+        : null;
+
+    const initialPersonal = teamRows.map((t) => ({
+      role_category: t.role_category ?? "ek",
+      wochenstunden: t.wochenstunden ?? 0,
+      gehaltVollzeit: finanzenBayern?.gehaltVollzeitByTeamId.get(t.team_id) ?? 0,
+    }));
 
     inhalt = (
       <SzenarioRechner
@@ -227,7 +268,9 @@ export default async function SzenarioPage() {
         empfohlenerSchluesselWert={empfohlenerSchluesselWert}
         vollzeitWochenstunden={vollzeitWochenstunden}
         staffingRules={staffingRules}
-        finanzenHeute={finanzenHeute}
+        finanzenHeute={finanzenBayern?.finanzenHeute}
+        lohnnebenkostenProzent={finanzenBayern?.lohnnebenkostenProzent ?? 0}
+        jahressonderzahlungProzent={finanzenBayern?.jahressonderzahlungProzent ?? 0}
       />
     );
   }

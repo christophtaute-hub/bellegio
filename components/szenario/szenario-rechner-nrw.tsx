@@ -39,7 +39,7 @@ type GruppeState = {
   gruppenform: string;
   buchungszeitStunden: number;
 };
-type PersonalState = { id: number; roleCategory: "fk" | "ek"; wochenstunden: number };
+type PersonalState = { id: number; roleCategory: "fk" | "ek"; wochenstunden: number; gehaltVollzeit: number };
 
 export function SzenarioRechnerNRW({
   tabelle,
@@ -47,6 +47,8 @@ export function SzenarioRechnerNRW({
   initialPersonal,
   vollzeitWochenstunden,
   finanzenHeute,
+  lohnnebenkostenProzent,
+  jahressonderzahlungProzent,
 }: {
   tabelle: NRWPersonalstundenRow[];
   initialGruppen: {
@@ -54,9 +56,11 @@ export function SzenarioRechnerNRW({
     gruppenform: string | null;
     buchungszeitStunden: number | null;
   }[];
-  initialPersonal: { roleCategory: "fk" | "ek"; wochenstunden: number }[];
+  initialPersonal: { roleCategory: "fk" | "ek"; wochenstunden: number; gehaltVollzeit: number }[];
   vollzeitWochenstunden: number;
   finanzenHeute?: Ergebnis;
+  lohnnebenkostenProzent: number;
+  jahressonderzahlungProzent: number;
 }) {
   const ersteZeile = tabelle[0];
   const [gruppen, setGruppen] = useState<GruppeState[]>(
@@ -69,9 +73,6 @@ export function SzenarioRechnerNRW({
   );
   const [personal, setPersonal] = useState<PersonalState[]>(
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
-  );
-  const [initialPersonalStundenGesamt] = useState(() =>
-    initialPersonal.reduce((sum, p) => sum + p.wochenstunden, 0)
   );
 
   const ergebnis = useMemo(() => {
@@ -240,6 +241,27 @@ export function SzenarioRechnerNRW({
                 }
               />
               <span className="text-sm text-muted-foreground">Std./Woche</span>
+              {finanzenHeute ? (
+                <>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={50}
+                    className="h-8 w-28"
+                    value={p.gehaltVollzeit}
+                    onChange={(e) =>
+                      setPersonal((prev) =>
+                        prev.map((row) =>
+                          row.id === p.id
+                            ? { ...row, gehaltVollzeit: Math.max(0, Number(e.target.value) || 0) }
+                            : row
+                        )
+                      )
+                    }
+                  />
+                  <span className="text-sm text-muted-foreground">€/Monat bei Vollzeit</span>
+                </>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
@@ -261,7 +283,7 @@ export function SzenarioRechnerNRW({
           onClick={() =>
             setPersonal((prev) => [
               ...prev,
-              { id: nextId++, roleCategory: "fk", wochenstunden: 30 },
+              { id: nextId++, roleCategory: "fk", wochenstunden: 30, gehaltVollzeit: 0 },
             ])
           }
         >
@@ -302,10 +324,10 @@ export function SzenarioRechnerNRW({
       {finanzenHeute ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
+          personal={personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
-          deltaStunden={
-            personal.reduce((sum, p) => sum + p.wochenstunden, 0) - initialPersonalStundenGesamt
-          }
+          lohnnebenkostenProzent={lohnnebenkostenProzent}
+          jahressonderzahlungProzent={jahressonderzahlungProzent}
         />
       ) : null}
     </div>
