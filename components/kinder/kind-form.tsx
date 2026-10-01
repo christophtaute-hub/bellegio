@@ -57,6 +57,10 @@ const kindFormSchema = z
   .refine((data) => data.status !== "aktiv" || data.austritt !== "", {
     message: "Aktive Kinder brauchen ein Austrittsdatum.",
     path: ["austritt"],
+  })
+  .refine((data) => data.status !== "nachruecker" || data.austritt !== "", {
+    message: "Nachrücker brauchen ein Austrittsdatum.",
+    path: ["austritt"],
   });
 
 type KindFormValues = z.infer<typeof kindFormSchema>;
@@ -132,12 +136,14 @@ export function KindForm({
   const watchedWohnort = watch("wohnort");
   const watchedAustritt = watch("austritt");
 
-  // Vorschlägt ein Austrittsdatum, sobald ein Kind aktiv wird und noch keins gesetzt ist — Krippenkinder
-  // zum 3., Kindergarten-Kinder zum 6. Geburtstag, auf den nächsten 1. September gerundet (gleiche
-  // Heuristik wie der einmalige Backfill für bestehende Demo-Kinder). Greift nur, solange das Feld leer
-  // ist, überschreibt also nie eine bereits gesetzte oder gerade manuell eingetragene Auswahl.
+  // Vorschlägt ein Austrittsdatum, sobald ein Kind aktiv wird oder Nachrücker ist und noch keins gesetzt
+  // ist — Krippenkinder zum 3., Kindergarten-Kinder zum 6. Geburtstag, auf den nächsten 1. September
+  // gerundet (gleiche Heuristik wie der einmalige Backfill für bestehende Demo-Kinder, Milestone 31).
+  // Greift nur, solange das Feld leer ist, überschreibt also nie eine bereits gesetzte oder gerade
+  // manuell eingetragene Auswahl. Nachrücker haben oft noch keine Gruppe zugeordnet — ohne Gruppe wird
+  // mangels besserer Information die Kindergarten-Heuristik (6. Geburtstag) angenommen.
   useEffect(() => {
-    if (watchedStatus !== "aktiv" || watchedAustritt || !watchedGeburtsdatum) return;
+    if ((watchedStatus !== "aktiv" && watchedStatus !== "nachruecker") || watchedAustritt || !watchedGeburtsdatum) return;
     const istKrippe = gruppenArtById[watchedGruppeId] === "krippe";
     setValue("austritt", vorgeschlagenerAustritt(watchedGeburtsdatum, istKrippe));
   }, [watchedStatus, watchedGruppeId, watchedGeburtsdatum, watchedAustritt, gruppenArtById, setValue]);
@@ -240,7 +246,7 @@ export function KindForm({
         </Field>
         <Field id="austritt" label="Austritt" error={errors.austritt?.message}>
           <Input id="austritt" type="date" {...register("austritt")} />
-          {watchedStatus === "aktiv" ? (
+          {watchedStatus === "aktiv" || watchedStatus === "nachruecker" ? (
             <p className="text-xs text-muted-foreground">
               Vorschlag automatisch berechnet (3./6. Geburtstag, 1. September) — bei Bedarf anpassen.
             </p>

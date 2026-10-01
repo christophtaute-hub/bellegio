@@ -43,8 +43,13 @@ function validateKindInput(input: KindInput) {
   }
   // Gespiegelt in der DB-Constraint kinder_aktiv_requires_austritt — hier zusätzlich geprüft, damit
   // eine fehlende Angabe als verständliche deutsche Meldung statt eines rohen Constraint-Fehlers ankommt.
-  if (input.status === "aktiv" && !input.austritt) {
-    throw new Error("Aktive Kinder brauchen ein Austrittsdatum.");
+  // Seit Milestone 31 auch für Nachrücker (Rückmeldung von Christoph).
+  if ((input.status === "aktiv" || input.status === "nachruecker") && !input.austritt) {
+    throw new Error(
+      input.status === "aktiv"
+        ? "Aktive Kinder brauchen ein Austrittsdatum."
+        : "Nachrücker brauchen ein Austrittsdatum."
+    );
   }
   if (input.ersetzt_kind_id && input.status !== "nachruecker") {
     throw new Error("Nur Nachrücker können ein Kind ersetzen.");
