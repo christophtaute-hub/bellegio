@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { archiviereEinrichtung, updateEinrichtungKostenstelleCluster } from "@/lib/actions/einrichtung";
 import { meldeErfolg, meldeFehler } from "@/lib/toast";
@@ -122,10 +120,6 @@ export function EinrichtungenVerwalten({
         ))}
       </ul>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <Link href="/einrichtung-auswahl/neu" className={buttonVariants({ size: "sm", className: "w-fit" })}>
-        <Plus className="size-3.5" />
-        Neue Einrichtung anlegen
-      </Link>
     </div>
   );
 }

@@ -4,33 +4,11 @@ import { getCurrentUserRole, canViewFinanzen, canWriteFinanzen } from "@/lib/ser
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
-import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import {
   FoerderungManuellEditor,
   LohnnebenkostenEditor,
   JahressonderzahlungEditor,
 } from "@/components/einrichtung/finanzen-editoren";
-import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
-
-async function ladeEinrichtungenFuerVerwaltung(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tragerId: string
-) {
-  const { data } = await supabase
-    .from("einrichtungen")
-    .select("id, name, address_city, bundesland_code, kostenstelle, cluster")
-    .eq("trager_id", tragerId)
-    .is("archived_at", null)
-    .order("name");
-  return (data ?? []).map((e) => ({
-    id: e.id,
-    name: e.name,
-    ort: e.address_city,
-    bundeslandLabel: BUNDESLAENDER.find((b) => b.code === e.bundesland_code)?.label ?? e.bundesland_code,
-    kostenstelle: e.kostenstelle,
-    cluster: e.cluster,
-  }));
-}
 
 export default async function EinstellungenPage() {
   const einrichtungId = await getActiveEinrichtungId();
@@ -169,20 +147,6 @@ export default async function EinstellungenPage() {
               canEdit={bearbeiteFinanzen}
             />
           </div>
-        </section>
-      ) : null}
-
-      {istTraegerAdmin && einrichtungId && eigenesProfil ? (
-        <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
-          <h2 className="font-heading text-lg text-primary">Einrichtungen des Trägers</h2>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Weitere Einrichtungen anlegen oder nicht mehr genutzte archivieren. Archivierte Einrichtungen verschwinden
-            aus der Auswahl, ihre Daten bleiben erhalten.
-          </p>
-          <EinrichtungenVerwalten
-            aktiveId={einrichtungId}
-            einrichtungen={await ladeEinrichtungenFuerVerwaltung(supabase, eigenesProfil.trager_id)}
-          />
         </section>
       ) : null}
     </div>

@@ -10,6 +10,9 @@ import { getKinderPresenceAtDate, buildKpis } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
+import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
+import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -70,7 +73,7 @@ export default async function EinrichtungAuswahlPage() {
   const { data: einrichtungen } = profil
     ? await supabase
         .from("einrichtungen")
-        .select("id, name, address_city")
+        .select("id, name, address_city, bundesland_code, kostenstelle, cluster")
         .eq("trager_id", profil.trager_id)
         .is("archived_at", null)
         .order("name")
@@ -80,6 +83,8 @@ export default async function EinrichtungAuswahlPage() {
     einrichtungen && einrichtungen.length > 0
       ? await ladeEinrichtungsKennzahlen(supabase, einrichtungen.map((e) => e.id), stichtag)
       : [];
+
+  const aktiveEinrichtungId = istTraegerAdmin ? await getActiveEinrichtungId() : null;
 
   return (
     <div className="flex flex-1 flex-col items-center gap-8 p-4 py-16">
@@ -167,6 +172,29 @@ export default async function EinrichtungAuswahlPage() {
           </Button>
         </form>
       </div>
+
+      {istTraegerAdmin && einrichtungen && einrichtungen.length > 0 ? (
+        <div className="flex w-full max-w-2xl flex-col gap-3 border-t pt-8">
+          <div className="flex flex-col gap-1">
+            <h2 className="font-heading text-base text-primary">Verwaltung</h2>
+            <p className="text-xs text-muted-foreground">
+              Kostenstelle/Cluster pflegen oder nicht mehr genutzte Einrichtungen archivieren. Archivierte
+              Einrichtungen verschwinden aus der Auswahl, ihre Daten bleiben erhalten.
+            </p>
+          </div>
+          <EinrichtungenVerwalten
+            aktiveId={aktiveEinrichtungId ?? ""}
+            einrichtungen={einrichtungen.map((e) => ({
+              id: e.id,
+              name: e.name,
+              ort: e.address_city,
+              bundeslandLabel: BUNDESLAENDER.find((b) => b.code === e.bundesland_code)?.label ?? e.bundesland_code,
+              kostenstelle: e.kostenstelle,
+              cluster: e.cluster,
+            }))}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
