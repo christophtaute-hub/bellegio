@@ -45,8 +45,10 @@ export type AbrechnungZiel = "/admin" | "/abrechnung" | null;
 
 export function AppSidebar({ abrechnung = null }: { abrechnung?: AbrechnungZiel }) {
   const pathname = usePathname();
+  // Ganz unten, nicht zwischen den fachlichen Menüpunkten — Abrechnung ist nur für den Betreiber
+  // (Christoph) bzw. den eigenen Träger-Admin sichtbar, soll aber nicht wie ein Kernfeature wirken.
   const navItems = abrechnung
-    ? [...NAV_ITEMS.slice(0, 7), { href: abrechnung, label: "Abrechnung", icon: Receipt }, ...NAV_ITEMS.slice(7)]
+    ? [...NAV_ITEMS, { href: abrechnung, label: "Abrechnung", icon: Receipt }]
     : NAV_ITEMS;
   const activeHref = navItems.map((item) => item.href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
