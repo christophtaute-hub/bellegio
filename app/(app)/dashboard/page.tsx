@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Users, Scale, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { canViewFinanzen } from "@/lib/server/current-user-role";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import {
@@ -25,6 +26,13 @@ import { PersonalAusblick, PersonalAusblickSkeleton } from "@/components/dashboa
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
 import { PersonalHinweise } from "@/components/dashboard/personal-hinweise";
 import { Handlungsbedarf } from "@/components/dashboard/handlungsbedarf";
+import { AufgabenKarte } from "@/components/dashboard/aufgaben-karte";
+import { BelegungKarte, FinanzenKarte, PersonalKarte } from "@/components/dashboard/kennzahlen-karten";
+import { UebersichtKarte, UebersichtSkeleton } from "@/components/dashboard/uebersicht-karte";
+import { baueAufgaben } from "@/lib/dashboard/aufgaben";
+import { ladeAufgabenDaten } from "@/lib/dashboard/aufgaben-daten";
+import { leseUebersichtParams } from "@/lib/dashboard/uebersicht";
+import { ladeFinanzenHeute } from "@/lib/finanzen/finanzen-heute";
 
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
 // der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
@@ -33,9 +41,9 @@ const TREND_MONTHS = 4;
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stichtag?: string }>;
+  searchParams: Promise<{ stichtag?: string; zeitraum?: string; modus?: string }>;
 }) {
-  const { stichtag: stichtagParam } = await searchParams;
+  const { stichtag: stichtagParam, zeitraum: zeitraumParam, modus: modusParam } = await searchParams;
   const stichtag = stichtagParam ?? toIsoDateString(new Date());
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
@@ -71,6 +79,30 @@ export default async function DashboardPage({
   const kpisByGruppenart =
     modell === "bayern"
       ? buildKpisByGruppenart(rows, gruppen ?? []).filter((g) => g.gruppenart !== "unbekannt")
+      : [];
+
+  const bundeslandCode = modell === "bayern" ? "by" : modell;
+  const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
+  const uebersichtParams = leseUebersichtParams(zeitraumParam, modusParam, zeigeFinanzen);
+  const [aufgabenDaten, finanzenHeute] = einrichtungId
+    ? await Promise.all([
+        ladeAufgabenDaten(supabase, einrichtungId, { zeigeFinanzen, bundeslandCode }),
+        zeigeFinanzen ? ladeFinanzenHeute(supabase, einrichtungId, stichtag, rows) : Promise.resolve(null),
+      ])
+    : [null, null];
+  const aufgaben =
+    personalErgebnis && aufgabenDaten
+      ? baueAufgaben({
+          ueberbelegung: Math.max(0, belegung.differenz),
+          freiePlaetze,
+          nachrueckerOffen: aufgabenDaten.nachrueckerOffen,
+          austritteBald: aufgabenDaten.austritteBald,
+          kinderOhneBuchungszeit: kpis.ohneBuchungszeit,
+          personalAmpel: personalErgebnis.daten.ampel,
+          personalText: personal?.value ?? "",
+          verguetungFehlt: aufgabenDaten.verguetungFehlt,
+          foerderbetragFehlt: aufgabenDaten.foerderbetragFehlt,
+        })
       : [];
 
   const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) =>
@@ -113,6 +145,26 @@ export default async function DashboardPage({
         <Suspense fallback={null}>
           <ErsteSchritte einrichtungId={einrichtungId} />
         </Suspense>
+      ) : null}
+
+      {einrichtungId && personalErgebnis && personal ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.4fr)]">
+          <AufgabenKarte aufgaben={aufgaben} />
+          <div className="flex flex-col gap-4">
+            <BelegungKarte kinder={kpis.kinderGesamt} sollplaetze={sollplaetzeSumme} />
+            <PersonalKarte personal={personal} ampel={personalErgebnis.daten.ampel} />
+            {finanzenHeute ? <FinanzenKarte finanzen={finanzenHeute} /> : null}
+          </div>
+          <Suspense fallback={<UebersichtSkeleton />}>
+            <UebersichtKarte
+              einrichtungId={einrichtungId}
+              zeitraum={uebersichtParams.zeitraum}
+              modus={uebersichtParams.modus}
+              zeigeFinanzen={zeigeFinanzen}
+              stichtagParam={stichtagParam}
+            />
+          </Suspense>
+        </div>
       ) : null}
 
       {einrichtungId ? <PersonalHinweise einrichtungId={einrichtungId} stichtag={stichtag} /> : null}
