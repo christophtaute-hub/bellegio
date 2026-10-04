@@ -34,14 +34,15 @@ export function resolveBayernBasiswertAmStichtag(versionen: BayernBasiswertVersi
   return treffer ? { basiswert: treffer.basiswert, qualitaetsbonus: treffer.qualitaetsbonus } : null;
 }
 
-/** Reine Funktion (Jahresbetrag je Kind!): Art. 21 BayKiBiG — Basiswert × Buchungszeitfaktor × Gewichtungsfaktor je Kind,
- * plus Qualitätsbonus. Nutzt dieselbe PresenceRow-Form wie kinder_presence_at_date
- * (buchungszeit_factor, weighting_factor_value) statt eigene Faktoren neu herzuleiten.
- * Offene Annahme (nicht abschließend quellenbelegt, vor Produktivbetrieb gegenprüfen): der
- * Qualitätsbonus wird als fixer Betrag je belegtem Platz angenommen, nicht buchungszeit-skaliert. */
+/** Reine Funktion (Jahresbetrag je Kind!): Art. 21 Abs. 2 BayKiBiG — "der jährliche staatliche Förderbetrag pro Kind … errechnet sich als
+ * Produkt aus Basiswert, Buchungszeit- und Gewichtungsfaktor". Der Qualitätsbonus erhöht den Basiswert (Art. 23 Abs. 1 Satz 2
+ * BayKiBiG, "Basiswert plus") und geht damit in dieses Produkt ein, er ist kein pauschaler Zuschlag je Kind. Nutzt dieselbe
+ * PresenceRow-Form wie kinder_presence_at_date (buchungszeit_factor, weighting_factor_value) statt eigene Faktoren neu herzuleiten.
+ * Nur der staatliche Anteil: der Eigenanteil der Gemeinde (Art. 22) und Sonderfälle (z. B. Erhöhung der Buchungszeitfaktoren nach § 24
+ * AVBayKiBiG, bei der der Qualitätsbonus entfällt) sind nicht abgebildet. */
 export function berechneBayernFoerdererloesProKind(row: PresenceRow, basiswert: BayernBasiswert): number {
   const buchungszeitFactor = row.buchungszeit_factor ?? 0;
-  return buchungszeitFactor * row.weighting_factor_value * basiswert.basiswert + basiswert.qualitaetsbonus;
+  return buchungszeitFactor * row.weighting_factor_value * (basiswert.basiswert + basiswert.qualitaetsbonus);
 }
 
 export function berechneBayernFoerdererloesGesamt(rows: PresenceRow[], basiswert: BayernBasiswert | null): number {

@@ -76,18 +76,25 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
   const gruppenarten = (months[0]?.kpisByGruppenart ?? [])
     .filter((g) => g.gruppenart !== "unbekannt")
     .map((g) => g.gruppenart);
-  const gruppenartRows = gruppenarten.flatMap((gruppenart) => {
-    const kpisFuer = (m: ForecastMonth) => m.kpisByGruppenart.find((g) => g.gruppenart === gruppenart)?.kpis;
-    const label = GRUPPENART_LABEL[gruppenart] ?? gruppenart;
-    return [
-      { label: `${label}: Ungewichtete Std.`, values: months.map((m) => runde(kpisFuer(m)?.ungewichteteSumme ?? 0, 1)) },
-      { label: `${label}: Gewichtete Std.`, values: months.map((m) => runde(kpisFuer(m)?.gewichteteSumme ?? 0, 1)) },
-    ];
-  });
+  const kpisFuer = (m: ForecastMonth, gruppenart: string) => m.kpisByGruppenart.find((g) => g.gruppenart === gruppenart)?.kpis;
+  const nachGruppenart = (praefix: string, wert: (k: NonNullable<ReturnType<typeof kpisFuer>>) => number, stellen: number) =>
+    gruppenarten.length > 1
+      ? gruppenarten.map((gruppenart) => ({
+          label: `${praefix} — ${GRUPPENART_LABEL[gruppenart] ?? gruppenart}`,
+          values: months.map((m) => {
+            const k = kpisFuer(m, gruppenart);
+            return k ? runde(wert(k), stellen) : 0;
+          }),
+        }))
+      : [];
   return [
-    ...gruppenartRows,
-    { label: "Ungewichtete Kinderzahl", values: months.map((m) => m.kpis.kinderGesamt) },
-    { label: "Gewichtete Kinderzahl", values: months.map((m) => runde(d(m).gewichteteKinderzahl, 1)) },
+    ...nachGruppenart("Kinder (Kopfzahl)", (k) => k.kinderGesamt, 0),
+    { label: "Kinder gesamt", values: months.map((m) => m.kpis.kinderGesamt) },
+    ...nachGruppenart("Buchungsstunden ungewichtet", (k) => k.ungewichteteSumme, 1),
+    { label: "Buchungsstunden ungewichtet gesamt (Σ Buchungszeitfaktor)", values: months.map((m) => runde(m.kpis.ungewichteteSumme, 1)) },
+    ...nachGruppenart("Buchungsstunden gewichtet", (k) => k.gewichteteSumme, 1),
+    { label: "Buchungsstunden gewichtet gesamt (× Gewichtungsfaktor)", values: months.map((m) => runde(m.kpis.gewichteteSumme, 1)) },
+    { label: "Gewichtete Kinderzahl (Anstellungsschlüssel)", values: months.map((m) => runde(d(m).gewichteteKinderzahl, 1)) },
     { label: "Ist-VZÄ", values: months.map((m) => runde(d(m).vzaeIst, 2)) },
     { label: "Soll-VZÄ", values: months.map((m) => runde(d(m).vzaeSoll, 2)) },
     { label: "Soll-Fachkraft-VZÄ", values: months.map((m) => runde(d(m).vzaeSollFachkraft, 2)) },

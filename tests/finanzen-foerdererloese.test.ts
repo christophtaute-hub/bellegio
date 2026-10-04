@@ -35,14 +35,20 @@ describe("berechneBayernFoerdererloesProKind", () => {
     const u3Kind = kind({ weighting_factor_value: 2.0 });
     const ergebnisRegel = berechneBayernFoerdererloesProKind(regelkind, basiswert);
     const ergebnisU3 = berechneBayernFoerdererloesProKind(u3Kind, basiswert);
-    expect(ergebnisRegel).toBeCloseTo(1.75 * 1.0 * 1000 + 100, 10);
-    expect(ergebnisU3).toBeCloseTo(1.75 * 2.0 * 1000 + 100, 10);
+    expect(ergebnisRegel).toBeCloseTo(1.75 * 1.0 * (1000 + 100), 10);
+    expect(ergebnisU3).toBeCloseTo(1.75 * 2.0 * (1000 + 100), 10);
     expect(ergebnisU3).toBeGreaterThan(ergebnisRegel);
   });
 
-  it("ohne Buchungszeitfaktor (null) bleibt der Basisterm 0, der Qualitätsbonus bleibt trotzdem bestehen", () => {
+  it("ohne Buchungszeitfaktor (null) gibt es keine Förderung — der Qualitätsbonus ist Teil des Basiswerts, kein Festbetrag", () => {
     const ohneBuchungszeit = kind({ buchungszeit_factor: null });
-    expect(berechneBayernFoerdererloesProKind(ohneBuchungszeit, basiswert)).toBe(100);
+    expect(berechneBayernFoerdererloesProKind(ohneBuchungszeit, basiswert)).toBe(0);
+  });
+
+  it("Beispiel mit den amtlichen 2026-Werten: Kind 7-8h (Faktor 2,0), Regelkind ab 3 Jahren", () => {
+    const amtlich: BayernBasiswert = { basiswert: 1563.88, qualitaetsbonus: 268.01 };
+    const k = kind({ buchungszeit_factor: 2.0, weighting_factor_value: 1.0 });
+    expect(berechneBayernFoerdererloesProKind(k, amtlich)).toBeCloseTo(3663.78, 2);
   });
 });
 
@@ -50,7 +56,7 @@ describe("berechneBayernFoerdererloesGesamt", () => {
   it("summiert über mehrere Kinder", () => {
     const rows = [kind({ weighting_factor_value: 1.0 }), kind({ weighting_factor_value: 2.0 })];
     const summe = berechneBayernFoerdererloesGesamt(rows, basiswert);
-    expect(summe).toBeCloseTo((1.75 * 1.0 * 1000 + 100) + (1.75 * 2.0 * 1000 + 100), 10);
+    expect(summe).toBeCloseTo(1.75 * 1.0 * 1100 + 1.75 * 2.0 * 1100, 10);
   });
 
   it("ohne Basiswert (null) liefert 0", () => {

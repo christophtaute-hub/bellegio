@@ -243,23 +243,27 @@ export default async function DokumentationPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">
-            Fördererlöse (Milestone 29c)
+            Fördererlöse (staatliche kindbezogene Förderung)
           </h3>
           <p className="font-mono text-sm font-semibold text-primary">
-            Fördererlös je Kind = Basiswert × Buchungszeitfaktor × Gewichtungsfaktor + Qualitätsbonus
+            Förderbetrag je Kind und Jahr = (Basiswert + Qualitätsbonus) × Buchungszeitfaktor × Gewichtungsfaktor
           </p>
           <p className="text-sm text-muted-foreground">
-            Nach Art. 21 BayKiBiG, amtlich veröffentlicht im BayMBl.: 2026-Basiswert 1.563,88 €, Qualitätsbonus
-            268,01 €. Beide Werte ändern sich jährlich und sind in Bellegio versioniert hinterlegt (gleiche Technik
-            wie bei den Personalschlüssel-Werten).
+            Art. 21 Abs. 2 BayKiBiG: „Der jährliche staatliche Förderbetrag pro Kind … errechnet sich als Produkt aus
+            Basiswert, Buchungszeit- und Gewichtungsfaktor“. Der Qualitätsbonus erhöht den Basiswert („Basiswert plus“,
+            Art. 23 Abs. 1 BayKiBiG) und wird deshalb mit den Faktoren multipliziert. Amtliche Werte für die Förderabschläge
+            2026 (BayMBl. 2025 Nr. 557): Basiswert 1.563,88 € (gilt für 3–4 Std. Buchungszeit, Faktor 1,0), Qualitätsbonus
+            268,01 €. Beide ändern sich jährlich und sind in Bellegio versioniert hinterlegt. Bellegio zeigt den
+            Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen. Bei mehreren Gewichtungsmerkmalen
+            gilt der höchste Faktor.
           </p>
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Nicht abschließend geklärt:</strong> ob der Qualitätsbonus pauschal
-            je belegtem Platz gilt oder ebenfalls mit dem Buchungszeitfaktor skaliert — Bellegio rechnet aktuell mit
-            der pauschalen Variante. Zum 01.01.2027 tritt außerdem eine Reform in Kraft, die Teile dieser Berechnung
-            (u.a. eine Teamkräftepauschale) neu strukturiert; diese ist hier noch nicht abgebildet. Der berechnete
-            Wert ersetzt keinen Blick in den eigenen Zuwendungsbescheid — bei Abweichung lässt sich unter
-            Einrichtung → Finanzen ein manueller Förderbetrag hinterlegen, der die Formel überschreibt.
+            <strong className="text-foreground">Nicht abgebildet:</strong> der Eigenanteil der Gemeinde (Art. 22 BayKiBiG: der
+            Anspruch des Trägers ist die staatliche Förderung zuzüglich eines gemeindlichen Anteils — dessen Höhe regelt die
+            Gemeinde), Sonderfälle wie die Erhöhung von Buchungszeitfaktoren nach § 24 AVBayKiBiG (dort entfällt der
+            Qualitätsbonus) sowie die Reform zum 01.01.2027 (u. a. Teamkräftepauschale). Der berechnete Wert ersetzt keinen
+            Blick in den eigenen Zuwendungsbescheid — bei Abweichung lässt sich unter Einrichtung → Finanzen ein
+            manueller Förderbetrag hinterlegen, der die Formel überschreibt.
           </p>
         </div>
 

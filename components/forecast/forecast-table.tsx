@@ -189,28 +189,78 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
 
   return (
     <>
-          {gruppenarten.map((gruppenart) => (
-            <TableRow key={gruppenart}>
-              <TableCell className="sticky left-0 z-10 bg-card font-medium">
-                {GRUPPENART_LABEL[gruppenart] ?? gruppenart}: Ungewichtete / Gewichtete Buchungsstunden
-              </TableCell>
-              {months.map((m) => {
-                const kpis = gruppenartKpis(m, gruppenart);
-                return (
-                  <TableCell key={m.month} className="text-right tabular-nums">
-                    {kpis ? `${formatNumber(kpis.ungewichteteSumme)} / ${formatNumber(kpis.gewichteteSumme)}` : "0,0 / 0,0"}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
+          <AbschnittKopf spalten={months.length + 1} titel="Kinder (Kopfzahl)" />
+          {gruppenarten.length > 1
+            ? gruppenarten.map((gruppenart) => (
+                <TableRow key={`kopf-${gruppenart}`}>
+                  <LabelCell>{GRUPPENART_LABEL[gruppenart] ?? gruppenart}</LabelCell>
+                  {months.map((m) => (
+                    <TableCell key={m.month} className="text-right tabular-nums">
+                      {formatNumber(gruppenartKpis(m, gruppenart)?.kinderGesamt ?? 0, 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : null}
           <TableRow>
-            <TableCell className="sticky left-0 z-10 bg-card font-medium">
-              Ungewichtete / Gewichtete Kinderzahl
-            </TableCell>
+            <LabelCell stark>Kinder gesamt</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right font-semibold tabular-nums">
+                {formatNumber(m.kpis.kinderGesamt, 0)}
+              </TableCell>
+            ))}
+          </TableRow>
+
+          <AbschnittKopf spalten={months.length + 1} titel="Buchungsstunden ungewichtet" hinweis="Summe der Buchungszeitfaktoren (z. B. 7–8 Std. = 2,0)" />
+          {gruppenarten.length > 1
+            ? gruppenarten.map((gruppenart) => (
+                <TableRow key={`ung-${gruppenart}`}>
+                  <LabelCell>{GRUPPENART_LABEL[gruppenart] ?? gruppenart}</LabelCell>
+                  {months.map((m) => (
+                    <TableCell key={m.month} className="text-right tabular-nums">
+                      {formatNumber(gruppenartKpis(m, gruppenart)?.ungewichteteSumme ?? 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : null}
+          <TableRow>
+            <LabelCell stark>Gesamt ungewichtet</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right font-semibold tabular-nums">
+                {formatNumber(m.kpis.ungewichteteSumme)}
+              </TableCell>
+            ))}
+          </TableRow>
+
+          <AbschnittKopf spalten={months.length + 1} titel="Buchungsstunden gewichtet" hinweis="zusätzlich × Gewichtungsfaktor (z. B. unter 3 Jahre = 2,0) — Grundlage der staatlichen Förderung" />
+          {gruppenarten.length > 1
+            ? gruppenarten.map((gruppenart) => (
+                <TableRow key={`gew-${gruppenart}`}>
+                  <LabelCell>{GRUPPENART_LABEL[gruppenart] ?? gruppenart}</LabelCell>
+                  {months.map((m) => (
+                    <TableCell key={m.month} className="text-right tabular-nums">
+                      {formatNumber(gruppenartKpis(m, gruppenart)?.gewichteteSumme ?? 0)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            : null}
+          <TableRow>
+            <LabelCell stark>Gesamt gewichtet</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right font-semibold tabular-nums">
+                {formatNumber(m.kpis.gewichteteSumme)}
+              </TableCell>
+            ))}
+          </TableRow>
+
+          <AbschnittKopf spalten={months.length + 1} titel="Personal und Anstellungsschlüssel" hinweis="Grundlage ist die gewichtete Kinderzahl (nur Gewichtungsfaktoren, ohne Buchungszeit)" />
+          <TableRow>
+            <LabelCell>Gewichtete Kinderzahl</LabelCell>
             {months.map((m) => (
               <TableCell key={m.month} className="text-right tabular-nums">
-                {formatNumber(m.kpis.kinderGesamt, 0)} / {formatNumber(bayernDaten(m).gewichteteKinderzahl)}
+                {formatNumber(bayernDaten(m).gewichteteKinderzahl)}
               </TableCell>
             ))}
           </TableRow>
@@ -294,6 +344,19 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
             ))}
           </TableRow>
     </>
+  );
+}
+
+function AbschnittKopf({ spalten, titel, hinweis }: { spalten: number; titel: string; hinweis?: string }) {
+  return (
+    <TableRow className="bg-secondary/40 hover:bg-secondary/40">
+      <TableCell className="sticky left-0 z-10 bg-secondary py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {titel}
+      </TableCell>
+      <TableCell colSpan={spalten - 1} className="py-1.5 text-xs text-muted-foreground">
+        {hinweis ?? ""}
+      </TableCell>
+    </TableRow>
   );
 }
 
