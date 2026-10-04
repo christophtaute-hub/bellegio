@@ -2,13 +2,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
-import Link from "next/link";
-import { ArrowLeftRight } from "lucide-react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
+import { EinrichtungSwitcher } from "@/components/layout/einrichtung-switcher";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
-import { Button } from "@/components/ui/button";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
@@ -32,7 +30,7 @@ export default async function AppLayout({
     user
       ? supabase
           .from("user_profiles")
-          .select("full_name, email")
+          .select("full_name, email, trager_id")
           .eq("id", user.id)
           .single()
       : Promise.resolve({ data: null }),
@@ -44,6 +42,16 @@ export default async function AppLayout({
           .single()
       : Promise.resolve({ data: null }),
   ]);
+
+  // Alle für diesen Nutzer sichtbaren Einrichtungen seines Trägers (RLS filtert) für den Schnellwechsler.
+  const { data: wechselListe } = profile?.trager_id
+    ? await supabase
+        .from("einrichtungen")
+        .select("id, name, address_city, bundesland_code")
+        .eq("trager_id", profile.trager_id)
+        .is("archived_at", null)
+        .order("name")
+    : { data: null };
 
   // Defense in depth: a cookie can point at a facility this user no
   // longer has access to (revoked access, or a stale cookie proxy.ts's
@@ -73,16 +81,17 @@ export default async function AppLayout({
           {einrichtung?.bundesland_code ? (
             <BundeslandBadge code={einrichtung.bundesland_code} />
           ) : null}
-          <Button
-            variant="ghost"
-            size="xs"
-            nativeButton={false}
-            render={<Link href="/einrichtung-auswahl" />}
-            className="gap-1 text-muted-foreground"
-          >
-            <ArrowLeftRight className="size-3.5" />
-            Wechseln
-          </Button>
+          {(wechselListe?.length ?? 0) > 1 ? (
+            <EinrichtungSwitcher
+              einrichtungen={(wechselListe ?? []).map((e) => ({
+                id: e.id,
+                name: e.name,
+                ort: e.address_city,
+                bundesland_code: e.bundesland_code,
+              }))}
+              aktiveId={activeEinrichtungId ?? null}
+            />
+          ) : null}
           {vorname ? (
             <p className="hidden truncate text-sm text-muted-foreground sm:block">
               Aloha, {vorname}

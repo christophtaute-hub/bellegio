@@ -14,6 +14,7 @@ import {
 } from "@/lib/dashboard/presence";
 import { getPersonalplanungFuerEinrichtung } from "@/lib/team/personalplanung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
+import { formatGewichtet, personalKennzahl } from "@/lib/dashboard/personal-kennzahl";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { MetricCard } from "@/components/ui/metric-card";
 import { StatTile } from "@/components/ui/stat-tile";
@@ -28,43 +29,6 @@ import { Handlungsbedarf } from "@/components/dashboard/handlungsbedarf";
 // Zeigt beim Laden direkt die nächsten 3 Monate voraus (nicht rückwirkend) —
 // der Stichtag-Picker bleibt für weiter entfernte Zeitpunkte.
 const TREND_MONTHS = 4;
-
-function formatGewichtet(value: number): string {
-  return value.toLocaleString("de-DE", {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 2,
-  });
-}
-
-function personalKennzahl(
-  ergebnis: Awaited<ReturnType<typeof getPersonalplanungFuerEinrichtung>>
-): { label: string; value: string; warnt: boolean; trendWert: number } {
-  if (ergebnis.modell === "bayern") {
-    const { anstellungsschluessel, mindestschluesselOk } = ergebnis.daten;
-    return {
-      label: "Anstellungsschlüssel",
-      value: anstellungsschluessel !== null ? `1 : ${formatGewichtet(anstellungsschluessel)}` : "–",
-      warnt: !mindestschluesselOk,
-      trendWert: anstellungsschluessel ?? 0,
-    };
-  }
-  if (ergebnis.modell === "bw") {
-    const { istVzaeGesamt, sollVzaeGesamt } = ergebnis.daten;
-    return {
-      label: "Ist-VZÄ / Soll-VZÄ",
-      value: `${formatGewichtet(istVzaeGesamt)} / ${formatGewichtet(sollVzaeGesamt)}`,
-      warnt: istVzaeGesamt < sollVzaeGesamt,
-      trendWert: istVzaeGesamt,
-    };
-  }
-  const { istFk, sollFachkraftStundenGesamt } = ergebnis.daten;
-  return {
-    label: "Ist-FK / Soll-FK Std.",
-    value: `${formatGewichtet(istFk)} / ${formatGewichtet(sollFachkraftStundenGesamt)}`,
-    warnt: istFk < sollFachkraftStundenGesamt,
-    trendWert: istFk,
-  };
-}
 
 export default async function DashboardPage({
   searchParams,

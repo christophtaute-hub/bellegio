@@ -6,8 +6,10 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import { istBundeslandCode } from "@/lib/admin/neuer-kunde";
+import { wechselZiel } from "@/lib/einrichtung/weiter-ziel";
 
-export async function setActiveEinrichtung(einrichtungId: string) {
+/** `weiter`: aktueller Pfad, damit der Schnellwechsler im selben Bereich bleibt (nur erste Pfad-Ebene, siehe wechselZiel). */
+export async function setActiveEinrichtung(einrichtungId: string, weiter?: string) {
   const supabase = await createClient();
 
   // Re-validated via RLS: if the user has no access, this returns no row
@@ -32,7 +34,7 @@ export async function setActiveEinrichtung(einrichtungId: string) {
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect("/dashboard");
+  redirect(wechselZiel(weiter));
 }
 
 export async function updateVollzeitWochenstunden(
