@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { oderFilter, suchTokens } from "@/lib/suche/suchbegriff";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
@@ -188,8 +189,8 @@ export default async function KinderPage({
   if (gruppe !== "alle") {
     query = query.eq("gruppe_id", gruppe);
   }
-  if (q.trim()) {
-    query = query.or(`vorname.ilike.%${q.trim()}%,nachname.ilike.%${q.trim()}%`);
+  for (const filter of oderFilter(suchTokens(q), ["vorname", "nachname"])) {
+    query = query.or(filter);
   }
 
   const { data: kinderRoh } = await query;

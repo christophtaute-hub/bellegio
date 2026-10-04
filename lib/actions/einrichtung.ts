@@ -8,8 +8,7 @@ import { ACTIVE_EINRICHTUNG_COOKIE } from "@/lib/active-einrichtung";
 import { istBundeslandCode } from "@/lib/admin/neuer-kunde";
 import { wechselZiel } from "@/lib/einrichtung/weiter-ziel";
 
-/** `weiter`: aktueller Pfad, damit der Schnellwechsler im selben Bereich bleibt (nur erste Pfad-Ebene, siehe wechselZiel). */
-export async function setActiveEinrichtung(einrichtungId: string, weiter?: string) {
+async function aktiviereEinrichtung(einrichtungId: string) {
   const supabase = await createClient();
 
   // Re-validated via RLS: if the user has no access, this returns no row
@@ -33,8 +32,22 @@ export async function setActiveEinrichtung(einrichtungId: string, weiter?: strin
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
+}
 
+/** `weiter`: aktueller Pfad, damit der Schnellwechsler im selben Bereich bleibt (nur erste Pfad-Ebene, siehe wechselZiel). */
+export async function setActiveEinrichtung(einrichtungId: string, weiter?: string) {
+  await aktiviereEinrichtung(einrichtungId);
   redirect(wechselZiel(weiter));
+}
+
+const DETAIL_ZIEL = /^\/(kinder|team)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Öffnet eine Detailseite (Kind/Mitarbeitende) in der Einrichtung, zu der sie gehört — für Suchtreffer aus einer anderen
+ * als der aktiven Einrichtung. Nur genau diese beiden Pfadmuster sind als Ziel erlaubt. */
+export async function oeffneDetailInEinrichtung(einrichtungId: string, ziel: string) {
+  if (!DETAIL_ZIEL.test(ziel)) throw new Error("Ungültiges Ziel.");
+  await aktiviereEinrichtung(einrichtungId);
+  redirect(ziel);
 }
 
 export async function updateVollzeitWochenstunden(

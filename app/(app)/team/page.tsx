@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { oderFilter, suchTokens } from "@/lib/suche/suchbegriff";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
@@ -101,8 +102,8 @@ export default async function TeamPage({
   if (kategorie !== "alle") {
     query = query.eq("role_category", kategorie);
   }
-  if (q.trim()) {
-    query = query.or(`vorname.ilike.%${q.trim()}%,nachname.ilike.%${q.trim()}%`);
+  for (const filter of oderFilter(suchTokens(q), ["vorname", "nachname"])) {
+    query = query.or(filter);
   }
 
   const { data: team } = await query;

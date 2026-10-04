@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { UserMenu } from "@/components/layout/user-menu";
 import { EinrichtungSwitcher } from "@/components/layout/einrichtung-switcher";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
+import { GlobalSearch } from "@/components/layout/global-search";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
@@ -98,6 +99,7 @@ export default async function AppLayout({
             </p>
           ) : null}
           <div className="flex-1" />
+          <GlobalSearch />
           <UserMenu
             fullName={profile?.full_name ?? user?.email ?? null}
             einrichtungName={einrichtung?.name ?? null}
