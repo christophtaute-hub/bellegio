@@ -136,7 +136,8 @@ export function resolveFinanzenMonat(
     foerdererloeseMonat = basis.foerderungManuell;
   } else if (basis.bundeslandCode === "by") {
     const basiswert = resolveBayernBasiswertAmStichtag(basis.bayernVersionen, stichtag);
-    foerdererloeseMonat = berechneBayernFoerdererloesGesamt(kinderRows, basiswert);
+    // Basiswert und Qualitätsbonus sind Jahresbeträge je Kind (Förderabschläge werden in Monatsraten gezahlt) → ÷ 12.
+    foerdererloeseMonat = berechneBayernFoerdererloesGesamt(kinderRows, basiswert) / 12;
   } else if (basis.bundeslandCode === "nrw") {
     const tabelle = resolveNRWKindpauschalenTabelleAmStichtag(basis.nrwKindpauschalenVersionenByGroup, stichtag);
     foerdererloeseMonat = berechneNRWFoerdererloesGesamt(

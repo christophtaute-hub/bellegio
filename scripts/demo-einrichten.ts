@@ -84,6 +84,9 @@ async function main() {
         auswaertigen_quote_prozent: q.auswaertigen_quote_prozent,
         kostenstelle: q.kostenstelle,
         cluster: q.cluster,
+        foerderung_monatlich_manuell: q.foerderung_monatlich_manuell,
+        lohnnebenkosten_prozent: q.lohnnebenkosten_prozent,
+        jahressonderzahlung_prozent: q.jahressonderzahlung_prozent,
       })
       .select("id")
       .single();
@@ -212,6 +215,16 @@ async function main() {
         .select("id")
         .single();
       if (te || !nt) throw new Error(te?.message ?? "Person nicht kopiert.");
+      // Vergütung (ohne sie zeigt die Demo keine Personalkosten; ein Reset des Demo-Trägers löscht sie per Cascade)
+      const { data: verguetung } = await sb
+        .from("team_verguetung")
+        .select("entgeltgruppe, stufe, monatsgehalt_manuell")
+        .eq("team_id", t.id)
+        .maybeSingle();
+      if (verguetung) {
+        const { error: ve } = await sb.from("team_verguetung").insert({ ...verguetung, team_id: nt.id, einrichtung_id: e.id });
+        if (ve) throw new Error(ve.message);
+      }
       const { data: ausfall } = await sb.from("team_ausfallzeiten").select("art, von, bis, notizen").eq("team_id", t.id);
       if ((ausfall ?? []).length > 0) await sb.from("team_ausfallzeiten").insert((ausfall ?? []).map((a) => ({ ...a, team_id: nt.id })));
       const { data: stunden } = await sb.from("team_monthly_hours").select("month, wochenstunden").eq("team_id", t.id);

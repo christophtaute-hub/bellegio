@@ -34,7 +34,7 @@ export function resolveBayernBasiswertAmStichtag(versionen: BayernBasiswertVersi
   return treffer ? { basiswert: treffer.basiswert, qualitaetsbonus: treffer.qualitaetsbonus } : null;
 }
 
-/** Reine Funktion: Art. 21 BayKiBiG — Basiswert × Buchungszeitfaktor × Gewichtungsfaktor je Kind,
+/** Reine Funktion (Jahresbetrag je Kind!): Art. 21 BayKiBiG — Basiswert × Buchungszeitfaktor × Gewichtungsfaktor je Kind,
  * plus Qualitätsbonus. Nutzt dieselbe PresenceRow-Form wie kinder_presence_at_date
  * (buchungszeit_factor, weighting_factor_value) statt eigene Faktoren neu herzuleiten.
  * Offene Annahme (nicht abschließend quellenbelegt, vor Produktivbetrieb gegenprüfen): der
