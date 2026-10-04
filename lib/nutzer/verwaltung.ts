@@ -1,6 +1,6 @@
 import { pruefePasswort } from "@/lib/passwort";
 
-export type NeueRolle = "mitarbeiter" | "einrichtungsleitung";
+export type NeueRolle = "mitarbeiter" | "einrichtungsleitung" | "traeger_admin";
 export type Bereich = "belegung" | "personal" | "controlling" | "szenario" | "finanzen";
 export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
 
@@ -31,7 +31,15 @@ export const ROLLEN: { value: NeueRolle; label: string; hinweis: string }[] = [
     label: "Einrichtungsleitung",
     hinweis: "Bearbeitet alle Bereiche aller Einrichtungen. Verwaltet keine Nutzer und sieht keine Abrechnung.",
   },
+  {
+    value: "traeger_admin",
+    label: "Träger-Admin",
+    hinweis:
+      "Gleichberechtigt zu dir: voller Zugriff auf alle Einrichtungen, verwaltet Nutzer und Rechte, sieht die Abrechnung des Trägers und kann weitere Träger-Admins anlegen. Über diese Seite lässt sich ein Träger-Admin später nicht mehr herabstufen, sperren oder löschen.",
+  },
 ];
+
+export const ALLE_NEUEN_ROLLEN: NeueRolle[] = ROLLEN.map((r) => r.value);
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -54,7 +62,7 @@ export function pruefeNeuenNutzer(input: NeuerNutzerInput): string | null {
     const fehler = pruefePasswort(input.passwort);
     if (fehler) return fehler;
   }
-  if (input.rolle !== "mitarbeiter" && input.rolle !== "einrichtungsleitung") return "Bitte eine Rolle wählen.";
+  if (!ALLE_NEUEN_ROLLEN.includes(input.rolle)) return "Bitte eine Rolle wählen.";
   for (const b of BEREICHE) {
     if (!ZUGRIFFE.some((z) => z.value === input.rechte[b.key])) return "Bitte für jeden Bereich eine Stufe wählen.";
   }

@@ -9,6 +9,7 @@ import {
   darfNutzerVerwalten,
   pruefeNeuenNutzer,
   zugriffRang,
+  ALLE_NEUEN_ROLLEN,
   type NeueRolle,
   type NeuerNutzerInput,
   type Verwaltungsaktion,
@@ -135,6 +136,8 @@ export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgeb
     const aufrufer = await aktuellerAufrufer();
     if (!aufrufer) return { ok: false, error: "Nicht angemeldet." };
     const istTraegerAdmin = aufrufer.rolle === "traeger_admin";
+    // Eskalationsschutz: nur ein Träger-Admin darf einen weiteren Träger-Admin anlegen.
+    if (input.rolle === "traeger_admin" && !istTraegerAdmin) return { ok: false, error: NICHT_ERLAUBT };
 
     // Wer nicht Träger-Admin ist, darf nur als lokale Administration anlegen: nur Mitarbeiter,
     // nur für die eigene(n) Einrichtung(en), nie mit mehr Rechten, als man selbst dort hat.
@@ -275,7 +278,7 @@ export async function sperreNutzer(userId: string, gesperrt: boolean): Promise<N
 
 export async function setzeNutzerRolle(userId: string, rolle: NeueRolle): Promise<NutzerErgebnis> {
   try {
-    if (rolle !== "mitarbeiter" && rolle !== "einrichtungsleitung") return { ok: false, error: "Bitte eine Rolle wählen." };
+    if (!ALLE_NEUEN_ROLLEN.includes(rolle)) return { ok: false, error: "Bitte eine Rolle wählen." };
     const pruefung = await zielPruefen(userId, "rolle");
     if (!pruefung.ok) return pruefung;
     const { error } = await pruefung.admin.from("user_profiles").update({ role: rolle }).eq("id", userId);

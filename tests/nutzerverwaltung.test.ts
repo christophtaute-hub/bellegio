@@ -60,6 +60,11 @@ describe("Neuen Nutzer prüfen", () => {
     expect(pruefeNeuenNutzer({ ...basis, passwort: "kurz" })).toMatch(/mindestens/);
   });
 
+  it("akzeptiert die Rolle Träger-Admin und lehnt unbekannte Rollen ab", () => {
+    expect(pruefeNeuenNutzer({ ...basis, rolle: "traeger_admin", einrichtungIds: [] })).toBeNull();
+    expect(pruefeNeuenNutzer({ ...basis, rolle: "betreiber" as never })).toMatch(/Rolle/);
+  });
+
   it("lehnt unbekannte Rechtestufen ab", () => {
     expect(pruefeNeuenNutzer({ ...basis, rechte: { ...basis.rechte, belegung: "alles" as never } })).toMatch(/Stufe/);
   });

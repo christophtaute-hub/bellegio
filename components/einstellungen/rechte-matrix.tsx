@@ -225,7 +225,7 @@ export function RechteMatrix({
                   />
                 ) : null}
 
-                {istTraegerAdmin && user.id !== currentUserId ? (
+                {istTraegerAdmin && user.id !== currentUserId && user.role !== "traeger_admin" ? (
                   <KannRechteVerwaltenToggle
                     userId={user.id}
                     wert={user.kann_rechte_verwalten}
@@ -475,6 +475,15 @@ function KontoVerwaltung({
           onChange={(e) => {
             setError(null);
             const neu = e.target.value as NeueRolle;
+            if (
+              neu === "traeger_admin" &&
+              !window.confirm(
+                `${name} wirklich zum Träger-Admin machen? Ein Träger-Admin hat vollen Zugriff inkl. Abrechnung und lässt sich über diese Seite nicht mehr herabstufen, sperren oder löschen.`
+              )
+            ) {
+              e.target.value = rolle;
+              return;
+            }
             startTransition(async () => {
               try {
                 const ergebnis = await setzeNutzerRolle(userId, neu);
