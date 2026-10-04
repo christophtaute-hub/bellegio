@@ -4,7 +4,7 @@ const EINBLICKE = [
   {
     kategorie: "Personalschlüssel",
     titel: "Warum der Schlüssel plötzlich kippt",
-    text: "Ein einziger Austritt reicht: Im Beispiel sinkt das Personal von 2,8 auf 2,0 VZÄ — aus 1 : 9,3 wird 1 : 12,9. Bellegio zeigt dir den Monat, in dem das passiert, schon Monate vorher.",
+    text: "Ein einziger Austritt reicht: Im Beispiel sinkt das Personal von 5,8 auf 4,3 VZÄ — aus 1 : 9,2 wird 1 : 12,2. Bellegio zeigt dir den Monat, in dem das passiert, schon Monate vorher.",
   },
   {
     kategorie: "Drei Länder, drei Rechenwege",
@@ -25,6 +25,21 @@ const EINBLICKE = [
     kategorie: "Statistik",
     titel: "I-Status sichtbar machen",
     text: "Kinder mit I-Status tauchen in der Kategorisierung nach Wochenstunden als eigene Zeile auf — für jeden Monat des Jahres und in allen drei Bundesländern.",
+  },
+  {
+    kategorie: "Bayern: Förderung",
+    titel: "Der Basiswert hat ein Plus",
+    text: "Der jährliche staatliche Förderbetrag je Kind ist Basiswert plus Qualitätsbonus mal Buchungszeit- mal Gewichtungsfaktor. Bellegio rechnet das je Kind und zeigt dir den Monatswert.",
+  },
+  {
+    kategorie: "NRW: Kindpauschale",
+    titel: "Die Pauschale ist nicht dein Einkommen",
+    text: "Die Kindpauschale stellt die anerkennungsfähigen Gesamtkosten dar, die Land, Jugendamt, Träger und Eltern gemeinsam tragen. Bellegio kennzeichnet das Ergebnis deshalb ausdrücklich als Planungsgröße.",
+  },
+  {
+    kategorie: "Controlling",
+    titel: "Zwei Stundenzahlen, die man verwechselt",
+    text: "Ungewichtete Buchungsstunden summieren die Buchungszeitfaktoren, gewichtete multiplizieren zusätzlich den Gewichtungsfaktor. Der Anstellungsschlüssel nutzt dagegen die gewichtete Kinderzahl ohne Buchungszeit. Bellegio zeigt alle drei getrennt.",
   },
   {
     kategorie: "Nachvollziehbarkeit",

@@ -3,7 +3,7 @@ import { Reveal } from "@/components/landing/reveal";
 
 const PUNKTE = [
   { icon: Database, titel: "Daten in Frankfurt", text: "Die Datenbank läuft in einem Rechenzentrum in Frankfurt am Main (EU)." },
-  { icon: ShieldCheck, titel: "Rechte je Bereich", text: "Belegung, Personal, Controlling und Szenario-Rechner lassen sich je Einrichtung einzeln auf ansehen oder bearbeiten stellen." },
+  { icon: ShieldCheck, titel: "Rechte je Bereich", text: "Belegung, Personal, Controlling, Szenario-Rechner und Finanzen lassen sich je Einrichtung einzeln auf ansehen oder bearbeiten stellen." },
   { icon: History, titel: "Änderungsprotokoll", text: "Änderungen an Kindern und Personal werden mit Zeitpunkt und Nutzer festgehalten." },
   { icon: FileSpreadsheet, titel: "Export jederzeit", text: "Zahlen lassen sich als Excel und PDF herausziehen — deine Daten bleiben deine Daten." },
 ];

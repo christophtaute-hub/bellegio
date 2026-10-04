@@ -11,9 +11,9 @@ const LAENDER = [
     erklaerung:
       "Jedes Kind zählt nach Alter und Bedarf unterschiedlich (unter drei Jahre 2,0 · ab drei Jahren 1,0 · Integrationskind 4,5). Die gewichtete Summe wird durch die Vollzeitäquivalente des Personals geteilt.",
     beispiel: [
-      ["Gewichtete Kinderzahl", "25,7"],
-      ["Personal (VZÄ)", "2,77"],
-      ["Anstellungsschlüssel", "1 : 9,28"],
+      ["Gewichtete Kinderzahl", "53,6"],
+      ["Personal (VZÄ)", "5,80"],
+      ["Anstellungsschlüssel", "1 : 9,24"],
     ],
   },
   {

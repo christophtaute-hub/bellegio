@@ -23,8 +23,8 @@ export function HeroSection() {
           <span className="text-white/45">Jede Fachkraft am richtigen Platz.</span>
         </h1>
         <p className="max-w-2xl text-lg text-white/60 md:text-xl">
-          Bellegio bringt Belegung, Personalschlüssel und Meldewesen zusammen — und rechnet in jedem Bundesland nach
-          dem Recht, das dort gilt.
+          Bellegio bringt Belegung, Personalschlüssel, Finanzen und Meldewesen zusammen — für eine Kita oder einen ganzen
+          Träger, und in jedem Bundesland nach dem Recht, das dort gilt.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button

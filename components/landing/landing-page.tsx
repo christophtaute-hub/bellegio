@@ -13,6 +13,13 @@ import { KindMockup } from "@/components/landing/mockups/kind-mockup";
 import { TeamMockup } from "@/components/landing/mockups/team-mockup";
 import { KategorisierungMockup } from "@/components/landing/mockups/kategorisierung-mockup";
 import { AusblickMockup, BelegungMockup, MappeMockup } from "@/components/landing/mockups/vorschau-mockups";
+import {
+  ControllingMockup,
+  EinrichtungenMockup,
+  FinanzenMockup,
+  SucheMockup,
+  SzenarioFinanzenMockup,
+} from "@/components/landing/mockups/uebersicht-mockups";
 
 export function LandingPage({ preise }: { preise: Listenpreise }) {
   return (
@@ -22,7 +29,23 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
         <HeroSection />
 
         <StorySection
+          id="traeger"
+          eyebrow="Alle Einrichtungen im Blick"
+          titel="Ein Träger, viele Kitas — eine Übersicht."
+          text="Nach dem Login siehst du jede Einrichtung als Kachel mit Belegung und Personal-Ampel, nach Bundesland sortiert. Ein Klick öffnet die Kita, die Suche findet jedes Kind und jede Fachkraft."
+          punkte={[
+            "Kacheln je Einrichtung mit Belegung und Personal-Ampel — nach Bundesland gruppiert",
+            "Schnellwechsler im Header: von Kita zu Kita springen und im selben Bereich bleiben",
+            "Globale Suche (Strg/Cmd + K) für Einrichtungen, Kinder, Mitarbeitende und Funktionen",
+            "Mitarbeitende sehen nur die Einrichtungen und Bereiche, für die sie Rechte haben",
+          ]}
+          mockups={[<EinrichtungenMockup key="einrichtungen" />, <SucheMockup key="suche" />]}
+        />
+
+        <StorySection
           id="kind"
+          hintergrund="getoent"
+          spiegeln
           eyebrow="Das Kind im Mittelpunkt"
           titel="Jedes Kind hat eine Geschichte. Bellegio hält sie fest."
           text="Vom ersten Nachrücker-Eintrag bis zum Schuleintritt: Stammdaten, Buchungszeit, I-Status und Verlauf an einem Ort — und bei jeder Änderung steht, wer sie wann gemacht hat."
@@ -37,8 +60,6 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
 
         <StorySection
           id="team"
-          hintergrund="getoent"
-          spiegeln
           eyebrow="Das Team im Blick"
           titel="Der Personalschlüssel ist kein Bauchgefühl."
           text="Bellegio rechnet aus, ob dein Personal reicht — heute und in den kommenden Monaten. So siehst du Engpässe, bevor sie zum Problem werden."
@@ -49,6 +70,23 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
             "Jede Änderung am Personal wird protokolliert",
           ]}
           mockups={[<TeamMockup key="team" />, <AusblickMockup key="ausblick" />]}
+        />
+
+        <StorySection
+          id="finanzen"
+          hintergrund="getoent"
+          spiegeln
+          eyebrow="Finanzen im Blick"
+          titel="Was kostet dein Personal — und was kommt rein?"
+          text="Fördererlöse und Personalkosten stehen neben der Belegung. Im Szenario-Rechner siehst du, was eine zusätzliche Fachkraft oder ein Austritt für das Ergebnis bedeutet."
+          punkte={[
+            "Fördererlöse nach den Regeln des Bundeslands (Bayern, NRW) oder als eigener Betrag (Baden-Württemberg)",
+            "Personalkosten nach TVöD SuE oder mit eigenem Gehalt je Mitarbeitendem, inklusive Lohnnebenkosten",
+            "Szenario-Rechner mit Gehaltsfeld je Zeile — ohne echte Daten anzufassen",
+            "Finanzen sehen nur Nutzer mit eigenem Recht, getrennt von Belegung und Personal",
+            "Planungsgröße: Elternbeiträge, kommunale Anteile und Sachkosten sind nicht enthalten",
+          ]}
+          mockups={[<FinanzenMockup key="finanzen" />, <SzenarioFinanzenMockup key="szenario" />]}
         />
 
         <section id="bundeslaender" className="scroll-mt-16 py-20 md:py-32">
@@ -76,7 +114,6 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
         </section>
 
         <StorySection
-          hintergrund="getoent"
           eyebrow="Vorausschau statt Überraschung"
           titel="Was im nächsten Jahr passiert, siehst du heute."
           text="Belegung und Personal lassen sich Monat für Monat vorausberechnen. Freie Plätze, Schuleintritte und Nachrücker greifen ineinander."
@@ -90,16 +127,17 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
 
         <StorySection
           id="meldewesen"
+          hintergrund="getoent"
           spiegeln
           eyebrow="Meldewesen ohne Excel"
           titel="Die Statistik aus einem Guss."
           text="Kinder nach Wochenstunden, Monat für Monat und inklusive Kindern mit I-Status — in allen drei Bundesländern gleich aufgebaut und mit einem Klick als Excel oder PDF exportiert."
           punkte={[
-            "Kategorisierung nach Kalenderjahr von Januar bis Dezember",
-            "Der 1. März als amtlicher Erhebungsstichtag ist markiert",
+            "Controlling je Monat: Kopfzahl sowie ungewichtete und gewichtete Buchungsstunden je Gruppenart",
+            "Kategorisierung nach Kalenderjahr von Januar bis Dezember, inklusive I-Status",
             "Prüfungsmappe für Aufsicht, Jugendamt und Träger — als PDF und Excel",
           ]}
-          mockups={[<KategorisierungMockup key="kat" />, <MappeMockup key="mappe" />]}
+          mockups={[<ControllingMockup key="controlling" />, <KategorisierungMockup key="kat" />, <MappeMockup key="mappe" />]}
         />
 
         <EinblickeSection />
