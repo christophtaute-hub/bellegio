@@ -29,13 +29,13 @@ export const ROLLEN: { value: NeueRolle; label: string; hinweis: string }[] = [
   {
     value: "einrichtungsleitung",
     label: "Einrichtungsleitung",
-    hinweis: "Bearbeitet alle Bereiche aller Einrichtungen. Verwaltet keine Nutzer und sieht keine Abrechnung.",
+    hinweis: "Bearbeitet alle Bereiche aller Einrichtungen. Verwaltet keine Nutzer.",
   },
   {
     value: "traeger_admin",
     label: "Träger-Admin",
     hinweis:
-      "Gleichberechtigt zu dir: voller Zugriff auf alle Einrichtungen, verwaltet Nutzer und Rechte, sieht die Abrechnung des Trägers und kann weitere Träger-Admins anlegen. Über diese Seite lässt sich ein Träger-Admin später nicht mehr herabstufen, sperren oder löschen.",
+      "Gleichberechtigt zu dir: voller Zugriff auf alle Einrichtungen, verwaltet Nutzer und Rechte und kann weitere Träger-Admins anlegen. Über diese Seite lässt sich ein Träger-Admin später nicht mehr herabstufen, sperren oder löschen.",
   },
 ];
 

@@ -69,7 +69,6 @@ export async function speichereTragerAbrechnung(tragerId: string, input: TragerA
     .upsert({ trager_id: tragerId, ...input, updated_at: new Date().toISOString() });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/kunden");
-  revalidatePath("/abrechnung");
 }
 
 export async function erstelleRechnungsEntwurf(tragerId: string, monat: string) {

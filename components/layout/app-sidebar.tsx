@@ -39,14 +39,13 @@ const NAV_ITEMS = [
   { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
 ] as const;
 
-/** Wer welche „Abrechnung“ sieht, entscheidet der Aufrufer: der Betreiber landet in seiner Einnahmen-Übersicht,
- * Träger-Administratoren sehen ihre eigenen Rechnungen, alle anderen bekommen keinen Menüpunkt. */
-export type AbrechnungZiel = "/admin" | "/abrechnung" | null;
+/** Nur der Betreiber (Admin) bekommt den Menüpunkt „Abrechnung“ — seine Einnahmen-Übersicht und die Rechnungen, die er
+ * an Kunden versendet. Träger-Administratoren und alle anderen sehen ihn nicht (und die Daten auch nicht, siehe RLS). */
+export type AbrechnungZiel = "/admin" | null;
 
 export function AppSidebar({ abrechnung = null }: { abrechnung?: AbrechnungZiel }) {
   const pathname = usePathname();
-  // Ganz unten, nicht zwischen den fachlichen Menüpunkten — Abrechnung ist nur für den Betreiber
-  // (Christoph) bzw. den eigenen Träger-Admin sichtbar, soll aber nicht wie ein Kernfeature wirken.
+  // Ganz unten, nicht zwischen den fachlichen Menüpunkten — Abrechnung ist nur für den Betreiber sichtbar.
   const navItems = abrechnung
     ? [...NAV_ITEMS, { href: abrechnung, label: "Abrechnung", icon: Receipt }]
     : NAV_ITEMS;

@@ -478,7 +478,7 @@ function KontoVerwaltung({
             if (
               neu === "traeger_admin" &&
               !window.confirm(
-                `${name} wirklich zum Träger-Admin machen? Ein Träger-Admin hat vollen Zugriff inkl. Abrechnung und lässt sich über diese Seite nicht mehr herabstufen, sperren oder löschen.`
+                `${name} wirklich zum Träger-Admin machen? Ein Träger-Admin hat vollen Zugriff, verwaltet Nutzer und lässt sich über diese Seite nicht mehr herabstufen, sperren oder löschen.`
               )
             ) {
               e.target.value = rolle;

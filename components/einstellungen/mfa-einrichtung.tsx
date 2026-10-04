@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type Einrichtung = { faktorId: string; qr: string; geheimnis: string };
 
-/** Zwei-Faktor-Anmeldung mit Authenticator-App (TOTP). Empfohlen für Konten mit Zugriff auf die Abrechnung. */
+/** Zwei-Faktor-Anmeldung mit Authenticator-App (TOTP). Empfohlen für Konten mit Verwaltungsrechten. */
 export function MfaEinrichtung() {
   const [aktiverFaktor, setAktiverFaktor] = useState<string | null | undefined>(undefined);
   const [einrichtung, setEinrichtung] = useState<Einrichtung | null>(null);
@@ -97,8 +97,8 @@ export function MfaEinrichtung() {
       <div>
         <h2 className="font-heading text-lg text-primary">Zwei-Faktor-Anmeldung</h2>
         <p className="text-sm text-muted-foreground">
-          Beim Anmelden fragt Bellegio zusätzlich den Code einer Authenticator-App ab. Für den Zugang zur Abrechnung ist
-          das ausdrücklich empfohlen.
+          Beim Anmelden fragt Bellegio zusätzlich den Code einer Authenticator-App ab. Für Konten mit Verwaltungsrechten
+          (Träger-Admin) ist das ausdrücklich empfohlen.
         </p>
       </div>
 

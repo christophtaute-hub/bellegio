@@ -11,7 +11,7 @@ import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Button } from "@/components/ui/button";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { computeVorname } from "@/lib/server/current-user-name";
-import { getCurrentUserRole, isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
+import { isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
 
 export default async function AppLayout({
   children,
@@ -57,11 +57,11 @@ export default async function AppLayout({
   if (await zustimmungOffen()) redirect("/zustimmung");
 
   const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
-  const [rolle, istBetreiber, istDemo] = await Promise.all([getCurrentUserRole(), isPlatformOperator(), istDemoNutzer()]);
+  const [istBetreiber, istDemo] = await Promise.all([isPlatformOperator(), istDemoNutzer()]);
 
   return (
     <SidebarProvider>
-      <AppSidebar abrechnung={istBetreiber ? "/admin" : rolle === "traeger_admin" && !istDemo ? "/abrechnung" : null} />
+      <AppSidebar abrechnung={istBetreiber ? "/admin" : null} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />

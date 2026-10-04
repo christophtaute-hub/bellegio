@@ -29,7 +29,7 @@ export async function getCurrentUserRole(): Promise<UserRole | null> {
   return (profile?.role as UserRole) ?? null;
 }
 
-/** Demo-Konto: darf alles ausprobieren, sieht aber keine Abrechnung und ändert weder Passwort noch Zwei-Faktor. */
+/** Demo-Konto: darf alles ausprobieren, ändert weder Passwort noch Zwei-Faktor. */
 export async function istDemoNutzer(): Promise<boolean> {
   const supabase = await createClient();
   const {

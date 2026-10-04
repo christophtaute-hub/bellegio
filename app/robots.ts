@@ -19,7 +19,6 @@ export default function robots(): MetadataRoute.Robots {
           "/einstellungen",
           "/einrichtung-auswahl",
           "/admin",
-          "/abrechnung",
           "/login",
           "/passwort-vergessen",
           "/passwort-setzen",
