@@ -1,0 +1,35 @@
+# Zahlenabgleich mit den Demo-Kitas (Stand 2026-10-04, Stichtag 04.10.2026)
+
+Die Zahlen der App wurden mit einer unabhängigen Nachrechnung direkt auf den Rohtabellen (SQL, ohne die App-Funktionen) verglichen.
+Basis: sechs Kitas im Träger „Villa Kunterbunt“ (zwei je Bundesland), Daten aus `scripts/seed-milestone32-*.ts`. Alle Werte stimmen überein.
+Die Demo-Daten sind frei erfunden; geprüft wird die **Rechenlogik**, nicht echte Förderbescheide.
+
+| Kita | Größe | App | Nachrechnung |
+| --- | --- | --- | --- |
+| Kita Sonnenschein (BY) | gew. Kinder / VZÄ | Schlüssel 1 : 9,33 | 53,10 / 5,69 = 9,33 ✓ |
+| Testkita Bayern (BY, Vollzeit 40 Std.) | gew. Kinder / VZÄ | 1 : 9,24 | 53,60 / 5,80 = 9,24 ✓ |
+| Testkita Bayern | Fördererlöse / Personalkosten / Ergebnis | 13.435 / 37.005 / −23.570 € | 13.435 / 37.005 / −23.570 € ✓ |
+| Kita Sonnenschein | Fördererlöse / Personalkosten | 13.784 / 37.014 € | 13.784 / 37.014 € ✓ |
+| Kita Regenbogen (BW) | Ist-VZÄ / Soll-VZÄ | 6,82 / 6,26 | 6,82 / 6,26 ✓ |
+| Testkita Baden-Württemberg | Ist-VZÄ / Soll-VZÄ | 8,33 / 6,16 | 8,33 / 6,16 ✓ |
+| Kita Regenbogen | Personalkosten | 45.285 € | 45.285 € ✓ |
+| Kita Löwenzahn (NRW) | Ist-FK / Soll-FK Std. | 237,0 / 202,5 | 237,0 / 202,5 ✓ |
+| Testkita Nordrhein-Westfalen | Ist-FK / Soll-FK Std. | 202,5 / 202,5 | 202,5 / 202,5 ✓ |
+| Kita Löwenzahn | Personalkosten | 48.850 € | 48.850 € ✓ |
+| Kita Regenbogen | Verteilung nach Buchungszeit (52 Kinder) | 10 / 5 / 20 / 12 / 5 | 10 / 5 / 20 / 12 / 5 ✓ |
+
+## Rechenwege (zur Nachprüfung)
+
+- **Bayern:** Anstellungsschlüssel = Σ (höchster Gewichtungsfaktor je Kind) ÷ (Σ Wochenstunden ÷ Vollzeit). Fördererlös/Monat = Σ (Buchungszeitfaktor × Gewichtungsfaktor × Basiswert 1.563,88 € + Qualitätsbonus 268,01 €) ÷ 12.
+- **Baden-Württemberg:** Soll-VZÄ je Gruppe aus Referenz-VZÄ der Betriebsform; bei Hauptbetreuung/Randzeit-Split Randzeitrate = Referenz-VZÄ ÷ (2 × (Referenz-Öffnungszeit − 1) + 1), Hauptbetreuungsrate = 2 × Randzeitrate (KiTaVO §1 Abs. 2). Fördererlös ist ein manueller Betrag.
+- **NRW:** Soll-FK-Stunden = Σ (Fachkraftstunden + Leitungsfreistellung) je Gruppe nach Gruppenform × Buchungszeit (`nrw_personalstunden`). Fördererlös ist in der Demo ein manueller Betrag.
+- **Personalkosten (alle):** Σ (Monatsgehalt nach TVöD SuE bzw. manuell × Wochenstunden ÷ Vollzeit) × (1 + Lohnnebenkosten % + Jahressonderzahlung % ÷ 12).
+- **Ausfallzeiten** zählen nur, wenn sie den **ganzen** Monat abdecken (so rechnet `team_presence_for_month`).
+
+## Bekannte Grenzen (nicht durch den Abgleich abgedeckt)
+
+- Bayern-Basiswert/Qualitätsbonus gelten als Jahresbeträge je Kind; die Quelle (BayVV) sagt das nicht ausdrücklich. Vor echten Kunden gegen einen Förderbescheid prüfen.
+- NRW-Kindpauschalen sind nur für Gruppenform I hinterlegt; die Demo nutzt einen manuellen Förderbetrag.
+- TVöD-Tabelle (S3–S18) nicht gegen die Primärquelle (VKA/dbb) geprüft.
+- Ergebnis = Fördererlöse − Personalkosten; Elternbeiträge, kommunaler Anteil und Sachkosten fehlen.
+- Einschulungsstatus (Muss/Kann/Korridor) in den Demo-Daten nach vereinfachten Stichtagsregeln vergeben.
