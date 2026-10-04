@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 import type { PersonalKennzahl } from "@/lib/dashboard/personal-kennzahl";
@@ -78,6 +79,7 @@ export function FinanzenKarte({ finanzen }: { finanzen: Ergebnis }) {
           {finanzen.personalkostenNichtErfasst} Mitarbeitende ohne Vergütung fehlen in den Personalkosten.
         </p>
       ) : null}
+      <p className="text-xs text-muted-foreground">{ERGEBNIS_HINWEIS}</p>
     </Karte>
   );
 }

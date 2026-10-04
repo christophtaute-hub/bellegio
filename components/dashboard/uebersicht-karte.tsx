@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
 import { createClient } from "@/lib/supabase/server";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import {
@@ -105,6 +106,7 @@ export async function UebersichtKarte({
       </dl>
 
       <UebersichtChart punkte={punkte} ersteName={meta.erste} zweiteName={meta.zweite} alsEuro={meta.euro} />
+      {modus === "finanzen" ? <p className="text-xs text-muted-foreground">{ERGEBNIS_HINWEIS}</p> : null}
     </section>
   );
 }

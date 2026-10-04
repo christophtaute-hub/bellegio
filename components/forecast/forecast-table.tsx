@@ -1,3 +1,4 @@
+import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
 import {
   Table,
   TableBody,
@@ -340,6 +341,11 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
             </TableCell>
           );
         })}
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={months.length + 1} className="sticky left-0 z-10 bg-card text-xs text-muted-foreground">
+          {ERGEBNIS_HINWEIS}
+        </TableCell>
       </TableRow>
       {nichtErfasstMax > 0 ? (
         <TableRow>

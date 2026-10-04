@@ -1,6 +1,7 @@
 "use client";
 
 import { Wallet } from "lucide-react";
+import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
 import { MetricCard } from "@/components/ui/metric-card";
 import { berechneSzenarioErgebnis, type Ergebnis, type SzenarioPersonalZeile } from "@/lib/finanzen/ergebnis";
 
@@ -56,6 +57,7 @@ export function FinanzenSektion({
           tone={ergebnisSimuliert < 0 ? "warn" : "default"}
         />
       </div>
+      <p className="text-xs text-muted-foreground">{ERGEBNIS_HINWEIS}</p>
       {personalkostenNichtErfasst > 0 ? (
         <p className="text-xs text-muted-foreground">
           {personalkostenNichtErfasst} Personal-Zeile{personalkostenNichtErfasst === 1 ? "" : "n"} ohne Gehalt-Angabe
