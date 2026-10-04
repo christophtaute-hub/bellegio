@@ -16,20 +16,22 @@ Die Demo-Daten sind frei erfunden; geprüft wird die **Rechenlogik**, nicht echt
 | Kita Löwenzahn (NRW) | Ist-FK / Soll-FK Std. | 237,0 / 202,5 | 237,0 / 202,5 ✓ |
 | Testkita Nordrhein-Westfalen | Ist-FK / Soll-FK Std. | 202,5 / 202,5 | 202,5 / 202,5 ✓ |
 | Kita Löwenzahn | Personalkosten | 48.850 € | 48.850 € ✓ |
+| Kita Löwenzahn (NRW, Kindpauschalen 2026/27, ohne manuellen Betrag) | Fördererlöse / Ergebnis | 52.697 € / +3.848 € | 52.697 € / +3.848 € ✓ |
+| Testkita Nordrhein-Westfalen | Fördererlöse (erwartet) | – | 44.083 € (nur Nachrechnung) |
 | Kita Regenbogen | Verteilung nach Buchungszeit (52 Kinder) | 10 / 5 / 20 / 12 / 5 | 10 / 5 / 20 / 12 / 5 ✓ |
 
 ## Rechenwege (zur Nachprüfung)
 
 - **Bayern:** Anstellungsschlüssel = Σ (höchster Gewichtungsfaktor je Kind) ÷ (Σ Wochenstunden ÷ Vollzeit). Fördererlös/Monat = Σ (Buchungszeitfaktor × Gewichtungsfaktor × Basiswert 1.563,88 € + Qualitätsbonus 268,01 €) ÷ 12.
 - **Baden-Württemberg:** Soll-VZÄ je Gruppe aus Referenz-VZÄ der Betriebsform; bei Hauptbetreuung/Randzeit-Split Randzeitrate = Referenz-VZÄ ÷ (2 × (Referenz-Öffnungszeit − 1) + 1), Hauptbetreuungsrate = 2 × Randzeitrate (KiTaVO §1 Abs. 2). Fördererlös ist ein manueller Betrag.
-- **NRW:** Soll-FK-Stunden = Σ (Fachkraftstunden + Leitungsfreistellung) je Gruppe nach Gruppenform × Buchungszeit (`nrw_personalstunden`). Fördererlös ist in der Demo ein manueller Betrag.
+- **NRW:** Soll-FK-Stunden = Σ (Fachkraftstunden + Leitungsfreistellung) je Gruppe nach Gruppenform × Buchungszeit (`nrw_personalstunden`). Fördererlös/Monat = Σ je Kind (Kindpauschale der Gruppe nach Gruppenform × Betreuungsumfang, KGJ 2026/27) ÷ 12; Pauschalen siehe Migration `20261004100000_nrw_kindpauschalen_2026_27`.
 - **Personalkosten (alle):** Σ (Monatsgehalt nach TVöD SuE bzw. manuell × Wochenstunden ÷ Vollzeit) × (1 + Lohnnebenkosten % + Jahressonderzahlung % ÷ 12).
 - **Ausfallzeiten** zählen nur, wenn sie den **ganzen** Monat abdecken (so rechnet `team_presence_for_month`).
 
 ## Bekannte Grenzen (nicht durch den Abgleich abgedeckt)
 
 - Bayern-Basiswert/Qualitätsbonus gelten als Jahresbeträge je Kind; die Quelle (BayVV) sagt das nicht ausdrücklich. Vor echten Kunden gegen einen Förderbescheid prüfen.
-- NRW-Kindpauschalen sind nur für Gruppenform I hinterlegt; die Demo nutzt einen manuellen Förderbetrag.
+- NRW-Kindpauschalen (alle Gruppenformen, KGJ 2026/27) stammen aus einer kommunalen Beschlussvorlage (Stadt Ratingen, 10/2026), nicht aus KiBiz.web. Die Pauschale ist die Summe der anerkennungsfähigen Kosten (Land, Jugendamt, Träger, Eltern) — der Träger erhält nicht den vollen Betrag. Einzelintegration, Mietzuschlag und §§34/35-Zuschläge fehlen.
 - TVöD-Tabelle (S3–S18) nicht gegen die Primärquelle (VKA/dbb) geprüft.
 - Ergebnis = Fördererlöse − Personalkosten; Elternbeiträge, kommunaler Anteil und Sachkosten fehlen.
 - Einschulungsstatus (Muss/Kann/Korridor) in den Demo-Daten nach vereinfachten Stichtagsregeln vergeben.

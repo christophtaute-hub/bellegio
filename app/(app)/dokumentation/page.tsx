@@ -704,19 +704,25 @@ export default async function DokumentationPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
           <h3 className="font-heading text-lg text-primary">
-            Fördererlöse — Wichtiger Hinweis zur Quellenlage (Milestone 29c)
+            Fördererlöse — Wichtiger Hinweis zur Quellenlage
           </h3>
           <p className="font-mono text-sm font-semibold text-primary">
             Fördererlös je Kind/Jahr = Kindpauschale nach Gruppenform × Buchungszeitband (§§32–34, §37 KiBiz)
           </p>
           <p className="text-sm text-muted-foreground">
-            Hinterlegt ist aktuell nur die Kindpauschale für <strong className="text-foreground">Gruppenform I</strong>
-            {" "}(25/35/45 Std./Woche, Stand 2025/26). Gruppenform II und III fehlen bewusst — sie wurden noch nicht
-            verlässlich recherchiert und deshalb nicht erfunden. Kinder in diesen Gruppenformen zeigen aktuell 0 €
-            Fördererlös in Controlling, was das Ergebnis unterschätzt. Auch die Werte für Gruppenform I stammen aus
-            einer Praktiker-Quelle, nicht aus einem direkten Abgleich mit KiBiz.web — vor Produktivbetrieb gegen die
-            dort hinterlegten aktuellen Beträge prüfen. Zudem ändert sich die Kindpauschale jährlich über die
-            Fortschreibungsrate nach §37 KiBiz. Bis zur Nachbesserung lässt sich unter Einrichtung → Finanzen ein
+            Hinterlegt sind die Kindpauschalen für alle Gruppenformen (I, II, III) und Betreuungsumfänge (25/35/45 Std./Woche)
+            im Kindergartenjahr 2026/27 (Gruppenform I z. B. 8.029,57 / 10.794,38 / 13.856,85 € je Kind und Jahr). Die Werte
+            stammen aus einer kommunalen Beschlussvorlage, die die Landespauschalen wiedergibt (Stadt Ratingen, Vorlage 10/2026),
+            und sind intern stimmig (Absenkung um 0,14 % gegenüber 2025/26) — sie wurden{" "}
+            <strong className="text-foreground">nicht direkt gegen KiBiz.web</strong> geprüft. Vor Produktivbetrieb dort
+            gegenchecken. Die Pauschalen ändern sich jährlich über die Fortschreibungsrate nach §37 KiBiz; die Vorjahreswerte
+            bleiben für frühere Monate gespeichert.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Wichtig:</strong> Die Kindpauschale ist die Summe der anerkennungsfähigen Kosten.
+            Sie wird von Land, Jugendamt, Träger (Trägeranteil) und über Elternbeiträge aufgebracht — ein Träger erhält also
+            nicht den vollen Betrag als Förderung. Nicht abgebildet sind außerdem Einzelintegration, Mietzuschlag und
+            Zuschläge nach §§34/35. Das Ergebnis ist daher eine Planungsgröße. Unter Einrichtung → Finanzen lässt sich ein
             manueller Förderbetrag hinterlegen, der die Formel komplett ersetzt.
           </p>
         </div>

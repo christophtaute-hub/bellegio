@@ -3,8 +3,8 @@
  *  - Testkita Bayern: drei zusätzliche Fachkräfte, damit der Anstellungsschlüssel heute im grünen Bereich liegt
  *    (ca. 1:9,3). Eine davon ist befristet bis 31.03.2027 — zusammen mit Julia Vogts Austritt kippt der Schlüssel dadurch
  *    wie in der Demo vorgesehen ab April 2027 auf rot.
- *  - NRW: Die Kindpauschalen sind nur für Gruppenform I hinterlegt (II/III fehlen noch), das Ergebnis der NRW-Demo-Kitas
- *    wäre dadurch stark negativ. Für die Demo wird der manuelle Förderbetrag (Override) auf einen plausiblen Wert gesetzt.
+ *  - (NRW-Förderbetrag: früher hier als manueller Wert gesetzt; seit der Migration 20261004100000_nrw_kindpauschalen_2026_27
+ *    sind alle Kindpauschalen hinterlegt, die NRW-Demo-Kitas rechnen ohne Override.)
  *
  * Nutzung: npx tsx --env-file=.env.local scripts/seed-milestone32-demo-nachbesserung.ts
  * Idempotent (Personal per Vor-/Nachname). Danach Demo ableiten: scripts/demo-einrichten.ts
@@ -18,11 +18,6 @@ const NEUE_FACHKRAEFTE = [
   { vorname: "Lisa", nachname: "Brunner", rolle: "Erzieherin", stunden: 30, eintritt: "2023-09-01", austritt: null, stufe: 3 },
   { vorname: "Peter", nachname: "Aigner", rolle: "Pädagogische Fachkraft (befristet)", stunden: 30, eintritt: "2025-09-01", austritt: "2027-03-31", stufe: 2 },
 ];
-
-const NRW_FOERDERBETRAG: Record<string, number> = {
-  "Kita Löwenzahn": 55000,
-  "Testkita Nordrhein-Westfalen": 47000,
-};
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -66,17 +61,6 @@ async function main() {
       .from("team_verguetung")
       .upsert({ team_id: person.id, einrichtung_id: bayern.id, entgeltgruppe: "S8a", stufe: p.stufe, monatsgehalt_manuell: null }, { onConflict: "team_id" });
     if (ve) throw new Error(`Vergütung ${p.nachname}: ${ve.message}`);
-  }
-
-  for (const [name, betrag] of Object.entries(NRW_FOERDERBETRAG)) {
-    const { data, error } = await sb
-      .from("einrichtungen")
-      .update({ foerderung_monatlich_manuell: betrag })
-      .eq("trager_id", traeger.id)
-      .eq("name", name)
-      .select("id");
-    if (error) throw new Error(`${name}: ${error.message}`);
-    console.log(`${name}: Förderbetrag ${betrag} € (${data?.length} Einrichtung)`);
   }
 }
 
