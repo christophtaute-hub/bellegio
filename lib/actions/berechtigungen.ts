@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
@@ -43,6 +44,16 @@ async function alsErgebnis(kontext: string, fehler: unknown): Promise<NutzerErge
   }
   if (fehler instanceof ZeitlimitFehler) return { ok: false, error: ZEITLIMIT_MELDUNG };
   return { ok: false, error: UNERWARTETER_FEHLER };
+}
+
+/** Ziel des Einladungs-Links: direkt die Seite "Passwort festlegen" der aktuell aufgerufenen Domain, statt sich auf
+ * die in Supabase hinterlegte Site-URL zu verlassen (die bei Staging/Produktion abweichen kann). */
+async function passwortSetzenUrl(): Promise<string | undefined> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (!host) return undefined;
+  const protokoll = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${protokoll}://${host}/passwort-setzen`;
 }
 
 async function aktuellerAufrufer() {
@@ -174,7 +185,7 @@ export async function legeNutzerAn(input: NeuerNutzerInput): Promise<NutzerErgeb
     try {
       const ergebnis = input.passwort
         ? await mitZeitlimit(admin.auth.admin.createUser({ email, password: input.passwort, email_confirm: true }))
-        : await mitZeitlimit(admin.auth.admin.inviteUserByEmail(email));
+        : await mitZeitlimit(admin.auth.admin.inviteUserByEmail(email, { redirectTo: await passwortSetzenUrl() }));
       angelegt = ergebnis.data;
       createError = ergebnis.error;
     } catch (netzwerkFehler) {
