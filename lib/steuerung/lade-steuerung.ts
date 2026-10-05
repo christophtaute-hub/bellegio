@@ -29,6 +29,7 @@ export type GruppenZeile = GruppeStatus & {
 
 export type SteuerungsDaten = {
   stichtag: string;
+  vollzeitWochenstunden: number;
   modell: "bayern" | "bw" | "nrw";
   belegung: { belegt: number; sollplaetze: number; frei: number };
   personal: { kennzahl: PersonalKennzahl; ampel: Ampel };
@@ -214,6 +215,7 @@ export async function ladeSteuerung(
   const belegt = erster.kpis.kinderGesamt;
   return {
     stichtag,
+    vollzeitWochenstunden: vollzeit,
     modell: erster.personal.modell,
     belegung: { belegt, sollplaetze, frei: Math.max(0, sollplaetze - belegt) },
     personal: { kennzahl: personalKennzahl(erster.personal), ampel: erster.personal.daten.ampel },

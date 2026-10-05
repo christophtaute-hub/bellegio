@@ -11,6 +11,10 @@ export type AusblickMonat = {
   bedarfStunden: number;
   /** Fehlende Wochenstunden Personal (0 = nichts fehlt). */
   fehlendeStunden: number;
+  /** Wochenstunden, die das Gesetz mindestens verlangt (ohne Puffer für „mehr als nötig“). */
+  sollStunden: number;
+  /** Wochenstunden Personal über dem Bedarf — nur gesetzt, wenn der Überhang deutlich ist (mind. 8 Std. und 25 % über dem Bedarf — ein Puffer für Ausfälle ist normal). */
+  ueberhangStunden: number;
   /** Anzahl Kinder in diesem Monat. */
   kinder: number;
   /** Kurzer Befund im Rechenweg des jeweiligen Bundeslandes (Fachbegriffe für Interessierte). */
@@ -33,6 +37,8 @@ export type AusblickErgebnis = {
   monate: AusblickMonat[];
   ersteWarnung: AusblickMonat | null;
   ersterEngpass: AusblickMonat | null;
+  /** Erster Monat, in dem deutlich mehr Personal da ist als nötig (z. B. weil Schulkinder gehen). */
+  ersterUeberhang: AusblickMonat | null;
   hoechsteLuecke: number;
   verursacher: AusblickAustritt[];
   /** Kurzer Ursachen-Satz, z.B. Austritt einer Person — null, wenn keine eindeutige Ursache erkennbar ist. */
@@ -61,6 +67,15 @@ function fehlVerb(wert: number): string {
   return Math.max(1, Math.ceil(wert)) === 1 ? "fehlt" : "fehlen";
 }
 
+const UEBERHANG_MIN_STUNDEN = 8;
+const UEBERHANG_MIN_ANTEIL = 0.25;
+
+function ueberhang(ist: number, soll: number, fehlend: number): number {
+  if (fehlend > 0) return 0;
+  const mehr = ist - soll;
+  return mehr >= UEBERHANG_MIN_STUNDEN && mehr >= soll * UEBERHANG_MIN_ANTEIL ? mehr : 0;
+}
+
 function bewerteMonat(m: ForecastMonth, vollzeitWochenstunden: number): AusblickMonat {
   const p = m.personal;
   const kinder = m.kpis.kinderGesamt;
@@ -79,6 +94,8 @@ function bewerteMonat(m: ForecastMonth, vollzeitWochenstunden: number): Ausblick
       istStunden: d.istAzGesamt,
       bedarfStunden: Math.max(sollGesamt, d.istAzGesamt + fehlend),
       fehlendeStunden: fehlend,
+      sollStunden: sollGesamt,
+      ueberhangStunden: ueberhang(d.istAzGesamt, sollGesamt, fehlend),
       kinder,
       detail: d.mindestschluesselOk
         ? d.qualifikationsschluesselOk
@@ -98,6 +115,8 @@ function bewerteMonat(m: ForecastMonth, vollzeitWochenstunden: number): Ausblick
       istStunden: ist,
       bedarfStunden: soll,
       fehlendeStunden: Math.max(0, soll - ist),
+      sollStunden: soll,
+      ueberhangStunden: ueberhang(ist, soll, Math.max(0, soll - ist)),
       kinder,
       detail: `Ist ${zahl(d.istVzaeGesamt, 2)} VZÄ, Soll ${zahl(d.sollVzaeGesamt, 2)} VZÄ (KiTaVO)`,
     };
@@ -114,6 +133,8 @@ function bewerteMonat(m: ForecastMonth, vollzeitWochenstunden: number): Ausblick
     istStunden: ist,
     bedarfStunden: Math.max(sollGesamt, ist + fehlend),
     fehlendeStunden: fehlend,
+    sollStunden: sollGesamt,
+    ueberhangStunden: ueberhang(ist, sollGesamt, fehlend),
     kinder,
     detail: `Fachkraft ${zahl(d.istFk)} von ${zahl(d.sollFachkraftStundenGesamt)} Std., Ergänzungskraft ${zahl(d.istEk)} von ${zahl(d.sollErgaenzungskraftStundenGesamt)} Std. (KiBiz)`,
   };
@@ -171,6 +192,7 @@ export function berechnePersonalAusblick(
   const monate = months.map((m) => bewerteMonat(m, vollzeitWochenstunden));
   const ersterEngpass = monate.find((m) => m.ampel === "rot") ?? null;
   const ersteWarnung = monate.find((m) => m.ampel !== "gruen") ?? null;
+  const ersterUeberhang = monate.find((m) => m.ueberhangStunden > 0) ?? null;
   const hoechsteLuecke = monate.reduce((max, m) => Math.max(max, m.fehlendeStunden), 0);
 
   const kritisch = ersterEngpass ?? ersteWarnung;
@@ -218,6 +240,7 @@ export function berechnePersonalAusblick(
     monate,
     ersteWarnung,
     ersterEngpass,
+    ersterUeberhang,
     hoechsteLuecke,
     verursacher,
     ursache,
@@ -255,5 +278,5 @@ function formuliereSatz(
         : "Dein Personal liegt nur noch knapp über dem Bedarf.";
     return { ton: "warnung", text: `${wann} wird es knapp: ${zusatz}` };
   }
-  return { ton: "ok", text: `In den nächsten ${horizont} Monaten reicht dein Personal.` };
+  return { ton: "ok", text: `In den nächsten ${horizont} Monaten ist beim Personal alles in Ordnung.` };
 }

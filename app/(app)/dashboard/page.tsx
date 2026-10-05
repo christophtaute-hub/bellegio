@@ -7,11 +7,11 @@ import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { ladeSteuerung, VORAUSSCHAU_OPTIONEN, VORAUSSCHAU_STANDARD } from "@/lib/steuerung/lade-steuerung";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
-import { Vorausschau } from "@/components/dashboard/vorausschau";
+import { Cockpit } from "@/components/dashboard/cockpit";
+import { baueCockpit } from "@/lib/steuerung/cockpit";
 import { StatusChips } from "@/components/dashboard/status-chips";
 import { Handlungsliste } from "@/components/dashboard/handlungsliste";
 import { GruppenAmpel } from "@/components/dashboard/gruppen-ampel";
-import { PersonalVerlauf } from "@/components/dashboard/personal-verlauf";
 
 /** Das Dashboard beantwortet drei Fragen: Wo ist ein Problem? Warum? Was muss ich tun? Ein Stichtag gilt für die ganze
  * Seite — auch für künftige Zeitpunkte. Alles Weitere (Zahlenreihen, Zusammensetzung, Finanzverlauf) steht im Controlling. */
@@ -35,6 +35,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const zeigeGehaelter = einrichtungId ? await canViewGehaelter(supabase, einrichtungId) : false;
   const daten = einrichtungId ? await ladeSteuerung(supabase, einrichtungId, stichtag, { zeigeFinanzen, zeigeGehaelter, monateVoraus: gewaehlteMonate }) : null;
 
+  const cockpit = daten ? baueCockpit(daten) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
@@ -52,18 +54,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </Suspense>
       ) : null}
 
-      {daten ? (
+      {daten && cockpit ? (
         <>
-          <Vorausschau daten={daten} monate={gewaehlteMonate} heute={heute} stichtagParam={stichtagParam && stichtag !== heute ? stichtag : null} />
+          <Cockpit
+            cockpit={{ ...cockpit, monate: cockpit.monate.slice(0, gewaehlteMonate) }}
+            monate={gewaehlteMonate}
+            jetztLabel={stichtag === heute ? "Jetzt" : formatDate(stichtag)}
+            stichtagParam={stichtag !== heute ? stichtag : null}
+          />
           <StatusChips daten={daten} />
-          <Handlungsliste handlungen={daten.handlungen} />
+          {/* Der Personal-Engpass der Einrichtung steht schon oben im Cockpit — hier nicht doppelt. */}
+          <Handlungsliste handlungen={daten.handlungen.filter((h) => h.id !== "personal-einrichtung")} />
           <GruppenAmpel
             gruppen={daten.gruppen}
             modell={daten.modell}
             zuordnung={daten.zuordnung}
             stichtagMonat={`${stichtag.slice(0, 7)}-01`}
           />
-          <PersonalVerlauf ausblick={daten.ausblick} />
         </>
       ) : null}
     </div>

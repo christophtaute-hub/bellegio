@@ -36,7 +36,7 @@ describe("baueHandlungen", () => {
       ...leer,
       ausblick: {
         satz: { ton: "engpass", text: "Ab April 2027 fehlen dir rund 20 Wochenstunden Personal." },
-        ersterEngpass: { monat: "2027-04-01", ampel: "rot", istStunden: 172, bedarfStunden: 192, fehlendeStunden: 20, kinder: 36, detail: "" },
+        ersterEngpass: { monat: "2027-04-01", ampel: "rot", istStunden: 172, bedarfStunden: 192, fehlendeStunden: 20, sollStunden: 192, ueberhangStunden: 0, kinder: 36, detail: "" },
         ersteWarnung: null,
         ursache: "Julia Vogt scheidet aus (30 Wochenstunden weniger).",
         verursacher: [{ name: "Julia Vogt", austritt: "2027-03-31", wochenstunden: 30 }],

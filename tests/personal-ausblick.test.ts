@@ -79,7 +79,7 @@ describe("Personal-Ausblick (Bayern)", () => {
     expect(a.ersteWarnung).toBeNull();
     expect(a.hoechsteLuecke).toBe(0);
     expect(a.empfehlungen).toEqual([]);
-    expect(a.satz).toEqual({ ton: "ok", text: "In den nächsten 3 Monaten reicht dein Personal." });
+    expect(a.satz).toEqual({ ton: "ok", text: "In den nächsten 3 Monaten ist beim Personal alles in Ordnung." });
   });
 
   it("liefert für eine leere Monatsliste ein leeres Ergebnis statt zu fallen", () => {
