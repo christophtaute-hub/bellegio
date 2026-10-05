@@ -17,16 +17,22 @@ const PRESETS = [
 export function StichtagPicker({
   basePath,
   stichtag,
+  kompakt = false,
+  behalte,
 }: {
   basePath: string;
   stichtag: string;
+  /** Nur Datumsfeld und „Heute“, ohne die Sprungmarken (+3 … +24 Monate). */
+  kompakt?: boolean;
+  /** Weitere Parameter, die beim Absenden erhalten bleiben (z. B. der Zeitraum der Vorausschau). */
+  behalte?: Record<string, string>;
 }) {
   const today = new Date();
 
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="flex flex-wrap gap-2">
-        {PRESETS.map((preset) => {
+        {(kompakt ? PRESETS.slice(0, 1) : PRESETS).map((preset) => {
           const presetDate = toIsoDateString(addMonthsUtc(today, preset.months));
           const isActive = presetDate === stichtag;
           return (
@@ -35,7 +41,7 @@ export function StichtagPicker({
               variant={isActive ? "default" : "secondary"}
               size="sm"
               nativeButton={false}
-              render={<Link href={`${basePath}?stichtag=${presetDate}`} />}
+              render={<Link href={`${basePath}?${new URLSearchParams({ ...behalte, stichtag: presetDate })}`} />}
             >
               {preset.label}
             </Button>
@@ -47,6 +53,9 @@ export function StichtagPicker({
         action={basePath}
         className={cn("flex items-end gap-2")}
       >
+        {Object.entries(behalte ?? {}).map(([name, wert]) => (
+          <input key={name} type="hidden" name={name} value={wert} />
+        ))}
         <div className="flex flex-col gap-1">
           <label htmlFor="stichtag" className="text-xs text-muted-foreground">
             Stichtag

@@ -4,9 +4,10 @@ import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { canViewFinanzen, canViewGehaelter } from "@/lib/server/current-user-role";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
-import { ladeSteuerung } from "@/lib/steuerung/lade-steuerung";
+import { ladeSteuerung, VORAUSSCHAU_OPTIONEN, VORAUSSCHAU_STANDARD } from "@/lib/steuerung/lade-steuerung";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
+import { Vorausschau } from "@/components/dashboard/vorausschau";
 import { StatusChips } from "@/components/dashboard/status-chips";
 import { Handlungsliste } from "@/components/dashboard/handlungsliste";
 import { GruppenAmpel } from "@/components/dashboard/gruppen-ampel";
@@ -14,8 +15,9 @@ import { PersonalVerlauf } from "@/components/dashboard/personal-verlauf";
 
 /** Das Dashboard beantwortet drei Fragen: Wo ist ein Problem? Warum? Was muss ich tun? Ein Stichtag gilt für die ganze
  * Seite — auch für künftige Zeitpunkte. Alles Weitere (Zahlenreihen, Zusammensetzung, Finanzverlauf) steht im Controlling. */
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ stichtag?: string }> }) {
-  const { stichtag: stichtagParam } = await searchParams;
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ stichtag?: string; monate?: string }> }) {
+  const { stichtag: stichtagParam, monate: monateParam } = await searchParams;
+  const gewaehlteMonate = VORAUSSCHAU_OPTIONEN.find((n) => n === Number(monateParam)) ?? VORAUSSCHAU_STANDARD;
   const heute = toIsoDateString(new Date());
   const stichtag = stichtagParam && /^\d{4}-\d{2}-\d{2}$/.test(stichtagParam) ? stichtagParam : heute;
   const einrichtungId = await getActiveEinrichtungId();
@@ -31,7 +33,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
   const zeigeGehaelter = einrichtungId ? await canViewGehaelter(supabase, einrichtungId) : false;
-  const daten = einrichtungId ? await ladeSteuerung(supabase, einrichtungId, stichtag, { zeigeFinanzen, zeigeGehaelter }) : null;
+  const daten = einrichtungId ? await ladeSteuerung(supabase, einrichtungId, stichtag, { zeigeFinanzen, zeigeGehaelter, monateVoraus: gewaehlteMonate }) : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +44,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </p>
       </div>
 
-      <StichtagPicker basePath="/dashboard" stichtag={stichtag} />
+      <StichtagPicker basePath="/dashboard" stichtag={stichtag} kompakt behalte={{ monate: String(gewaehlteMonate) }} />
 
       {einrichtungId ? (
         <Suspense fallback={null}>
@@ -52,6 +54,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
       {daten ? (
         <>
+          <Vorausschau daten={daten} monate={gewaehlteMonate} heute={heute} stichtagParam={stichtagParam && stichtag !== heute ? stichtag : null} />
           <StatusChips daten={daten} />
           <Handlungsliste handlungen={daten.handlungen} />
           <GruppenAmpel

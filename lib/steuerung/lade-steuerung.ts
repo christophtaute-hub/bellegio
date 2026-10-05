@@ -15,8 +15,12 @@ import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { baueHandlungen, type GruppenVerlauf, type Handlung } from "@/lib/steuerung/handlungen";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 
-/** Wie weit das Dashboard vorausschaut. */
+/** Wie weit das Dashboard mindestens vorausschaut (Aufgaben, Gruppen-Ampel, Ausblick). */
 export const STEUERUNG_MONATE = 18;
+
+/** Zeiträume, zwischen denen die Vorausschau auf dem Dashboard umschaltbar ist (Monate). */
+export const VORAUSSCHAU_OPTIONEN = [3, 6, 9, 12, 18, 24] as const;
+export const VORAUSSCHAU_STANDARD = 6;
 
 export type GruppenZeile = GruppeStatus & {
   /** Erster Monat, in dem die Gruppe nicht mehr „in Ordnung“ ist (nur bei belastbaren Gruppenwerten). */
@@ -46,10 +50,10 @@ export async function ladeSteuerung(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
   stichtag: string,
-  optionen: { zeigeFinanzen: boolean; zeigeGehaelter: boolean }
+  optionen: { zeigeFinanzen: boolean; zeigeGehaelter: boolean; monateVoraus?: number }
 ): Promise<SteuerungsDaten> {
   const [monate, kinderHeute, gruppenRes, kinderRes, einrichtungRes, teamRes, ausfallRes] = await Promise.all([
-    buildForecastMonths(supabase, einrichtungId, stichtag, STEUERUNG_MONATE, false, true),
+    buildForecastMonths(supabase, einrichtungId, stichtag, Math.max(STEUERUNG_MONATE, optionen.monateVoraus ?? 0), false, true),
     getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
     supabase
       .from("gruppen")

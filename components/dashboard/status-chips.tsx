@@ -20,30 +20,17 @@ function Chip({ href, label, children, ton }: { href: string; label: string; chi
 }
 
 const euro = (wert: number) => wert.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-const AMPEL_TEXT = { gruen: "In Ordnung", gelb: "Knapp", rot: "Handlungsbedarf" } as const;
 
-/** Drei Zahlen, jede mit Ampel und Link: Belegung, Personal, Ergebnis. Mehr braucht der Kopf der Seite nicht. */
+/** Das Monatsergebnis (nur mit Finanz-Recht). Belegung und Personal stehen in der Vorausschau darüber. */
 export function StatusChips({ daten }: { daten: SteuerungsDaten }) {
-  const { belegung, personal, finanzen } = daten;
-  const belegungTon = belegung.belegt > belegung.sollplaetze ? "rot" : "neutral";
+  const { finanzen } = daten;
+  if (!finanzen) return null;
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <Chip href="/gruppen" label="Belegung" ton={belegungTon}>
-        {belegung.belegt} / {belegung.sollplaetze} Plätze
-        <span className="ml-2 text-xs font-normal text-muted-foreground">
-          {belegung.belegt > belegung.sollplaetze ? `${belegung.belegt - belegung.sollplaetze} zu viel` : belegung.frei > 0 ? `${belegung.frei} frei` : "voll"}
-        </span>
+      <Chip href="/controlling" label="Ergebnis im Monat" ton={finanzen.ergebnisMonat < 0 ? "gelb" : "neutral"}>
+        {euro(finanzen.ergebnisMonat)}
+        <span className="ml-2 text-xs font-normal text-muted-foreground">Förderung − Personal</span>
       </Chip>
-      <Chip href="/team" label={personal.kennzahl.label} ton={personal.ampel}>
-        {personal.kennzahl.value}
-        <span className="ml-2 text-xs font-normal text-muted-foreground">{AMPEL_TEXT[personal.ampel]}</span>
-      </Chip>
-      {finanzen ? (
-        <Chip href="/controlling" label="Ergebnis im Monat" ton={finanzen.ergebnisMonat < 0 ? "gelb" : "neutral"}>
-          {euro(finanzen.ergebnisMonat)}
-          <span className="ml-2 text-xs font-normal text-muted-foreground">Förderung − Personal</span>
-        </Chip>
-      ) : null}
     </div>
   );
 }
