@@ -1,5 +1,6 @@
 "use server";
 
+import { kitajahrBeginnStandard } from "@/lib/kita-datum";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Json } from "@/types/database.types";
@@ -248,6 +249,7 @@ export async function legeKundenAn(input: NeuerKundeInput): Promise<KundeAnlegen
         name: input.einrichtungName.trim(),
         address_city: input.ort?.trim() || null,
         bundesland_code: input.bundeslandCode,
+        kita_year_start_month: kitajahrBeginnStandard(input.bundeslandCode),
         vollzeit_wochenstunden: input.vollzeitWochenstunden,
       })
       .select("id")

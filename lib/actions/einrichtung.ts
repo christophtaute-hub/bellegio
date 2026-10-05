@@ -1,5 +1,6 @@
 "use server";
 
+import { kitajahrBeginnStandard } from "@/lib/kita-datum";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -263,6 +264,7 @@ export async function legeEinrichtungAn(input: NeueEinrichtungInput): Promise<Ei
     name: input.name.trim(),
     address_city: input.ort?.trim() || null,
     bundesland_code: input.bundeslandCode,
+    kita_year_start_month: kitajahrBeginnStandard(input.bundeslandCode),
     vollzeit_wochenstunden: input.vollzeitWochenstunden,
     kostenstelle: input.kostenstelle?.trim() || null,
     cluster: input.cluster?.trim() || null,

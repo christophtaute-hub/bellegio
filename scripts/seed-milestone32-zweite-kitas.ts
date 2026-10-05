@@ -20,7 +20,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database.types";
-import { addMonthsUtc, parseIsoDate, toIsoDateString, vorgeschlagenerAustritt } from "../lib/kita-datum";
+import { addMonthsUtc, kitajahrBeginnStandard, parseIsoDate, toIsoDateString, vorgeschlagenerAustritt } from "../lib/kita-datum";
 
 type Bundesland = "by" | "bw" | "nrw";
 type Alter = "u3" | "ue3" | "gemischt";
@@ -235,7 +235,7 @@ async function main() {
           address_street: spec.strasse,
           address_zip: spec.plz,
           address_city: spec.ort,
-          kita_year_start_month: 9,
+          kita_year_start_month: kitajahrBeginnStandard(spec.bundesland),
           vollzeit_wochenstunden: 39,
           bundesland_code: spec.bundesland,
           empfohlener_anstellungsschluessel: 10,

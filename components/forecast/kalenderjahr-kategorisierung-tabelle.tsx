@@ -6,9 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
+import { monatsKurzLabel, type KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
 
-const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 function Zahl({ wert }: { wert: number }) {
   return <>{wert === 0 ? <span className="text-muted-foreground/50">–</span> : wert}</>;
@@ -50,9 +49,9 @@ export function KalenderjahrKategorisierungTabelle({
           <TableHeader>
             <TableRow>
               <TableHead className="sticky left-0 z-10 bg-card">Wochenstunden</TableHead>
-              {monate.map((m, i) => (
+              {monate.map((m) => (
                 <TableHead key={m.monat} className="text-right whitespace-nowrap">
-                  {MONATSNAMEN[i]}
+                  {monatsKurzLabel(m.monat)}
                 </TableHead>
               ))}
             </TableRow>
@@ -91,7 +90,7 @@ export function KalenderjahrKategorisierungTabelle({
       ) : null}
       {ausgeblendet > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {ausgeblendet} Bänder ohne Kinder in diesem Jahr sind ausgeblendet.
+          {ausgeblendet} Bänder ohne Kinder im gewählten Zeitraum sind ausgeblendet.
         </p>
       ) : null}
     </div>

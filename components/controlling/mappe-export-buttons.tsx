@@ -26,7 +26,7 @@ export function MappeExportButtons({
   zeigeFinanzen = false,
 }: {
   months: ForecastMonth[];
-  kategorisierung: { jahr: number; monate: KategorisierungsMonat[] };
+  kategorisierung: { label: string; monate: KategorisierungsMonat[] };
   audit: AuditMonat[];
   meta: MappeMeta;
   zeigeFinanzen?: boolean;
@@ -55,7 +55,7 @@ export function MappeExportButtons({
           XLSX.utils.book_append_sheet(
             workbook,
             XLSX.utils.json_to_sheet(buildKategorisierungRows(kategorisierung.monate)),
-            `Kategorisierung ${kategorisierung.jahr}`
+            "Kategorisierung"
           );
           XLSX.utils.book_append_sheet(
             workbook,

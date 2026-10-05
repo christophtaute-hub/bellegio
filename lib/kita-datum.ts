@@ -152,3 +152,26 @@ export function addMonthsUtc(date: Date, months: number): Date {
 export function toIsoDateString(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
+
+/** Beginn des Kita-/Kindergartenjahres je Bundesland (Monat): Bayern und Baden-Württemberg 1. September, Nordrhein-Westfalen
+ * 1. August (§ 2 KiBiz: Kindergartenjahr 1.8.–31.7.). Gilt als Vorgabe bei neuen Einrichtungen; je Einrichtung änderbar. */
+export const KITAJAHR_BEGINN_STANDARD: Record<string, number> = { by: 9, bw: 9, nrw: 8 };
+
+export function kitajahrBeginnStandard(bundeslandCode: string | null | undefined): number {
+  return KITAJAHR_BEGINN_STANDARD[bundeslandCode ?? ""] ?? 9;
+}
+
+/** Jahr, in dem das Kitajahr beginnt, das den Tag `heute` enthält (z. B. 2026 für den 05.10.2026 bei Beginn im September). */
+export function kitajahrStartJahr(heute: Date, kitaYearStartMonth: number): number {
+  return heute.getUTCMonth() + 1 >= kitaYearStartMonth ? heute.getUTCFullYear() : heute.getUTCFullYear() - 1;
+}
+
+/** Erster Tag des Kitajahres, das im Jahr `startJahr` beginnt (ISO-Datum). */
+export function kitajahrBeginnIso(startJahr: number, kitaYearStartMonth: number): string {
+  return `${startJahr}-${String(kitaYearStartMonth).padStart(2, "0")}-01`;
+}
+
+/** „2026/27“ bzw. „2026“, wenn das Kitajahr im Januar beginnt. */
+export function kitajahrLabel(startJahr: number, kitaYearStartMonth: number): string {
+  return kitaYearStartMonth === 1 ? String(startJahr) : `${startJahr}/${String(startJahr + 1).slice(2)}`;
+}

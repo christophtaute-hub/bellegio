@@ -161,20 +161,27 @@ function bandAmStichtagAufloesen(
   return versionAmStichtag(bandVersionenById.get(bandId) ?? [], stichtag);
 }
 
+/** „Mär 26“ — Spaltenüberschrift für einen Monat (ISO-Datum). */
+export function monatsKurzLabel(iso: string): string {
+  const namen = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+  return `${namen[Number(iso.slice(5, 7)) - 1]} ${iso.slice(2, 4)}`;
+}
+
 /**
- * Kalenderjahr-Übersicht Januar bis Dezember: für jeden Monat (Stichtag =
- * 1. des Monats, wie in der Forecast-Tabelle) die Kinder je Wochenstunden-Band
- * inklusive der Kinder mit I-Status. Die Buchungszeit wird für jeden Monat aus
- * der Historie zum jeweiligen Stichtag aufgelöst, nicht aus dem aktuellen Wert.
+ * Kinder je Wochenstunden-Band für jeden Monat des gewählten Zeitraums (Stichtag = 1. des Monats, wie in der Forecast-Tabelle),
+ * inklusive der Kinder mit I-Status. Die Buchungszeit wird für jeden Monat aus der Historie zum jeweiligen Stichtag aufgelöst,
+ * nicht aus dem aktuellen Wert. `monate`: ISO-Daten der Monatsersten, aufsteigend.
  *
- * Der amtliche Erhebungsstichtag der Kinder- und Jugendhilfestatistik ist der
- * 1. März — er steckt als Märzspalte in dieser Übersicht.
+ * Der amtliche Erhebungsstichtag der Kinder- und Jugendhilfestatistik ist der 1. März — er steckt als Märzspalte darin.
  */
-export async function getKalenderjahrKategorisierung(
+export async function getKategorisierung(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
-  jahr: number
+  monate: string[]
 ): Promise<KategorisierungsMonat[]> {
+  if (monate.length === 0) return [];
+  const ersterMonat = monate[0];
+  const letzterMonat = monate[monate.length - 1];
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
     .select("bundesland_code")
@@ -191,8 +198,8 @@ export async function getKalenderjahrKategorisierung(
     .is("archived_at", null)
     .neq("status", "nachruecker")
     .not("eintritt", "is", null)
-    .lte("eintritt", `${jahr}-12-01`)
-    .or(`austritt.is.null,austritt.gt.${jahr}-01-01`);
+    .lte("eintritt", letzterMonat)
+    .or(`austritt.is.null,austritt.gt.${ersterMonat}`);
 
   const kinder = data ?? [];
   const kindIds = kinder.map((k) => k.id);
@@ -230,8 +237,7 @@ export async function getKalenderjahrKategorisierung(
     anhaengen(b.id, { min_hours: b.min_hours, max_hours: b.max_hours, gueltigAb: b.gueltig_ab, gueltigBis: null });
   }
 
-  return Array.from({ length: 12 }, (_, i) => {
-    const monat = `${jahr}-${String(i + 1).padStart(2, "0")}-01`;
+  return monate.map((monat) => {
     const eintraege: JahreskategorisierungEintrag[] = [];
     let nichtZugeordnet = 0;
 

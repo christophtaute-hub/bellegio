@@ -3,10 +3,9 @@
 import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
-import type { KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
+import { monatsKurzLabel, type KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 
-const MONATSNAMEN = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 
 export function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
   const rows: Record<string, string | number>[] = [];
@@ -17,12 +16,12 @@ export function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
     rows.push({
       Wochenstunden: band.label,
       Art: "Kinder",
-      ...Object.fromEntries(MONATSNAMEN.map((name, i) => [name, kinder[i]])),
+      ...Object.fromEntries(monate.map((m, i) => [monatsKurzLabel(m.monat), kinder[i]])),
     });
     rows.push({
       Wochenstunden: band.label,
       Art: "davon I-Status",
-      ...Object.fromEntries(MONATSNAMEN.map((name, i) => [name, iStatus[i]])),
+      ...Object.fromEntries(monate.map((m, i) => [monatsKurzLabel(m.monat), iStatus[i]])),
     });
   });
   return rows;
@@ -151,7 +150,7 @@ export function ExportButtons({
   zeigeFinanzen = false,
 }: {
   months: ForecastMonth[];
-  kategorisierung?: { jahr: number; monate: KategorisierungsMonat[] };
+  kategorisierung?: { label: string; monate: KategorisierungsMonat[] };
   zeigeFinanzen?: boolean;
 }) {
   return (
@@ -168,7 +167,7 @@ export function ExportButtons({
             XLSX.utils.book_append_sheet(
               workbook,
               XLSX.utils.json_to_sheet(buildKategorisierungRows(kategorisierung.monate)),
-              `Kategorisierung ${kategorisierung.jahr}`
+              `Kategorisierung`
             );
           }
           XLSX.writeFile(workbook, "bellegio-controlling.xlsx");
