@@ -5,7 +5,6 @@ import { GRUPPENART_LABEL } from "@/lib/constants";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import { cn } from "cn";
 
-const AMPEL_LABELS = { gruen: "In Ordnung", gelb: "Knapp", rot: "Zu wenig" } as const;
 
 const std = (wert: number) => (Math.round(wert * 10) / 10).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
@@ -74,9 +73,9 @@ export function GruppenAmpel({
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">
               <th className="py-2 pr-3 font-medium">Gruppe</th>
-              <th className="px-3 py-2 font-medium">Belegung</th>
+              <th className="px-3 py-2 font-medium">Kinder</th>
               <th className="px-3 py-2 font-medium">Personal{modell === "bayern" ? " (Richtwert)" : ""}</th>
-              <th className="px-3 py-2 font-medium">Wird kritisch</th>
+              <th className="px-3 py-2 font-medium">Neues Kind aufnehmen?</th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +98,13 @@ export function GruppenAmpel({
                   <td className="px-3 py-2.5">
                     {zuordnung.belastbar ? (
                       <div className="flex flex-col items-start gap-1">
-                        <AmpelBadge ampel={g.personal.ampel} labels={AMPEL_LABELS} />
+                        <AmpelBadge ampel={g.personal.ampel} />
+                        {g.kritisch ? (
+                          <span className={cn("text-xs font-medium", g.kritisch.ampel === "rot" ? "text-destructive" : "text-amber-700 dark:text-amber-400")}>
+                            {g.kritisch.monat <= stichtagMonat ? "Jetzt" : `Ab ${monatKurz(g.kritisch.monat)}`}
+                            {g.kritisch.ampel === "rot" ? " zu wenig Personal" : " knapp"}
+                          </span>
+                        ) : null}
                         <span className="text-xs tabular-nums text-muted-foreground">{personalText(g, modell)}</span>
                       </div>
                     ) : (
@@ -107,15 +112,17 @@ export function GruppenAmpel({
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-xs">
-                    {g.kritisch ? (
-                      <span className={g.kritisch.ampel === "rot" ? "font-medium text-destructive" : "font-medium text-amber-700 dark:text-amber-400"}>
-                        {g.kritisch.monat <= stichtagMonat ? "Jetzt" : `Ab ${monatKurz(g.kritisch.monat)}`}
-                        {" · "}
-                        {g.kritisch.ampel === "rot" ? "zu wenig Personal" : "knapp"}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">nicht absehbar</span>
-                    )}
+                    <span
+                      className={cn(
+                        "font-medium",
+                        g.zusage.art === "ja" && "text-emerald-700 dark:text-emerald-400",
+                        g.zusage.art === "personal" && "text-destructive",
+                        g.zusage.art === "spaeter" && "text-amber-700 dark:text-amber-400",
+                        g.zusage.art === "nein" && "text-muted-foreground"
+                      )}
+                    >
+                      {g.zusage.text}
+                    </span>
                   </td>
                 </tr>
               );

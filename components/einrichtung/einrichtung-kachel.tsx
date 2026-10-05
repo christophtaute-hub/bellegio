@@ -8,7 +8,6 @@ import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const AMPEL_LABELS = { gruen: "In Ordnung", gelb: "Knapp", rot: "Handlungsbedarf" };
 
 async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string; stichtag: string }) {
   const supabase = await createClient();
@@ -37,7 +36,7 @@ async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string
           <span className="text-muted-foreground">{k.personal.label}</span>
           <span className="truncate font-medium tabular-nums">{k.personal.value}</span>
         </div>
-        <AmpelBadge ampel={k.ampel} labels={AMPEL_LABELS} />
+        <AmpelBadge ampel={k.ampel} />
       </div>
     </div>
   );

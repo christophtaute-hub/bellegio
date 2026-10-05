@@ -24,11 +24,6 @@ const BW_BETRIEBSFORM_LABEL: Record<string, string> = {
   kinderkrippe: "Kinderkrippe",
 };
 
-const AMPEL_LABELS = {
-  gruen: "Personalschlüssel erfüllt",
-  gelb: "Knapp am Limit",
-  rot: "Personalschlüssel nicht erfüllt",
-};
 
 function formatNumber(value: number, decimals = 2): string {
   return value.toLocaleString("de-DE", {
@@ -345,7 +340,7 @@ export function SzenarioRechnerBW({
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg text-primary">Ergebnis</h2>
-          <AmpelBadge ampel={ergebnis.ampel} labels={AMPEL_LABELS} />
+          <AmpelBadge ampel={ergebnis.ampel} />
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatTile

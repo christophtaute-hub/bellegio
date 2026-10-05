@@ -4,20 +4,22 @@ import { formatDate } from "@/lib/kita-datum";
 import { loeseZeitraumAuf, zeitraumEnde, type ZeitraumParameter } from "@/lib/controlling/zeitraum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
-import { ForecastTable } from "@/components/forecast/forecast-table";
+import { ForecastKompakt, ForecastTable } from "@/components/forecast/forecast-table";
 import { RechtsstandHinweise } from "@/components/forecast/rechtsstand-hinweise";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import { ExportButtons } from "@/components/forecast/export-buttons";
 import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
 import Link from "next/link";
+import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function ControllingPage({
   searchParams,
 }: {
-  searchParams: Promise<ZeitraumParameter>;
+  searchParams: Promise<ZeitraumParameter & { ansicht?: string }>;
 }) {
   const parameter = await searchParams;
+  const alleKennzahlen = parameter.ansicht === "alle";
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
@@ -93,14 +95,34 @@ export default async function ControllingPage({
       <RechtsstandHinweise bundeslandCode={einrichtung?.bundesland_code ?? "by"} monate={months.map((m) => m.month)} zeigeFinanzen={zeigeFinanzen} />
 
       {months.length > 0 ? (
-        <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-end gap-1 text-sm print:hidden">
+            {[
+              { wert: "kompakt", label: "Kurz" },
+              { wert: "alle", label: "Alle Kennzahlen" },
+            ].map((a) => (
+              <Link
+                key={a.wert}
+                href={`/controlling?${new URLSearchParams({ ...(Object.fromEntries(Object.entries(parameter).filter(([, v]) => typeof v === "string")) as Record<string, string>), ansicht: a.wert })}`}
+                aria-current={(alleKennzahlen ? "alle" : "kompakt") === a.wert ? "true" : undefined}
+                className={cn(
+                  "rounded-full px-3 py-1 transition-colors",
+                  (alleKennzahlen ? "alle" : "kompakt") === a.wert ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {a.label}
+              </Link>
+            ))}
+          </div>
+          {alleKennzahlen ? <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} /> : <ForecastKompakt months={months} zeigeFinanzen={zeigeFinanzen} />}
+        </div>
       ) : (
         <p className="text-sm text-muted-foreground">
           Keine Daten verfügbar.
         </p>
       )}
 
-      {months.length > 0 ? (
+      {alleKennzahlen && months.length > 0 ? (
         <div className="flex flex-col gap-3">
           <h2 className="font-heading text-lg text-primary">
             Zeitkategorie je Monat

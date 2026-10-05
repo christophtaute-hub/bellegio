@@ -13,6 +13,7 @@ import { toIsoDateString } from "@/lib/kita-datum";
 import { ersterKritischerMonat, type GruppeStatus } from "@/lib/steuerung/gruppen-status";
 import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { baueHandlungen, type GruppenVerlauf, type Handlung } from "@/lib/steuerung/handlungen";
+import { bewerteZusage, type Zusage } from "@/lib/steuerung/zusage";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 
 /** Wie weit das Dashboard mindestens vorausschaut (Aufgaben, Gruppen-Ampel, Ausblick). */
@@ -25,6 +26,8 @@ export const VORAUSSCHAU_STANDARD = 6;
 export type GruppenZeile = GruppeStatus & {
   /** Erster Monat, in dem die Gruppe nicht mehr „in Ordnung“ ist (nur bei belastbaren Gruppenwerten). */
   kritisch: { monat: string; ampel: Ampel } | null;
+  /** Kann ich einem Kind zusagen? */
+  zusage: Zusage;
 };
 
 export type SteuerungsDaten = {
@@ -125,10 +128,12 @@ export async function ladeSteuerung(
       };
     }),
   }));
+  const einrichtungAmpel: Record<string, Ampel> = Object.fromEntries(ausblick.monate.map((m) => [m.monat, m.ampel]));
   const gruppen: GruppenZeile[] = erster.gruppenStatus.gruppen.map((g) => {
     const verlauf = gruppenVerlauf.find((v) => v.gruppeId === g.gruppeId);
     return {
       ...g,
+      zusage: verlauf ? bewerteZusage(verlauf, einrichtungAmpel, start) : { art: "nein" as const, text: "–", ab: null },
       kritisch: erster.gruppenStatus.belastbar && verlauf ? ersterKritischerMonat(verlauf.monate.map((m) => ({ monat: m.monat, ampel: m.ampel }))) : null,
     };
   });

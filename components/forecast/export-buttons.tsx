@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
 import { monatsKurzLabel, type KategorisierungsMonat } from "@/lib/controlling/jahreskategorisierung";
 import { GRUPPENART_LABEL } from "@/lib/constants";
+import { PERSONAL_STATUS } from "@/lib/ui/status";
 
 
 export function buildKategorisierungRows(monate: KategorisierungsMonat[]) {
@@ -106,7 +107,7 @@ function personalRows(months: ForecastMonth[]): { label: string; values: (string
   ];
 }
 
-const AMPEL_TEXT = { gruen: "Erfüllt", gelb: "Knapp", rot: "Nicht erfüllt" } as const;
+const AMPEL_TEXT = PERSONAL_STATUS;
 
 function finanzRows(months: ForecastMonth[]): { label: string; values: (string | number)[] }[] {
   const runde = (wert: number, stellen: number) => Number(wert.toFixed(stellen));

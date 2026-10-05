@@ -3,7 +3,6 @@ import { AmpelBadge } from "@/components/team/ampel-badge";
 import type { GruppeStatus } from "@/lib/steuerung/gruppen-status";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 
-const AMPEL_LABELS = { gruen: "In Ordnung", gelb: "Knapp", rot: "Zu wenig" } as const;
 
 const std = (wert: number) => (Math.round(wert * 10) / 10).toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
@@ -34,7 +33,7 @@ export function GruppePersonalKarte({
     <section className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-heading text-lg text-primary">Personal dieser Gruppe</h2>
-        {belastbar ? <AmpelBadge ampel={p.ampel} labels={AMPEL_LABELS} /> : null}
+        {belastbar ? <AmpelBadge ampel={p.ampel} /> : null}
       </div>
 
       {belastbar ? (

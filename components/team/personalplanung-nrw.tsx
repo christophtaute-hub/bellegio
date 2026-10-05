@@ -11,11 +11,6 @@ function formatNumber(value: number, decimals = 1): string {
   });
 }
 
-const AMPEL_LABELS = {
-  gruen: "Personalstunden erfüllt",
-  gelb: "Teilweise erfüllt",
-  rot: "Personalstunden nicht erfüllt",
-};
 
 export function PersonalplanungNRW({
   daten,
@@ -32,10 +27,10 @@ export function PersonalplanungNRW({
         <h2 className="font-heading text-lg text-primary">
           Personalstunden (Nordrhein-Westfalen)
         </h2>
-        <AmpelBadge ampel={daten.ampel} labels={AMPEL_LABELS} />
+        <AmpelBadge ampel={daten.ampel} />
       </div>
 
-      <StichtagPicker basePath={basePath} stichtag={stichtag} />
+      <StichtagPicker basePath={basePath} stichtag={stichtag} kompakt />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile

@@ -1,11 +1,8 @@
 import { cn } from "cn";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
+import { PERSONAL_STATUS } from "@/lib/ui/status";
 
-const DEFAULT_LABELS: Record<Ampel, string> = {
-  gruen: "Anstellungsschlüssel erfüllt",
-  gelb: "Knapp am Limit",
-  rot: "Anstellungsschlüssel nicht erfüllt",
-};
+const DEFAULT_LABELS: Record<Ampel, string> = PERSONAL_STATUS;
 
 const AMPEL_CLASSNAMES: Record<Ampel, string> = {
   gruen: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400",
@@ -18,7 +15,7 @@ export function AmpelBadge({
   labels,
 }: {
   ampel: Ampel;
-  /** Bundesland-spezifischer Text statt der bayerischen Standardbeschriftung. */
+  /** Eigener Text statt der einheitlichen Statuswörter (z. B. für Passung, nicht für Personal). */
   labels?: Partial<Record<Ampel, string>>;
 }) {
   const label = labels?.[ampel] ?? DEFAULT_LABELS[ampel];

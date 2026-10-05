@@ -13,6 +13,8 @@ import { AmpelBadge } from "@/components/team/ampel-badge";
 import { parseIsoDate } from "@/lib/kita-datum";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import type { ForecastMonth } from "@/lib/forecast/monthly-forecast";
+import { personalKennzahl } from "@/lib/dashboard/personal-kennzahl";
+import { belegungStatus } from "@/lib/ui/status";
 
 function formatMonthLabel(month: string): string {
   return parseIsoDate(month).toLocaleDateString("de-DE", {
@@ -56,7 +58,6 @@ function nrwDaten(m: ForecastMonth) {
   return m.personal.daten;
 }
 
-const AMPEL_LABELS = { gruen: "Erfüllt", gelb: "Knapp", rot: "Nicht erfüllt" };
 
 function LabelCell({ children, stark = false }: { children: React.ReactNode; stark?: boolean }) {
   return (
@@ -114,7 +115,7 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
           <LabelCell>Personalschlüssel (KiTaVO)</LabelCell>
           {months.map((m) => (
             <TableCell key={m.month} className="text-right">
-              <AmpelBadge ampel={bwDaten(m).ampel} labels={AMPEL_LABELS} />
+              <AmpelBadge ampel={bwDaten(m).ampel} />
             </TableCell>
           ))}
         </TableRow>
@@ -171,7 +172,7 @@ function PersonalZeilen({ months }: { months: Zeitreihe }) {
           <LabelCell>Personalstunden (KiBiz)</LabelCell>
           {months.map((m) => (
             <TableCell key={m.month} className="text-right">
-              <AmpelBadge ampel={nrwDaten(m).ampel} labels={AMPEL_LABELS} />
+              <AmpelBadge ampel={nrwDaten(m).ampel} />
             </TableCell>
           ))}
         </TableRow>
@@ -489,6 +490,67 @@ export function ForecastTable({ months, zeigeFinanzen = false }: { months: Forec
           </TableRow>
 
           <PersonalZeilen months={months} />
+          {zeigeFinanzen ? <FinanzenZeilen months={months} /> : null}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/** Die Kurzfassung für den Alltag: Kinder, Plätze, Personal (Ampel + Kennzahl) und — mit Recht — das Ergebnis. Alle weiteren
+ * Zeilen (Gruppenarten, gewichtete Stunden, Fachkraft-Aufteilung …) stehen in der vollständigen Tabelle. */
+export function ForecastKompakt({ months, zeigeFinanzen = false }: { months: ForecastMonth[]; zeigeFinanzen?: boolean }) {
+  const kennzahl = months[0] ? personalKennzahl(months[0].personal).label : "Personal";
+  return (
+    <div className="overflow-x-auto rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="sticky left-0 z-10 bg-card">Monat</TableHead>
+            {months.map((m) => (
+              <TableHead key={m.month} className="text-right whitespace-nowrap">
+                {formatMonthLabel(m.month)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <LabelCell stark>Kinder</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right tabular-nums font-medium">
+                {m.kpis.kinderGesamt}
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <LabelCell>Plätze</LabelCell>
+            {months.map((m) => {
+              const status = belegungStatus(m.kpis.kinderGesamt, m.belegung.plaetzeNachBetriebserlaubnis);
+              return (
+                <TableCell key={m.month} className={cn("text-right tabular-nums", status.ton === "zuviel" && "font-medium text-destructive")}>
+                  {m.belegung.plaetzeNachBetriebserlaubnis}
+                  <span className="block text-[11px] font-normal text-muted-foreground">{status.wort}</span>
+                </TableCell>
+              );
+            })}
+          </TableRow>
+          <TableRow>
+            <LabelCell stark>Personal</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right">
+                <AmpelBadge ampel={m.personal.daten.ampel} />
+              </TableCell>
+            ))}
+          </TableRow>
+          <TableRow>
+            <LabelCell>{kennzahl}</LabelCell>
+            {months.map((m) => (
+              <TableCell key={m.month} className="text-right tabular-nums text-muted-foreground">
+                {personalKennzahl(m.personal).value}
+              </TableCell>
+            ))}
+          </TableRow>
           {zeigeFinanzen ? <FinanzenZeilen months={months} /> : null}
         </TableBody>
       </Table>

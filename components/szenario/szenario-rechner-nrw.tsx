@@ -14,11 +14,6 @@ import {
 import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
-const AMPEL_LABELS = {
-  gruen: "Personalstunden erfüllt",
-  gelb: "Teilweise erfüllt",
-  rot: "Personalstunden nicht erfüllt",
-};
 
 function formatNumber(value: number, decimals = 1): string {
   return value.toLocaleString("de-DE", {
@@ -299,7 +294,7 @@ export function SzenarioRechnerNRW({
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg text-primary">Ergebnis</h2>
-          <AmpelBadge ampel={ergebnis.ampel} labels={AMPEL_LABELS} />
+          <AmpelBadge ampel={ergebnis.ampel} />
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatTile

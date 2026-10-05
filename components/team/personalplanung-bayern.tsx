@@ -30,7 +30,7 @@ export function PersonalplanungBayern({
         <AmpelBadge ampel={personal.ampel} />
       </div>
 
-      <StichtagPicker basePath={basePath} stichtag={stichtag} />
+      <StichtagPicker basePath={basePath} stichtag={stichtag} kompakt />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile
