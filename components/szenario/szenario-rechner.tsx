@@ -43,6 +43,8 @@ export function SzenarioRechner({
   vollzeitWochenstunden,
   staffingRules,
   finanzenHeute,
+  gehaltFelder = true,
+  standardGehalt = 0,
   lohnnebenkostenProzent,
   jahressonderzahlungProzent,
 }: {
@@ -55,6 +57,9 @@ export function SzenarioRechner({
   vollzeitWochenstunden: number;
   staffingRules: StaffingRules;
   finanzenHeute?: Ergebnis;
+  /** false = Nutzer ohne das Recht "Einzelgehälter": keine Gehaltsfelder, Rechnung mit Durchschnitt. */
+  gehaltFelder?: boolean;
+  standardGehalt?: number;
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
 }) {
@@ -229,7 +234,7 @@ export function SzenarioRechner({
                 }
               />
               <span className="text-sm text-muted-foreground">Std./Woche</span>
-              {finanzenHeute ? (
+              {finanzenHeute && gehaltFelder ? (
                 <>
                   <Input
                     type="number"
@@ -271,7 +276,7 @@ export function SzenarioRechner({
           onClick={() =>
             setPersonal((prev) => [
               ...prev,
-              { id: nextId++, role_category: "fk", wochenstunden: 30, gehaltVollzeit: 0 },
+              { id: nextId++, role_category: "fk", wochenstunden: 30, gehaltVollzeit: standardGehalt },
             ])
           }
         >
@@ -332,6 +337,7 @@ export function SzenarioRechner({
       {finanzenHeute ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
+          gehaelterAusgeblendet={!gehaltFelder}
           personal={personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
           lohnnebenkostenProzent={lohnnebenkostenProzent}

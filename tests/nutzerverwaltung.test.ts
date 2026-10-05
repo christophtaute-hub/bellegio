@@ -46,7 +46,7 @@ describe("Neuen Nutzer prüfen", () => {
     passwort: "Sonnenblume-2026",
     rolle: "mitarbeiter",
     einrichtungIds: ["e1"],
-    rechte: { belegung: "bearbeiten", personal: "kein_zugriff", controlling: "kein_zugriff", szenario: "kein_zugriff", finanzen: "kein_zugriff" },
+    rechte: { belegung: "bearbeiten", personal: "kein_zugriff", controlling: "kein_zugriff", szenario: "kein_zugriff", finanzen: "kein_zugriff", gehaelter: "kein_zugriff" },
   };
 
   it("akzeptiert vollständige Angaben mit Passwort und mit Einladung", () => {

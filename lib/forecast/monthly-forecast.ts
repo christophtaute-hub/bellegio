@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import {
   getKinderPresenceAtDate,
   buildKpis,
@@ -83,8 +84,22 @@ export type FinanzenBasis = {
   teamVerguetungByTeamId: Map<string, { entgeltgruppe: string | null; stufe: number | null; monatsgehaltManuell: number | null }>;
 };
 
+async function ladeVerguetungFuerSummen(supabase: SupabaseClient<Database>, einrichtungId: string) {
+  let client: SupabaseClient<Database> = supabase;
+  try {
+    client = createServiceRoleClient();
+  } catch {
+    // Ohne Service-Key (lokale Entwicklung) bleibt der Nutzer-Client: Träger-Admins sehen dann trotzdem alles.
+  }
+  return client.from("team_verguetung").select("team_id, entgeltgruppe, stufe, monatsgehalt_manuell").eq("einrichtung_id", einrichtungId);
+}
+
 /** Exportiert, damit der Szenario-Rechner (Milestone 30, Phase H) dieselbe Finanzen-Basis für "heute"
- * laden kann, statt die Fördererlöse-/Personalkosten-Verdrahtung ein zweites Mal nachzubauen. */
+ * laden kann, statt die Fördererlöse-/Personalkosten-Verdrahtung ein zweites Mal nachzubauen.
+ *
+ * Nur aufrufen, nachdem der Aufrufer das Recht "finanzen" (Summen) geprüft hat. Die Einzelvergütungen werden bewusst
+ * mit dem Service-Client gelesen: wer nur die Finanzübersicht sehen darf (ohne Recht "gehaelter"), würde sonst durch die
+ * RLS von team_verguetung eine Summe von 0 € sehen. Von hier verlässt nur das Aggregat den Server, nie die Einzelwerte. */
 export async function ladeFinanzenBasis(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
@@ -103,7 +118,7 @@ export async function ladeFinanzenBasis(
     getBayernBasiswertVersionen(supabase),
     getNRWKindpauschalenVersionen(supabase),
     getTVoedEntgeltVersionen(supabase),
-    supabase.from("team_verguetung").select("team_id, entgeltgruppe, stufe, monatsgehalt_manuell").eq("einrichtung_id", einrichtungId),
+    ladeVerguetungFuerSummen(supabase, einrichtungId),
   ]);
 
   const teamVerguetungByTeamId = new Map(

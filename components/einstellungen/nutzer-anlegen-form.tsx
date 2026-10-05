@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ZugriffSchalter } from "@/components/einstellungen/zugriff-schalter";
 import { legeNutzerAn } from "@/lib/actions/berechtigungen";
 import { meldeErfolg, meldeFehler } from "@/lib/toast";
 import {
   BEREICHE,
   ROLLEN,
-  ZUGRIFFE,
   erzeugePasswort,
   gruppiereNachCluster,
   type Bereich,
@@ -21,13 +21,7 @@ import {
 const SELECT_CLASS =
   "h-8 rounded-lg border border-input bg-transparent px-2 text-sm dark:bg-input/30";
 
-const KEINE_RECHTE: Record<Bereich, Zugriff> = {
-  belegung: "kein_zugriff",
-  personal: "kein_zugriff",
-  controlling: "kein_zugriff",
-  szenario: "kein_zugriff",
-  finanzen: "kein_zugriff",
-};
+const KEINE_RECHTE = Object.fromEntries(BEREICHE.map((b) => [b.key, "kein_zugriff"])) as Record<Bereich, Zugriff>;
 
 /** Legt einen Nutzer an: mit direkt vergebenem Passwort (sofort nutzbar) oder per Einladungs-Mail, dazu Rolle und
  * Rechte je Bereich für die gewählten Einrichtungen. Feinjustierung je Einrichtung bleibt in der Liste darunter.
@@ -210,22 +204,16 @@ export function NutzerAnlegenForm({
               })}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
             {BEREICHE.map((b) => (
-              <div key={b.key} className="flex flex-col gap-1.5">
-                <Label htmlFor={`recht-${b.key}`}>{b.label}</Label>
-                <select
-                  id={`recht-${b.key}`}
-                  className={SELECT_CLASS}
-                  value={rechte[b.key]}
-                  onChange={(e) => setRechte((alt) => ({ ...alt, [b.key]: e.target.value as Zugriff }))}
-                >
-                  {ZUGRIFFE.map((z) => (
-                    <option key={z.value} value={z.value}>
-                      {z.label}
-                    </option>
-                  ))}
-                </select>
+              <div key={b.key} className="flex flex-col gap-1">
+                <span className="text-sm font-medium">{b.label}</span>
+                <span className="text-xs text-muted-foreground">{b.hinweis}</span>
+                <ZugriffSchalter
+                  wert={rechte[b.key]}
+                  label={b.label}
+                  onChange={(neu) => setRechte((alt) => ({ ...alt, [b.key]: neu }))}
+                />
               </div>
             ))}
           </div>

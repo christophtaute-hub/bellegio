@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
-import { canUseSzenarioRechner, canViewFinanzen } from "@/lib/server/current-user-role";
+import { canUseSzenarioRechner, canViewFinanzen, canViewGehaelter } from "@/lib/server/current-user-role";
 import { getKinderPresenceAtDate, type PresenceRow } from "@/lib/dashboard/presence";
 import { getTeamPresenceForMonth, getStaffingRules, type TeamPresenceRow } from "@/lib/team/anstellungsschluessel";
 import { getBWPersonalschluesselTabelle } from "@/lib/team/personalschluessel-bw";
@@ -18,6 +18,9 @@ import { SzenarioRechnerNRW } from "@/components/szenario/szenario-rechner-nrw";
 type FinanzenFuerSzenario = {
   finanzenHeute: Ergebnis;
   gehaltVollzeitByTeamId: Map<string, number>;
+  /** Ohne das Recht "Einzelgehälter": keine Gehaltsfelder je Zeile, der Rechner rechnet mit dem Durchschnitt. */
+  gehaltFelder: boolean;
+  standardGehalt: number;
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
 };
@@ -33,18 +36,39 @@ async function ladeFinanzenFuerSzenario(
   nrwGruppenById: Map<string, { nrwGruppenform: string | null; nrwBuchungszeitStunden: number | null }>,
   today: string,
   kinderRows: PresenceRow[],
-  teamRows: TeamPresenceRow[]
+  teamRows: TeamPresenceRow[],
+  zeigeGehaelter: boolean
 ): Promise<FinanzenFuerSzenario> {
   const basis = await ladeFinanzenBasis(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, nrwGruppenById);
   const tvoedTabelle = resolveTVoedTabelleAmStichtag(basis.tvoedVersionenByGroup, today);
+  const gehaltVollzeitByTeamId = resolveGehaltVollzeitProTeamId(
+    teamRows.map((t) => t.team_id),
+    basis.teamVerguetungByTeamId,
+    tvoedTabelle,
+    vollzeitWochenstunden
+  );
+  // Ohne Einzelgehälter-Recht verlässt nur der stundengewichtete Durchschnitt den Server, nie ein Einzelwert.
+  let standardGehalt = 0;
+  let gehaltByTeamId = gehaltVollzeitByTeamId;
+  if (!zeigeGehaelter) {
+    let summe = 0;
+    let stunden = 0;
+    for (const t of teamRows) {
+      const gehalt = gehaltVollzeitByTeamId.get(t.team_id) ?? 0;
+      const std = t.wochenstunden ?? 0;
+      if (gehalt > 0 && std > 0) {
+        summe += gehalt * std;
+        stunden += std;
+      }
+    }
+    standardGehalt = stunden > 0 ? Math.round(summe / stunden) : 0;
+    gehaltByTeamId = new Map(teamRows.map((t) => [t.team_id, standardGehalt]));
+  }
   return {
     finanzenHeute: resolveFinanzenMonat(basis, today, kinderRows, teamRows),
-    gehaltVollzeitByTeamId: resolveGehaltVollzeitProTeamId(
-      teamRows.map((t) => t.team_id),
-      basis.teamVerguetungByTeamId,
-      tvoedTabelle,
-      vollzeitWochenstunden
-    ),
+    gehaltVollzeitByTeamId: gehaltByTeamId,
+    gehaltFelder: zeigeGehaelter,
+    standardGehalt,
     lohnnebenkostenProzent: basis.lohnnebenkostenProzent,
     jahressonderzahlungProzent: basis.jahressonderzahlungProzent,
   };
@@ -87,6 +111,7 @@ export default async function SzenarioPage() {
     ? await getTeamPresenceForMonth(supabase, einrichtungId, today)
     : [];
   const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
+  const zeigeGehaelter = einrichtungId ? await canViewGehaelter(supabase, einrichtungId) : false;
 
   let inhalt: React.ReactNode;
 
@@ -112,7 +137,7 @@ export default async function SzenarioPage() {
     // Förderbetrag (oder 0, falls keiner gesetzt ist), kinderRows bleibt deshalb ungenutzt.
     const finanzenBw =
       zeigeFinanzen && einrichtungId
-        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, [], teamRows)
+        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, [], teamRows, zeigeGehaelter)
         : null;
     const initialPersonal = teamRows.map((t) => ({
       wochenstunden: t.wochenstunden ?? 0,
@@ -126,6 +151,8 @@ export default async function SzenarioPage() {
         initialPersonal={initialPersonal}
         vollzeitWochenstunden={vollzeitWochenstunden}
         finanzenHeute={finanzenBw?.finanzenHeute}
+        gehaltFelder={finanzenBw?.gehaltFelder}
+        standardGehalt={finanzenBw?.standardGehalt}
         lohnnebenkostenProzent={finanzenBw?.lohnnebenkostenProzent ?? 0}
         jahressonderzahlungProzent={finanzenBw?.jahressonderzahlungProzent ?? 0}
       />
@@ -164,7 +191,8 @@ export default async function SzenarioPage() {
         nrwGruppenById,
         today,
         kinderRows,
-        teamRows
+        teamRows,
+        zeigeGehaelter
       );
     }
 
@@ -183,6 +211,8 @@ export default async function SzenarioPage() {
         initialPersonal={initialPersonal}
         vollzeitWochenstunden={vollzeitWochenstunden}
         finanzenHeute={finanzenNrw?.finanzenHeute}
+        gehaltFelder={finanzenNrw?.gehaltFelder}
+        standardGehalt={finanzenNrw?.standardGehalt}
         lohnnebenkostenProzent={finanzenNrw?.lohnnebenkostenProzent ?? 0}
         jahressonderzahlungProzent={finanzenNrw?.jahressonderzahlungProzent ?? 0}
       />
@@ -249,7 +279,7 @@ export default async function SzenarioPage() {
 
     const finanzenBayern =
       zeigeFinanzen && einrichtungId
-        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, kinderRows, teamRows)
+        ? await ladeFinanzenFuerSzenario(supabase, einrichtungId, bundeslandCode, vollzeitWochenstunden, new Map(), today, kinderRows, teamRows, zeigeGehaelter)
         : null;
 
     const initialPersonal = teamRows.map((t) => ({
@@ -269,6 +299,8 @@ export default async function SzenarioPage() {
         vollzeitWochenstunden={vollzeitWochenstunden}
         staffingRules={staffingRules}
         finanzenHeute={finanzenBayern?.finanzenHeute}
+        gehaltFelder={finanzenBayern?.gehaltFelder}
+        standardGehalt={finanzenBayern?.standardGehalt}
         lohnnebenkostenProzent={finanzenBayern?.lohnnebenkostenProzent ?? 0}
         jahressonderzahlungProzent={finanzenBayern?.jahressonderzahlungProzent ?? 0}
       />

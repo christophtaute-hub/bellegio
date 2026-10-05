@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { getZugriff, type Bereich, type Zugriff } from "@/lib/server/current-user-role";
+import { getZugriff } from "@/lib/server/current-user-role";
+import { BEREICH_KEYS, type Bereich, type Zugriff } from "@/lib/nutzer/bereiche";
 import { RechteMatrix } from "@/components/einstellungen/rechte-matrix";
 import { NutzerAnlegenForm } from "@/components/einstellungen/nutzer-anlegen-form";
-
-const ALLE_BEREICHE: Bereich[] = ["belegung", "personal", "controlling", "szenario", "finanzen"];
 
 /** Eigener Bereich "Nutzer & Rechte", unabhängig vom Menüpunkt "Einrichtung" (/einstellungen) —
  * dort geht es nur noch um Einrichtungs-/Trägerstammdaten. */
@@ -68,7 +67,7 @@ export default async function NutzerUndRechtePage() {
   if (!istTraegerAdmin) {
     for (const e of sichtbareEinrichtungen) {
       eigeneZugriffe[e.id] = {} as Record<Bereich, Zugriff>;
-      for (const bereich of ALLE_BEREICHE) {
+      for (const bereich of BEREICH_KEYS) {
         eigeneZugriffe[e.id][bereich] = await getZugriff(supabase, e.id, bereich);
       }
     }
@@ -97,9 +96,9 @@ export default async function NutzerUndRechtePage() {
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Nutzer &amp; Rechte</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Wer sieht welche Einrichtung, und wer darf in welchem Bereich bearbeiten? Träger-Admin und
-          Einrichtungsleitung haben immer vollen Zugriff. Wer selbst Rechte vergeben darf, kann anderen nie mehr
-          geben, als er selbst hat.
+          Wer sieht welche Einrichtung, und wer darf in welchem Bereich bearbeiten? Träger-Admins haben
+          immer vollen Zugriff, die Einrichtungsleitung standardmäßig alles außer Finanzübersicht und Einzelgehältern. Wer selbst Rechte
+          vergeben darf, kann anderen nie mehr geben, als er selbst hat.
         </p>
       </div>
 

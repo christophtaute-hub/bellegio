@@ -59,6 +59,8 @@ export function SzenarioRechnerBW({
   initialPersonal,
   vollzeitWochenstunden,
   finanzenHeute,
+  gehaltFelder = true,
+  standardGehalt = 0,
   lohnnebenkostenProzent,
   jahressonderzahlungProzent,
 }: {
@@ -73,6 +75,9 @@ export function SzenarioRechnerBW({
   initialPersonal: { wochenstunden: number; gehaltVollzeit: number }[];
   vollzeitWochenstunden: number;
   finanzenHeute?: Ergebnis;
+  /** false = Nutzer ohne das Recht "Einzelgehälter": keine Gehaltsfelder, Rechnung mit Durchschnitt. */
+  gehaltFelder?: boolean;
+  standardGehalt?: number;
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
 }) {
@@ -290,7 +295,7 @@ export function SzenarioRechnerBW({
                 }
               />
               <span className="text-sm text-muted-foreground">Std./Woche</span>
-              {finanzenHeute ? (
+              {finanzenHeute && gehaltFelder ? (
                 <>
                   <Input
                     type="number"
@@ -330,7 +335,7 @@ export function SzenarioRechnerBW({
           size="sm"
           className="self-start"
           onClick={() =>
-            setPersonal((prev) => [...prev, { id: nextId++, wochenstunden: 30, gehaltVollzeit: 0 }])
+            setPersonal((prev) => [...prev, { id: nextId++, wochenstunden: 30, gehaltVollzeit: standardGehalt }])
           }
         >
           Personal hinzufügen
@@ -365,6 +370,7 @@ export function SzenarioRechnerBW({
       {finanzenHeute ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
+          gehaelterAusgeblendet={!gehaltFelder}
           personal={personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
           lohnnebenkostenProzent={lohnnebenkostenProzent}

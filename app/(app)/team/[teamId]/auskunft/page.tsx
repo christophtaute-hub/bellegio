@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { canWritePersonal, canViewFinanzen } from "@/lib/server/current-user-role";
+import { canWritePersonal, canViewGehaelter } from "@/lib/server/current-user-role";
 import { AuskunftDokument, type AuskunftEintrag } from "@/components/datenschutz/auskunft-dokument";
 import { berechneAenderungen, TEAM_FELDER } from "@/lib/datenschutz/auskunft";
 import { AUSFALLZEIT_ART_LABEL, TEAM_ROLE_CATEGORY_LABEL, TEAM_STATUS_LABEL } from "@/lib/constants";
@@ -17,7 +17,7 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
   const { data: person } = await supabase.from("team").select("*").eq("id", teamId).single();
   if (!person || person.einrichtung_id !== einrichtungId) notFound();
 
-  const zeigeFinanzen = await canViewFinanzen(supabase, einrichtungId);
+  const zeigeGehaelter = await canViewGehaelter(supabase, einrichtungId);
 
   const [{ data: einrichtung }, { data: gruppen }, { data: ausfall }, { data: auditLog }, { data: verguetung }] = await Promise.all([
     supabase
@@ -32,7 +32,7 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
       .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
       .eq("team_id", teamId)
       .order("changed_at", { ascending: true }),
-    zeigeFinanzen
+    zeigeGehaelter
       ? supabase.from("team_verguetung").select("entgeltgruppe, stufe, monatsgehalt_manuell").eq("team_id", teamId).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
@@ -75,7 +75,7 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
             (a) => `${AUSFALLZEIT_ART_LABEL[a.art] ?? a.art}: ${formatDate(a.von)} – ${a.bis ? formatDate(a.bis) : "offen"}${a.notizen ? ` (${a.notizen})` : ""}`
           ),
         },
-        zeigeFinanzen
+        zeigeGehaelter
           ? {
               titel: "Vergütung",
               zeilen: verguetung
@@ -88,7 +88,7 @@ export default async function TeamAuskunftPage({ params }: { params: Promise<{ t
             }
           : {
               titel: "Vergütung",
-              zeilen: ["Für diese Auskunft ohne Finanzen-Zugriff erstellt — Vergütungsdaten sind hier nicht enthalten und müssen von einer Person mit Finanzen-Zugriff ergänzt werden."],
+              zeilen: ["Für diese Auskunft ohne das Recht „Einzelgehälter“ erstellt — Vergütungsdaten sind hier nicht enthalten und müssen von einer Person mit diesem Recht ergänzt werden."],
             },
       ]}
       verlauf={verlauf}

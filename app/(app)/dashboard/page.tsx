@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { canViewFinanzen } from "@/lib/server/current-user-role";
+import { canViewFinanzen, canViewGehaelter } from "@/lib/server/current-user-role";
 import { computeVorname } from "@/lib/server/current-user-name";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { ladeSteuerung } from "@/lib/steuerung/lade-steuerung";
@@ -30,7 +30,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
 
   const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
-  const daten = einrichtungId ? await ladeSteuerung(supabase, einrichtungId, stichtag, { zeigeFinanzen }) : null;
+  const zeigeGehaelter = einrichtungId ? await canViewGehaelter(supabase, einrichtungId) : false;
+  const daten = einrichtungId ? await ladeSteuerung(supabase, einrichtungId, stichtag, { zeigeFinanzen, zeigeGehaelter }) : null;
 
   return (
     <div className="flex flex-col gap-6">

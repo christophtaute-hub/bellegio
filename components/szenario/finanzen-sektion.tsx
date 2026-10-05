@@ -19,12 +19,14 @@ function formatEuro(value: number): string {
  * Gehalt-Felds × Stunden-Delta. */
 export function FinanzenSektion({
   finanzenHeute,
+  gehaelterAusgeblendet = false,
   personal,
   vollzeitWochenstunden,
   lohnnebenkostenProzent,
   jahressonderzahlungProzent,
 }: {
   finanzenHeute: Ergebnis;
+  gehaelterAusgeblendet?: boolean;
   personal: SzenarioPersonalZeile[];
   vollzeitWochenstunden: number;
   lohnnebenkostenProzent: number;
@@ -43,9 +45,9 @@ export function FinanzenSektion({
       <h2 className="font-heading text-lg text-primary">Finanzen</h2>
       <p className="text-xs text-muted-foreground">
         Fördererlöse bleiben auf dem heutigen realen Wert fixiert (in diesem Rechner nicht mitsimulierbar).
-        Personalkosten sind die echte Summe aus den Gehalt-Feldern beim Personal oben — bei bestehenden
-        Mitarbeitenden mit ihrem echten Vollzeit-Gehalt vorbefüllt, bei neu hinzugefügten Zeilen frei
-        editierbar, inklusive Lohnnebenkosten und Jahressonderzahlung.
+        {gehaelterAusgeblendet
+          ? "Personalkosten rechnen mit den durchschnittlichen Kosten je Wochenstunde deines Teams (Einzelgehälter sind für dich nicht sichtbar), inklusive Lohnnebenkosten und Jahressonderzahlung."
+          : "Personalkosten sind die echte Summe aus den Gehalt-Feldern beim Personal oben — bei bestehenden Mitarbeitenden mit ihrem echten Vollzeit-Gehalt vorbefüllt, bei neu hinzugefügten Zeilen frei editierbar, inklusive Lohnnebenkosten und Jahressonderzahlung."}
       </p>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <MetricCard label="Fördererlöse (heute, real)" value={formatEuro(finanzenHeute.foerdererloeseMonat)} icon={<Wallet />} />

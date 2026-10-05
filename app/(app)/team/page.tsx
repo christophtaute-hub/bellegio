@@ -9,7 +9,7 @@ import { PersonalplanungBayern } from "@/components/team/personalplanung-bayern"
 import { PersonalplanungBW } from "@/components/team/personalplanung-bw";
 import { PersonalplanungNRW } from "@/components/team/personalplanung-nrw";
 import { GruppeQuickSelect } from "@/components/team/gruppe-quick-select";
-import { canWritePersonal, canViewFinanzen } from "@/lib/server/current-user-role";
+import { canWritePersonal, canViewGehaelter } from "@/lib/server/current-user-role";
 import {
   Table,
   TableBody,
@@ -63,7 +63,7 @@ export default async function TeamPage({
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
 
-  const [{ data: gruppen }, canEditPersonal, personalplanung, zeigeFinanzen, { data: verguetung }] =
+  const [{ data: gruppen }, canEditPersonal, personalplanung, zeigeGehaelter, { data: verguetung }] =
     await Promise.all([
       einrichtungId
         ? supabase
@@ -77,7 +77,7 @@ export default async function TeamPage({
       einrichtungId
         ? getPersonalplanungFuerEinrichtung(supabase, einrichtungId, stichtag)
         : null,
-      einrichtungId ? canViewFinanzen(supabase, einrichtungId) : false,
+      einrichtungId ? canViewGehaelter(supabase, einrichtungId) : false,
       einrichtungId
         ? supabase
             .from("team_verguetung")
@@ -213,7 +213,7 @@ export default async function TeamPage({
                 <TableHead>Wochenstunden</TableHead>
                 <TableHead>Kategorie</TableHead>
                 <TableHead>Status</TableHead>
-                {zeigeFinanzen ? <TableHead>Tarif</TableHead> : null}
+                {zeigeGehaelter ? <TableHead>Tarif</TableHead> : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,7 +250,7 @@ export default async function TeamPage({
                       {TEAM_STATUS_LABEL[mitglied.status] ?? mitglied.status}
                     </Badge>
                   </TableCell>
-                  {zeigeFinanzen ? (
+                  {zeigeGehaelter ? (
                     <TableCell className="text-muted-foreground">
                       {formatTarif(verguetungByTeamId.get(mitglied.id))}
                     </TableCell>

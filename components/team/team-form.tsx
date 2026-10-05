@@ -62,8 +62,8 @@ export function TeamForm({
   einrichtungId,
   defaultValues,
   gruppen,
-  canViewFinanzen = false,
-  canWriteFinanzen = false,
+  canViewGehaelter = false,
+  canWriteGehaelter = false,
 }: {
   mode: "create" | "edit";
   teamId?: string;
@@ -71,12 +71,12 @@ export function TeamForm({
   einrichtungId?: string;
   defaultValues?: Partial<TeamFormValues>;
   gruppen: TeamFormOption[];
-  /** Vergütungs-Abschnitt: nur sichtbar mit Finanzen-Zugriff, nur editierbar mit
-   * Finanzen-Bearbeiten-Recht. Bewusst nur in mode="edit" nutzbar — beim Anlegen (mode="create")
+  /** Vergütungs-Abschnitt: nur sichtbar mit dem Recht "Einzelgehälter", nur editierbar mit
+   * Bearbeiten-Recht für Einzelgehälter. Bewusst nur in mode="edit" nutzbar — beim Anlegen (mode="create")
    * leitet der Server nach dem Speichern sofort weiter, ein Vergütungs-Eintrag käme dort ohnehin nie
    * an (siehe lib/actions/team-verguetung.ts). */
-  canViewFinanzen?: boolean;
-  canWriteFinanzen?: boolean;
+  canViewGehaelter?: boolean;
+  canWriteGehaelter?: boolean;
 }) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -123,7 +123,7 @@ export function TeamForm({
       } else if (teamId) {
         // upsertTeamVerguetung muss VOR updateTeamMitglied laufen: updateTeamMitglied leitet am
         // Ende per redirect() weiter, danach ist der Rest dieser Funktion unerreichbar.
-        if (canWriteFinanzen && einrichtungId) {
+        if (canWriteGehaelter && einrichtungId) {
           await upsertTeamVerguetung(teamId, einrichtungId, {
             entgeltgruppe: values.entgeltgruppe || null,
             stufe: values.stufe ? Number(values.stufe) : null,
@@ -216,7 +216,7 @@ export function TeamForm({
         </Field>
       </div>
 
-      {mode === "edit" && canViewFinanzen ? (
+      {mode === "edit" && canViewGehaelter ? (
         <div className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-4">
           <h3 className="text-sm font-medium">Vergütung</h3>
           <p className="text-xs text-muted-foreground">
@@ -225,7 +225,7 @@ export function TeamForm({
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field id="entgeltgruppe" label="Entgeltgruppe (TVöD SuE)">
-              <select id="entgeltgruppe" className={SELECT_CLASS} disabled={!canWriteFinanzen} {...register("entgeltgruppe")}>
+              <select id="entgeltgruppe" className={SELECT_CLASS} disabled={!canWriteGehaelter} {...register("entgeltgruppe")}>
                 <option value="">Keine Angabe</option>
                 {TVOED_SUE_ENTGELTGRUPPEN.map((gruppe) => (
                   <option key={gruppe} value={gruppe}>
@@ -235,7 +235,7 @@ export function TeamForm({
               </select>
             </Field>
             <Field id="stufe" label="Stufe">
-              <select id="stufe" className={SELECT_CLASS} disabled={!canWriteFinanzen} {...register("stufe")}>
+              <select id="stufe" className={SELECT_CLASS} disabled={!canWriteGehaelter} {...register("stufe")}>
                 <option value="">Keine Angabe</option>
                 {[1, 2, 3, 4, 5, 6].map((stufe) => (
                   <option key={stufe} value={stufe}>
@@ -250,7 +250,7 @@ export function TeamForm({
                 type="number"
                 step="0.01"
                 min="0"
-                disabled={!canWriteFinanzen}
+                disabled={!canWriteGehaelter}
                 placeholder="ersetzt die TVöD-Tabelle, wenn gesetzt"
                 {...register("monatsgehalt_manuell")}
               />

@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { isPlatformOperator, type Bereich } from "@/lib/server/current-user-role";
+import { isPlatformOperator } from "@/lib/server/current-user-role";
+import { BEREICH_KEYS, standardZugriffEinrichtungsleitung, type Bereich, type Zugriff } from "@/lib/nutzer/bereiche";
 import { oderFilter, suchTokens } from "@/lib/suche/suchbegriff";
 import { APP_FUNKTIONEN, filtereFunktionen } from "@/lib/suche/funktionen";
 
@@ -29,28 +30,30 @@ type Zugriffskarte = { ansehen: Record<Bereich, Set<string>>; bearbeiten: Record
  * einrichtung_berechtigungen steht. Die eigentliche Sicherheitsgrenze bleibt RLS — das hier verhindert nur, dass die
  * Suche Namen aus Bereichen zeigt, für die der Nutzer kein Recht hat (z.B. team_select prüft den Bereich nicht). */
 async function ladeZugriffskarte(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<Zugriffskarte> {
-  const leer = () => ({ belegung: new Set<string>(), personal: new Set<string>(), controlling: new Set<string>(), szenario: new Set<string>(), finanzen: new Set<string>() });
+  const leer = () => ({ belegung: new Set<string>(), personal: new Set<string>(), controlling: new Set<string>(), szenario: new Set<string>(), finanzen: new Set<string>(), gehaelter: new Set<string>() });
   const karte: Zugriffskarte = { ansehen: leer(), bearbeiten: leer(), traegerAdmin: false };
 
   const { data: profil } = await supabase.from("user_profiles").select("role, trager_id").eq("id", userId).single();
   if (!profil) return karte;
 
+  const { data: rechte } = await supabase.from("einrichtung_berechtigungen").select("einrichtung_id, bereich, zugriff").eq("user_id", userId);
+  const explizit = new Map((rechte ?? []).map((r) => [`${r.einrichtung_id}|${r.bereich}`, r.zugriff as Zugriff]));
+
   if (profil.role === "traeger_admin" || profil.role === "einrichtungsleitung") {
     karte.traegerAdmin = profil.role === "traeger_admin";
     const { data: alle } = await supabase.from("einrichtungen").select("id").eq("trager_id", profil.trager_id).is("archived_at", null);
     for (const e of alle ?? []) {
-      for (const bereich of ["belegung", "personal", "controlling", "szenario"] as const) {
-        karte.ansehen[bereich].add(e.id);
-        karte.bearbeiten[bereich].add(e.id);
-      }
-      if (profil.role === "traeger_admin") {
-        karte.ansehen.finanzen.add(e.id);
-        karte.bearbeiten.finanzen.add(e.id);
+      for (const bereich of BEREICH_KEYS) {
+        // Träger-Admin: alles. Einrichtungsleitung: eigene Einstellung, sonst der Standard (spiegelt app.current_user_zugriff()).
+        const zugriff: Zugriff =
+          profil.role === "traeger_admin" ? "bearbeiten" : (explizit.get(`${e.id}|${bereich}`) ?? standardZugriffEinrichtungsleitung(bereich));
+        if (zugriff !== "kein_zugriff") karte.ansehen[bereich].add(e.id);
+        if (zugriff === "bearbeiten") karte.bearbeiten[bereich].add(e.id);
       }
     }
+    return karte;
   }
 
-  const { data: rechte } = await supabase.from("einrichtung_berechtigungen").select("einrichtung_id, bereich, zugriff").eq("user_id", userId);
   for (const r of rechte ?? []) {
     const bereich = r.bereich as Bereich;
     if (!karte.ansehen[bereich]) continue;

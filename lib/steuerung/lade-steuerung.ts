@@ -46,7 +46,7 @@ export async function ladeSteuerung(
   supabase: SupabaseClient<Database>,
   einrichtungId: string,
   stichtag: string,
-  optionen: { zeigeFinanzen: boolean }
+  optionen: { zeigeFinanzen: boolean; zeigeGehaelter: boolean }
 ): Promise<SteuerungsDaten> {
   const [monate, kinderHeute, gruppenRes, kinderRes, einrichtungRes, teamRes, ausfallRes] = await Promise.all([
     buildForecastMonths(supabase, einrichtungId, stichtag, STEUERUNG_MONATE, false, true),
@@ -172,19 +172,22 @@ export async function ladeSteuerung(
   let foerderbetragFehlt: boolean | null = null;
   let finanzen: Ergebnis | null = null;
   if (optionen.zeigeFinanzen) {
-    const { data: verguetung } = await supabase
-      .from("team_verguetung")
-      .select("team_id, entgeltgruppe, stufe, monatsgehalt_manuell")
-      .eq("einrichtung_id", einrichtungId);
-    const mitWert = new Set(
-      (verguetung ?? [])
-        .filter((v) => v.monatsgehalt_manuell !== null || (v.entgeltgruppe !== null && v.stufe !== null))
-        .map((v) => v.team_id)
-    );
-    verguetungFehlt = team
-      .filter((t) => !mitWert.has(t.id))
-      .map((t) => ({ id: t.id, name: name(t) }))
-      .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    // Wer fehlt, steht mit Namen in der Handlungsliste und führt zur Vergütung der Person: nur mit dem Recht "gehaelter".
+    if (optionen.zeigeGehaelter) {
+      const { data: verguetung } = await supabase
+        .from("team_verguetung")
+        .select("team_id, entgeltgruppe, stufe, monatsgehalt_manuell")
+        .eq("einrichtung_id", einrichtungId);
+      const mitWert = new Set(
+        (verguetung ?? [])
+          .filter((v) => v.monatsgehalt_manuell !== null || (v.entgeltgruppe !== null && v.stufe !== null))
+          .map((v) => v.team_id)
+      );
+      verguetungFehlt = team
+        .filter((t) => !mitWert.has(t.id))
+        .map((t) => ({ id: t.id, name: name(t) }))
+        .sort((a, b) => a.name.localeCompare(b.name, "de"));
+    }
     if (einrichtung?.bundesland_code === "bw") foerderbetragFehlt = einrichtung.foerderung_monatlich_manuell == null;
     finanzen = await ladeFinanzenHeute(supabase, einrichtungId, stichtag, kinderHeute);
   }

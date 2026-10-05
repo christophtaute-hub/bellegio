@@ -1,16 +1,10 @@
 import { pruefePasswort } from "@/lib/passwort";
 
 export type NeueRolle = "mitarbeiter" | "einrichtungsleitung" | "traeger_admin";
-export type Bereich = "belegung" | "personal" | "controlling" | "szenario" | "finanzen";
-export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
+import { BEREICHE, type Bereich, type Zugriff } from "@/lib/nutzer/bereiche";
 
-export const BEREICHE: { key: Bereich; label: string }[] = [
-  { key: "belegung", label: "Belegung" },
-  { key: "personal", label: "Personal" },
-  { key: "controlling", label: "Controlling" },
-  { key: "szenario", label: "Szenario-Rechner" },
-  { key: "finanzen", label: "Finanzen" },
-];
+export { BEREICHE };
+export type { Bereich, Zugriff };
 
 export const ZUGRIFFE: { value: Zugriff; label: string }[] = [
   { value: "kein_zugriff", label: "Kein Zugriff" },

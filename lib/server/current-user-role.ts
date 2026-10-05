@@ -10,8 +10,8 @@ export type UserRole =
   | "controlling"
   | "mitarbeiter";
 
-export type Bereich = "belegung" | "personal" | "controlling" | "szenario" | "finanzen";
-export type Zugriff = "kein_zugriff" | "ansehen" | "bearbeiten";
+import { standardZugriffEinrichtungsleitung, type Bereich, type Zugriff } from "@/lib/nutzer/bereiche";
+export type { Bereich, Zugriff };
 
 export async function getCurrentUserRole(): Promise<UserRole | null> {
   const supabase = await createClient();
@@ -58,12 +58,11 @@ export async function isPlatformOperator(): Promise<boolean> {
 }
 
 /**
- * Effektiver Zugriff des aktuellen Nutzers auf einen Bereich einer
- * Einrichtung. traeger_admin/einrichtungsleitung haben immer "bearbeiten";
- * alle anderen Nutzer werden granular über einrichtung_berechtigungen
- * geprüft (spiegelt app.current_user_zugriff() aus der RLS — die
- * eigentliche Durchsetzung passiert dort, diese Funktion steuert nur, was
- * die UI anzeigt/anbietet).
+ * Effektiver Zugriff des aktuellen Nutzers auf einen Bereich einer Einrichtung (spiegelt app.current_user_zugriff() aus der
+ * RLS — die eigentliche Durchsetzung passiert dort, diese Funktion steuert nur, was die UI anzeigt/anbietet).
+ * Träger-Admins haben immer "bearbeiten". Alle anderen — auch die Einrichtungsleitung — werden über
+ * einrichtung_berechtigungen geprüft; fehlt für die Einrichtungsleitung eine Zeile, gilt ihr Standard (alles außer
+ * Finanzübersicht und Einzelgehälter).
  */
 export async function getZugriff(
   supabase: SupabaseClient<Database>,
@@ -82,13 +81,6 @@ export async function getZugriff(
     .single();
 
   if (profile?.role === "traeger_admin") return "bearbeiten";
-  // finanzen bekommt bewusst keinen Blanko-Zugriff für einrichtungsleitung — "Führung sieht
-  // mehrere Einrichtungen ohne Finanzsicht" (Milestone 29, Rückfrage d). Ohne diesen Ausschluss
-  // würde die UI hier fälschlich etwas anzeigen, das die RLS dahinter (current_user_zugriff)
-  // bereits korrekt blockiert.
-  if (bereich !== "finanzen" && profile?.role === "einrichtungsleitung") {
-    return "bearbeiten";
-  }
 
   const { data } = await supabase
     .from("einrichtung_berechtigungen")
@@ -98,7 +90,9 @@ export async function getZugriff(
     .eq("bereich", bereich)
     .maybeSingle();
 
-  return (data?.zugriff as Zugriff | undefined) ?? "kein_zugriff";
+  const explizit = data?.zugriff as Zugriff | undefined;
+  if (explizit) return explizit;
+  return profile?.role === "einrichtungsleitung" ? standardZugriffEinrichtungsleitung(bereich) : "kein_zugriff";
 }
 
 export async function canWriteBelegung(
@@ -141,4 +135,18 @@ export async function canViewFinanzen(
   einrichtungId: string
 ): Promise<boolean> {
   return (await getZugriff(supabase, einrichtungId, "finanzen")) !== "kein_zugriff";
+}
+
+export async function canWriteGehaelter(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "gehaelter")) === "bearbeiten";
+}
+
+export async function canViewGehaelter(
+  supabase: SupabaseClient<Database>,
+  einrichtungId: string
+): Promise<boolean> {
+  return (await getZugriff(supabase, einrichtungId, "gehaelter")) !== "kein_zugriff";
 }
