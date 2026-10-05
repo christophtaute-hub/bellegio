@@ -9,7 +9,6 @@ import { EinrichtungSwitcher } from "@/components/layout/einrichtung-switcher";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
-import { computeVorname } from "@/lib/server/current-user-name";
 import { isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
 
 export default async function AppLayout({
@@ -65,7 +64,6 @@ export default async function AppLayout({
 
   if (await zustimmungOffen()) redirect("/zustimmung");
 
-  const vorname = computeVorname(profile?.full_name, profile?.email, user?.email);
   const [istBetreiber, istDemo] = await Promise.all([isPlatformOperator(), istDemoNutzer()]);
 
   return (
@@ -92,11 +90,6 @@ export default async function AppLayout({
               }))}
               aktiveId={activeEinrichtungId ?? null}
             />
-          ) : null}
-          {vorname ? (
-            <p className="hidden truncate text-sm text-muted-foreground sm:block">
-              Aloha, {vorname}
-            </p>
           ) : null}
           <div className="flex-1" />
           <GlobalSearch />

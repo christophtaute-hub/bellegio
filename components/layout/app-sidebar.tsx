@@ -10,10 +10,7 @@ import {
   TrendingUp,
   Calculator,
   Settings,
-  BookOpen,
-  User,
   Receipt,
-  Users2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -32,11 +29,8 @@ const NAV_ITEMS = [
   { href: "/kinder", label: "Kinder", icon: Baby },
   { href: "/team", label: "Team", icon: UserCog },
   { href: "/controlling", label: "Controlling", icon: TrendingUp },
-  { href: "/szenario", label: "Szenario-Rechner", icon: Calculator },
-  { href: "/dokumentation", label: "Dokumentation", icon: BookOpen },
-  { href: "/einstellungen", label: "Einrichtung", icon: Settings },
-  { href: "/einstellungen/nutzer", label: "Nutzer & Rechte", icon: Users2 },
-  { href: "/einstellungen/profil", label: "Mein Profil", icon: User },
+  { href: "/szenario", label: "Planung", icon: Calculator },
+  { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ] as const;
 
 /** Nur der Betreiber (Admin) bekommt den Menüpunkt „Abrechnung“ — seine Einnahmen-Übersicht und die Rechnungen, die er

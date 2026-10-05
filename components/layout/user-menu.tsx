@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, Building2, ChevronDown, User, Shield } from "lucide-react";
+import { LogOut, Building2, Settings, User, Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { signOut } from "@/lib/actions/auth";
 
 export function UserMenu({
@@ -24,22 +23,15 @@ export function UserMenu({
   einrichtungName: string | null;
   istBetreiber?: boolean;
 }) {
-  const initials = (fullName ?? "?").trim().slice(0, 2).toUpperCase();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" className="h-9 gap-2 rounded-full pr-3 pl-1" />
+          <Button variant="ghost" className="h-9 gap-2 rounded-full px-3" />
         }
       >
-        <Avatar className="size-7">
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-        <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">
-          {fullName ?? "Unbekannt"}
-        </span>
-        <ChevronDown className="size-3.5 text-muted-foreground" />
+        <span className="max-w-40 truncate text-sm font-medium">{fullName ?? "Unbekannt"}</span>
+        <Settings className="size-4 text-muted-foreground" aria-label="Einstellungen" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {einrichtungName ? (
@@ -49,6 +41,10 @@ export function UserMenu({
             </DropdownMenuLabel>
           </DropdownMenuGroup>
         ) : null}
+        <DropdownMenuItem render={<Link href="/einstellungen" />}>
+          <Settings />
+          Einstellungen
+        </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/einrichtung-auswahl" />}>
           <Building2 />
           Einrichtung wechseln

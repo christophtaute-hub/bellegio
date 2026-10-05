@@ -38,6 +38,7 @@ const nextConfig: NextConfig = {
     // Die frühere Kundensicht „Kosten“/„Abrechnung“ gibt es nicht mehr — alte Lesezeichen führen zum Dashboard.
     return [
       { source: "/kosten/:path*", destination: "/dashboard", permanent: true },
+      { source: "/dokumentation", destination: "/einstellungen/rechtsgrundlagen", permanent: true },
       { source: "/abrechnung/:path*", destination: "/dashboard", permanent: true },
     ];
   },

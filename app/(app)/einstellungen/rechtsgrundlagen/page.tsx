@@ -108,7 +108,7 @@ export default async function DokumentationPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-3xl tracking-tight text-primary">
-          Berechnungsgrundlage: Personalbemessung
+          Rechtsgrundlagen
         </h1>
         <p className="text-sm text-muted-foreground">
           Wie Bellegio den Personalbedarf je Bundesland berechnet, mit
