@@ -7,17 +7,23 @@ import {
 export type Ergebnis = {
   foerdererloeseMonat: number;
   personalkostenMonat: number;
-  /** Fördererlöse − Personalkosten. Elternbeiträge bewusst NICHT enthalten (Milestone 29c, Phase 1
-   * beschränkt sich darauf — eigener, späterer Schritt). */
+  /** Elternbeiträge laut interner Preisliste — null, wenn keine Preisliste hinterlegt ist (dann sind sie nicht Teil des Ergebnisses). */
+  elternbeitraegeMonat?: number | null;
+  /** Fördererlöse + Elternbeiträge (falls Preisliste vorhanden) − Personalkosten. Kommunaler Anteil und Sachkosten fehlen. */
   ergebnisMonat: number;
   personalkostenNichtErfasst: number;
 };
 
-export function berechneErgebnis(foerdererloeseMonat: number, personalkosten: PersonalkostenGesamt): Ergebnis {
+export function berechneErgebnis(
+  foerdererloeseMonat: number,
+  personalkosten: PersonalkostenGesamt,
+  elternbeitraegeMonat: number | null = null
+): Ergebnis {
   return {
     foerdererloeseMonat,
+    elternbeitraegeMonat,
     personalkostenMonat: personalkosten.personalkostenGesamtMonat,
-    ergebnisMonat: foerdererloeseMonat - personalkosten.personalkostenGesamtMonat,
+    ergebnisMonat: foerdererloeseMonat + (elternbeitraegeMonat ?? 0) - personalkosten.personalkostenGesamtMonat,
     personalkostenNichtErfasst: personalkosten.nichtErfasst,
   };
 }

@@ -428,6 +428,51 @@ export type Database = {
         }
         Relationships: []
       }
+      einrichtung_beitraege: {
+        Row: {
+          betrag_monat: number
+          booking_time_band_id: string
+          created_at: string
+          einrichtung_id: string
+          gueltig_ab: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          betrag_monat: number
+          booking_time_band_id: string
+          created_at?: string
+          einrichtung_id: string
+          gueltig_ab?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          betrag_monat?: number
+          booking_time_band_id?: string
+          created_at?: string
+          einrichtung_id?: string
+          gueltig_ab?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "einrichtung_beitraege_booking_time_band_id_fkey"
+            columns: ["booking_time_band_id"]
+            isOneToOne: false
+            referencedRelation: "booking_time_bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "einrichtung_beitraege_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       einrichtung_berechtigungen: {
         Row: {
           bereich: string

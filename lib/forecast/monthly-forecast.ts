@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+import { berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag, type BeitragZeile } from "@/lib/finanzen/elternbeitraege";
 import {
   getKinderPresenceAtDate,
   buildKpis,
@@ -82,6 +83,8 @@ export type FinanzenBasis = {
   nrwGruppenById: Map<string, { nrwGruppenform: string | null; nrwBuchungszeitStunden: number | null }>;
   tvoedVersionenByGroup: Map<string, TVoedEntgeltVersion[]>;
   teamVerguetungByTeamId: Map<string, { entgeltgruppe: string | null; stufe: number | null; monatsgehaltManuell: number | null }>;
+  /** Interne Preisliste (Elternbeiträge) — leer, wenn keine hinterlegt ist. */
+  beitraege: BeitragZeile[];
 };
 
 async function ladeVerguetungFuerSummen(supabase: SupabaseClient<Database>, einrichtungId: string) {
@@ -113,12 +116,14 @@ export async function ladeFinanzenBasis(
     nrwKindpauschalenVersionenByGroup,
     tvoedVersionenByGroup,
     { data: verguetungRows },
+    beitraege,
   ] = await Promise.all([
     supabase.from("einrichtungen").select("foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
     getBayernBasiswertVersionen(supabase),
     getNRWKindpauschalenVersionen(supabase),
     getTVoedEntgeltVersionen(supabase),
     ladeVerguetungFuerSummen(supabase, einrichtungId),
+    ladeBeitragszeilen(supabase, einrichtungId),
   ]);
 
   const teamVerguetungByTeamId = new Map(
@@ -136,6 +141,7 @@ export async function ladeFinanzenBasis(
     nrwGruppenById,
     tvoedVersionenByGroup,
     teamVerguetungByTeamId,
+    beitraege,
   };
 }
 
@@ -182,7 +188,9 @@ export function resolveFinanzenMonat(
     )
   );
   const personalkosten = berechnePersonalkostenGesamt(personalkostenErgebnisse, basis.lohnnebenkostenProzent, basis.jahressonderzahlungProzent);
-  return berechneErgebnis(foerdererloeseMonat, personalkosten);
+  const preise = preiseAmStichtag(basis.beitraege, stichtag);
+  const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise).summe : null;
+  return berechneErgebnis(foerdererloeseMonat, personalkosten, elternbeitraege);
 }
 
 function monthStart(isoDate: string): string {
