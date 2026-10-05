@@ -38,6 +38,7 @@ import {
   type TVoedEntgeltVersion,
 } from "@/lib/finanzen/personalkosten";
 import { berechneErgebnis, type Ergebnis } from "@/lib/finanzen/ergebnis";
+import { berechneGruppenStatus, type GruppenStatusErgebnis } from "@/lib/steuerung/gruppen-status";
 
 export type ZeitkategorieMonat =
   | { modell: "bayern"; matrix: CompositionMatrix }
@@ -60,6 +61,8 @@ export type ForecastMonth = {
   /** Bundesland-abhängig: Bayern (Anstellungsschlüssel), BW (VZÄ-Soll), NRW (Fachkraft-/Ergänzungskraft-Stunden). */
   personal: PersonalplanungErgebnis;
   zeitkategorie: ZeitkategorieMonat;
+  /** Belegung und Personal je Gruppe (Gruppen-Ampel, Milestone 33). */
+  gruppenStatus: GruppenStatusErgebnis;
   /** Fördererlöse/Personalkosten/Ergebnis — nur gesetzt, wenn buildForecastMonths mit
    * includeFinanzen=true aufgerufen wurde (Bereich "finanzen", Milestone 29c). Bewusst optional statt
    * eines leeren Platzhalters, damit "kein Zugriff" zu "Feld fehlt komplett" statt "Feld zeigt 0 €"
@@ -177,12 +180,17 @@ export async function buildForecastMonths(
   einrichtungId: string,
   startMonth: string,
   monthCount: number,
-  includeFinanzen = false
+  includeFinanzen = false,
+  /** true: der erste Eintrag nutzt `startMonth` als exakten Stichtag (Tag genau) statt des Monatsersten —
+   * für das Dashboard, dessen Stichtag „heute“ sein soll. Alle weiteren Einträge sind Monatserste. */
+  ersterStichtagExakt = false
 ): Promise<ForecastMonth[]> {
   const [{ data: gruppen }, { data: einrichtung }, personalBasis] = await Promise.all([
     supabase
       .from("gruppen")
-      .select("id, gruppenart, sollplatze, nrw_gruppenform, nrw_buchungszeit_stunden")
+      .select(
+        "id, name, gruppenart, sollplatze, bw_betriebsform, bw_altersmischung, bw_oeffnungszeit_stunden, bw_randzeit_stunden, nrw_gruppenform, nrw_buchungszeit_stunden"
+      )
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null),
     supabase
@@ -228,7 +236,7 @@ export async function buildForecastMonths(
 
   const start = monthStart(startMonth);
   const months = Array.from({ length: monthCount }, (_, i) =>
-    toIsoDateString(addMonthsUtc(parseIsoDate(start), i))
+    i === 0 && ersterStichtagExakt ? startMonth : toIsoDateString(addMonthsUtc(parseIsoDate(start), i))
   );
 
   return Promise.all(
@@ -269,8 +277,9 @@ export async function buildForecastMonths(
             : { modell: "bayern", matrix: buildCompositionMatrix(kinderRows) };
 
       const finanzen = finanzenBasis ? resolveFinanzenMonat(finanzenBasis, month, kinderRows, teamRows) : undefined;
+      const gruppenStatus = berechneGruppenStatus(gruppen ?? [], personalKontext, kinderRows, teamRows);
 
-      return { month, kpis, kpisByGruppenart, belegung, personal, zeitkategorie, finanzen };
+      return { month, kpis, kpisByGruppenart, belegung, personal, zeitkategorie, gruppenStatus, finanzen };
     })
   );
 }

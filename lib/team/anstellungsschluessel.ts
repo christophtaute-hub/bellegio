@@ -9,6 +9,8 @@ export type TeamPresenceRow = {
   rolle: string | null;
   role_category: string | null;
   wochenstunden: number | null;
+  /** Gruppe der Person; null = Einrichtungsebene (keiner Gruppe zugeordnet). */
+  gruppe_id: string | null;
 };
 
 export async function getStaffingRules(

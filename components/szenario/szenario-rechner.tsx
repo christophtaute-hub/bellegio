@@ -99,6 +99,7 @@ export function SzenarioRechner({
       rolle: null,
       role_category: p.role_category,
       wochenstunden: p.wochenstunden,
+      gruppe_id: null,
     }));
 
     const kpis = buildKpis(rows);

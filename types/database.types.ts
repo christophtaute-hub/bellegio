@@ -2262,6 +2262,7 @@ export type Database = {
       team_presence_for_month: {
         Args: { p_einrichtung_id: string; p_month: string }
         Returns: {
+          gruppe_id: string
           nachname: string
           role_category: string
           rolle: string

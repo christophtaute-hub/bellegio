@@ -7,7 +7,9 @@ import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { buttonVariants } from "@/components/ui/button";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { StatTile } from "@/components/ui/stat-tile";
+import { GruppePersonalKarte } from "@/components/gruppen/gruppe-personal-karte";
+import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
+import { ersterKritischerMonat } from "@/lib/steuerung/gruppen-status";
 import {
   KinderTable,
   type GruppenSortSpalte,
@@ -195,6 +197,8 @@ export default async function GruppeDetailPage({
     { data: nachrueckerKinderRoh },
     { data: platzwerte },
     { data: alleKinderRoh },
+    { data: gruppenPersonal },
+    forecast,
   ] = await Promise.all([
     supabase
       .from("gruppen")
@@ -229,6 +233,15 @@ export default async function GruppeDetailPage({
       .eq("einrichtung_id", einrichtungId ?? "")
       .is("archived_at", null)
       .limit(3000),
+    supabase
+      .from("team")
+      .select("id, vorname, nachname, wochenstunden, role_category")
+      .eq("gruppe_id", gruppeId)
+      .eq("status", "aktiv")
+      .is("archived_at", null)
+      .order("nachname"),
+    // Personal je Gruppe für die nächsten 12 Monate — gleiche Berechnung wie im Dashboard.
+    buildForecastMonths(supabase, einrichtungId ?? "", toIsoDateString(new Date()), 12, false, true),
   ]);
 
   const aktiveKinder = (aktiveKinderRoh ?? []) as RohKind[];
@@ -274,17 +287,6 @@ export default async function GruppeDetailPage({
     return sortiereFuerAnzeige(gefiltert, sort ?? "name", dir);
   }
   const freiePlaetze = sitzplaetze.filter((z) => z.kind === null).map((z) => ({ frei: true as const, platz: z.platz }));
-
-  const geschlechtAnzahl = (geschlecht: string) => aktiveKinder.filter((k) => k.geschlecht === geschlecht).length;
-  const verteilung = [
-    { kuerzel: "w", anzahl: geschlechtAnzahl("weiblich") },
-    { kuerzel: "m", anzahl: geschlechtAnzahl("maennlich") },
-    { kuerzel: "d", anzahl: geschlechtAnzahl("divers") },
-  ]
-    .filter((eintrag) => eintrag.anzahl > 0)
-    .map((eintrag) => `${eintrag.anzahl} ${eintrag.kuerzel}`)
-    .join(" · ");
-  const ohneAngabe = geschlechtAnzahl("keine_angabe");
 
   const hinweise: HinweisEintrag[] = aktiveKinder.flatMap((kind) => {
     const eintraege: HinweisEintrag[] = [];
@@ -351,6 +353,14 @@ export default async function GruppeDetailPage({
   );
   const eigeneFreiwerdende = freiwerdende.filter((f) => f.gruppeId === gruppeId).slice(0, HANDLUNGSBEDARF_MAX_EINTRAEGE);
 
+  const eigenerPersonalStatus = forecast[0]?.gruppenStatus.gruppen.find((g) => g.gruppeId === gruppeId) ?? null;
+  const kritischerMonat = ersterKritischerMonat(
+    forecast.map((m) => ({
+      monat: `${m.month.slice(0, 7)}-01`,
+      ampel: m.gruppenStatus.gruppen.find((g) => g.gruppeId === gruppeId)?.personal.ampel ?? ("gruen" as const),
+    }))
+  );
+
   const geschwister = geschwisterGruppen ?? [];
   const eigenerIndex = geschwister.findIndex((g) => g.id === gruppeId);
   const vorherige = eigenerIndex > 0 ? geschwister[eigenerIndex - 1] : null;
@@ -410,20 +420,35 @@ export default async function GruppeDetailPage({
         <p className="text-sm text-muted-foreground">Belegungsmanagement</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatTile label="Sollplätze" value={String(sollplatzeRounded)} />
-        <StatTile label="Belegt" value={String(belegtRounded)} />
-        <StatTile
-          label={belegungsStatus === "ueberbelegt" ? "Überbelegt" : "Frei"}
-          value={String(Math.abs(freiRounded))}
-          tone={belegungsStatus === "ueberbelegt" ? "warn" : "default"}
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+        <span>
+          <span className="font-semibold tabular-nums">{belegtRounded}</span> von{" "}
+          <span className="font-semibold tabular-nums">{sollplatzeRounded}</span> Plätzen belegt
+        </span>
+        <span className={belegungsStatus === "ueberbelegt" ? "font-medium text-destructive" : "text-muted-foreground"}>
+          {belegungsStatus === "ueberbelegt" ? `${Math.abs(freiRounded)} überbelegt` : freiRounded > 0 ? `${freiRounded} frei` : "voll"}
+        </span>
+        {nachrueckerKinder.length > 0 ? (
+          <span className="text-muted-foreground">
+            {nachrueckerKinder.length} {nachrueckerKinder.length === 1 ? "Nachrücker/geplant" : "Nachrücker/geplant"}
+          </span>
+        ) : null}
+      </p>
+
+      {eigenerPersonalStatus ? (
+        <GruppePersonalKarte
+          status={eigenerPersonalStatus}
+          modell={forecast[0].personal.modell}
+          kritisch={kritischerMonat}
+          belastbar={forecast[0].gruppenStatus.belastbar}
+          personen={(gruppenPersonal ?? []).map((m) => ({
+            id: m.id,
+            name: [m.vorname, m.nachname].filter(Boolean).join(" "),
+            wochenstunden: Number(m.wochenstunden ?? 0),
+            kategorie: m.role_category,
+          }))}
         />
-        <StatTile label="Nachrücker/geplant" value={String(nachrueckerKinder.length)} />
-        <StatTile
-          label={ohneAngabe > 0 ? `Geschlecht (${ohneAngabe} ohne Angabe)` : "Geschlecht (aktive Kinder)"}
-          value={verteilung || "–"}
-        />
-      </div>
+      ) : null}
 
       <HinweiseBox eintraege={hinweise} />
 
