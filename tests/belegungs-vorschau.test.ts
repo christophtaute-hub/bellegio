@@ -55,6 +55,31 @@ describe("Belegungs-Vorschau", () => {
     expect(freiwerdende[0].vorschlaege).toEqual([]);
   });
 
+  it("feste Nachfolge („B rückt für A nach“) zählt als eingeplant, auch wenn B später eintritt, und steht am Abgang", () => {
+    const kinder = [
+      kind({ id: "a" }),
+      kind({ id: "b", austritt: "2027-03-31" }),
+      kind({ id: "n", status: "nachruecker", gruppeId: "g1", eintritt: "2027-06-01", ersetztKindId: "b" }),
+    ];
+    const { freiwerdende } = berechneBelegungsVorschau([gruppe], kinder, start, 6);
+    expect(freiwerdende).toHaveLength(1);
+    expect(freiwerdende[0].abgaenge[0].nachfolger).toMatchObject({ kindId: "n", name: "Kind N" });
+    expect(freiwerdende[0].bereitsEingeplant.map((e) => e.kindId)).toEqual(["n"]);
+    expect(freiwerdende[0].vorschlaege).toEqual([]);
+  });
+
+  it("ein fest zugeordneter Nachrücker wird nicht für andere Plätze vorgeschlagen", () => {
+    const kinder = [
+      kind({ id: "a", austritt: "2027-02-28" }),
+      kind({ id: "b", austritt: "2027-04-30" }),
+      kind({ id: "n1", status: "nachruecker", eintritt: "2027-03-01", ersetztKindId: "a" }),
+      kind({ id: "n2", status: "nachruecker", eintritt: "2027-08-01", geburtsdatum: "2022-06-01" }),
+    ];
+    const { freiwerdende } = berechneBelegungsVorschau([gruppe], kinder, start, 6);
+    const zweiter = freiwerdende.find((f) => f.monat === "2027-05-01");
+    expect(zweiter?.vorschlaege.map((v) => v.kindId)).toEqual(["n2"]);
+  });
+
   it("zählt Nachrücker nicht als belegt", () => {
     const kinder = [kind({ id: "a" }), kind({ id: "n", status: "nachruecker", eintritt: "2027-02-01" })];
     const { zeilen } = berechneBelegungsVorschau([gruppe], kinder, start, 3);

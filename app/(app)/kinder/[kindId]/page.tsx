@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { NachfolgerZuordnen } from "@/components/gruppen/nachfolger-zuordnen";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { FileText } from "lucide-react";
@@ -111,6 +112,25 @@ export default async function KindDetailPage({
     gruppe_id: k.gruppe_id ?? "",
   }));
 
+  // Nachfolge: „Kind B rückt für Kind A nach“ — vom austretenden Kind und vom Nachrücker aus sichtbar
+  const [{ data: nachrueckerPool }, { data: nachfolgerRoh }, { data: ersetztesKind }] = await Promise.all([
+    kind.status === "aktiv"
+      ? supabase
+          .from("kinder")
+          .select("id, vorname, nachname, eintritt")
+          .eq("einrichtung_id", einrichtungId ?? "")
+          .in("status", ["nachruecker", "geplant"])
+          .is("ersetzt_kind_id", null)
+          .is("archived_at", null)
+      : Promise.resolve({ data: [] }),
+    kind.status === "aktiv"
+      ? supabase.from("kinder").select("id, vorname, nachname, eintritt").eq("ersetzt_kind_id", kind.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    kind.ersetzt_kind_id
+      ? supabase.from("kinder").select("id, vorname, nachname, austritt").eq("id", kind.ersetzt_kind_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+
   const { data: auditLog } = await supabase
     .from("kinder_audit_log")
     .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
@@ -194,6 +214,35 @@ export default async function KindDetailPage({
           { label: "Wohnort", wert: kind.wohnort ?? "" },
         ]}
       />
+      {kind.status === "aktiv" && kind.austritt ? (
+        <section id="nachfolge" className="flex flex-col gap-2 rounded-2xl border bg-card p-4 print:hidden">
+          <h2 className="font-heading text-base text-primary">Nachfolge</h2>
+          <p className="text-xs text-muted-foreground">Austritt am {formatDate(kind.austritt)} — wer übernimmt den Platz?</p>
+          <NachfolgerZuordnen
+            austretendId={kind.id}
+            austretendName={`${kind.vorname} ${kind.nachname}`}
+            austritt={kind.austritt}
+            nachfolger={
+              nachfolgerRoh
+                ? { kindId: nachfolgerRoh.id, name: `${nachfolgerRoh.vorname} ${nachfolgerRoh.nachname}`, eintritt: nachfolgerRoh.eintritt }
+                : null
+            }
+            optionen={(nachrueckerPool ?? [])
+              .map((n) => ({ id: n.id, name: `${n.vorname} ${n.nachname}`, eintritt: n.eintritt }))
+              .sort((a, b) => a.name.localeCompare(b.name, "de"))}
+            darfBearbeiten={darfBelegungBearbeiten}
+          />
+        </section>
+      ) : null}
+      {ersetztesKind ? (
+        <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm print:hidden">
+          Rückt nach für{" "}
+          <Link href={`/kinder/${ersetztesKind.id}`} className="font-medium text-primary underline-offset-2 hover:underline">
+            {ersetztesKind.vorname} {ersetztesKind.nachname}
+          </Link>
+          {ersetztesKind.austritt ? ` (Austritt ${formatDate(ersetztesKind.austritt)})` : ""}.
+        </p>
+      ) : null}
       <div className="print:hidden">
       <KindForm
         mode="edit"

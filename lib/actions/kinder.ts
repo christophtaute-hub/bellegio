@@ -230,3 +230,55 @@ export async function fuegeNotizHinzu(kindId: string, text: string): Promise<{ o
   revalidatePath("/gruppen");
   return { ok: true };
 }
+
+export type NachfolgeErgebnis = { ok: true } | { ok: false; error: string };
+
+/** Ordnet einem austretenden Kind einen Nachfolger zu („Kind B rückt für Kind A nach“). Der Nachrücker übernimmt die Gruppe des
+ * austretenden Kindes; hat er noch keinen Eintritt, wird der Tag nach dem Austritt vorgeschlagen. Pro austretendem Kind gibt es
+ * genau einen Nachfolger — eine frühere Zuordnung wird ersetzt. `nachfolgerId = null` löst die Zuordnung. RLS prüft das Recht
+ * (Bereich Belegung, bearbeiten); die Fachprüfungen stehen hier, damit eine verständliche Meldung statt eines Fehlers ankommt. */
+export async function ordneNachfolgerZu(austretendId: string, nachfolgerId: string | null): Promise<NachfolgeErgebnis> {
+  const supabase = await createClient();
+  const einrichtungId = await getActiveEinrichtungId();
+
+  const { data: austretend } = await supabase
+    .from("kinder")
+    .select("id, einrichtung_id, status, gruppe_id, austritt")
+    .eq("id", austretendId)
+    .maybeSingle();
+  if (!austretend || austretend.einrichtung_id !== einrichtungId) return { ok: false, error: "Das Kind wurde nicht gefunden." };
+  if (austretend.status !== "aktiv") return { ok: false, error: "Nur ein aktives Kind kann einen Nachfolger bekommen." };
+
+  // Bisherige Zuordnung zu diesem Kind lösen (ein Nachfolger je Platz).
+  const { error: loeseFehler } = await supabase.from("kinder").update({ ersetzt_kind_id: null }).eq("ersetzt_kind_id", austretendId);
+  if (loeseFehler) return { ok: false, error: "Die Zuordnung konnte nicht gespeichert werden." };
+
+  if (nachfolgerId) {
+    const { data: nachfolger } = await supabase
+      .from("kinder")
+      .select("id, einrichtung_id, status, eintritt")
+      .eq("id", nachfolgerId)
+      .maybeSingle();
+    if (!nachfolger || nachfolger.einrichtung_id !== einrichtungId) return { ok: false, error: "Der Nachrücker wurde nicht gefunden." };
+    if (nachfolger.status !== "nachruecker" && nachfolger.status !== "geplant") {
+      return { ok: false, error: "Als Nachfolger kommt nur ein Nachrücker oder geplantes Kind in Frage." };
+    }
+    const update: { ersetzt_kind_id: string; gruppe_id: string | null; eintritt?: string } = {
+      ersetzt_kind_id: austretendId,
+      gruppe_id: austretend.gruppe_id,
+    };
+    if (!nachfolger.eintritt && austretend.austritt) {
+      const tag = new Date(`${austretend.austritt}T00:00:00Z`);
+      tag.setUTCDate(tag.getUTCDate() + 1);
+      update.eintritt = toIsoDateString(tag);
+    }
+    const { error } = await supabase.from("kinder").update(update).eq("id", nachfolgerId);
+    if (error) return { ok: false, error: "Die Zuordnung konnte nicht gespeichert werden." };
+  }
+
+  revalidatePath("/gruppen");
+  revalidatePath("/dashboard");
+  revalidatePath(`/kinder/${austretendId}`);
+  if (nachfolgerId) revalidatePath(`/kinder/${nachfolgerId}`);
+  return { ok: true };
+}

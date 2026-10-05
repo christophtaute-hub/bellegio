@@ -7,6 +7,7 @@ import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { buttonVariants } from "@/components/ui/button";
 import { GRUPPENART_LABEL } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { NachfolgerZuordnen, type NachrueckerOption } from "@/components/gruppen/nachfolger-zuordnen";
 import { GruppePersonalKarte } from "@/components/gruppen/gruppe-personal-karte";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { ersterKritischerMonat } from "@/lib/steuerung/gruppen-status";
@@ -35,6 +36,8 @@ import type { Ampel } from "@/lib/team/anstellungsschluessel";
 // 18-Monats-Tabelle unter /gruppen/vorschau, da hier nur die nächsten anstehenden Plätze zählen.
 const HANDLUNGSBEDARF_MONATE = 15;
 const HANDLUNGSBEDARF_MAX_EINTRAEGE = 2;
+// Bei Massenaustritten (z. B. Schuleintritt im September) nur die ersten Kinder mit eigenem Auswahlfeld zeigen.
+const NACHFOLGE_SICHTBAR = 3;
 
 const PASSUNG_AMPEL: Record<PassungsEinschaetzung, Ampel> = { gut: "gruen", bedingt: "gelb", schlecht: "rot" };
 const PASSUNG_LABEL: Record<PassungsEinschaetzung, string> = {
@@ -229,7 +232,7 @@ export default async function GruppeDetailPage({
     // können für Vorschläge auch aus anderen Gruppen kommen).
     supabase
       .from("kinder")
-      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id")
       .eq("einrichtung_id", einrichtungId ?? "")
       .is("archived_at", null)
       .limit(3000),
@@ -252,6 +255,16 @@ export default async function GruppeDetailPage({
     resolveAktuelleNotizen(supabase, allKindIds),
   ]);
 
+  // „Kind B rückt für Kind A nach“: Namen für die Tabellen und Auswahl der noch nicht zugeordneten Nachrücker
+  const kindNachId = new Map((alleKinderRoh ?? []).map((k) => [k.id, `${k.vorname} ${k.nachname}`]));
+  const nachfolgerVon = new Map(
+    (alleKinderRoh ?? []).filter((k) => k.ersetzt_kind_id).map((k) => [k.ersetzt_kind_id as string, `${k.vorname} ${k.nachname}`])
+  );
+  const nachrueckerOptionen: NachrueckerOption[] = (alleKinderRoh ?? [])
+    .filter((k) => (k.status === "nachruecker" || k.status === "geplant") && !k.ersetzt_kind_id)
+    .map((k) => ({ id: k.id, name: `${k.vorname} ${k.nachname}`, eintritt: k.eintritt }))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+
   const belegtRaw = (platzwerte ?? []).reduce((sum, row) => sum + Number(row.platzwert), 0);
   const sollplatzeRounded = Math.round(Number(gruppe.sollplatze));
   const belegtRounded = Math.round(belegtRaw);
@@ -266,10 +279,11 @@ export default async function GruppeDetailPage({
   );
   const aktiveKinderMitPlatz: KindZeile[] = sitzplaetze
     .filter((z): z is { platz: number; kind: KindZeile } => z.kind !== null)
-    .map((z) => ({ ...z.kind, platz: z.platz }));
-  const nachrueckerKinderMitPlatz: KindZeile[] = nachrueckerKinder.map((k) =>
-    zuKindZeile(k, findePlatzVonKindId(sitzplaetze, k.ersetzt_kind_id), weightingLabels, aktuelleNotizen)
-  );
+    .map((z) => ({ ...z.kind, platz: z.platz, nachfolgerName: nachfolgerVon.get(z.kind.id) ?? null }));
+  const nachrueckerKinderMitPlatz: KindZeile[] = nachrueckerKinder.map((k) => ({
+    ...zuKindZeile(k, findePlatzVonKindId(sitzplaetze, k.ersetzt_kind_id), weightingLabels, aktuelleNotizen),
+    ersetztName: k.ersetzt_kind_id ? (kindNachId.get(k.ersetzt_kind_id) ?? null) : null,
+  }));
 
   // Standardansicht (kein Suchbegriff, keine gewählte Sortierung): das vollständige Sitzplatzbild inkl. freier
   // Plätze. Sobald gesucht oder anders sortiert wird, geht es um eine gezielte Kinderliste — freie Plätze passen
@@ -346,6 +360,7 @@ export default async function GruppeDetailPage({
       eintritt: k.eintritt,
       austritt: k.austritt,
       wohnort: k.wohnort,
+      ersetztKindId: k.ersetzt_kind_id,
     })),
     vorschauStart,
     HANDLUNGSBEDARF_MONATE,
@@ -453,9 +468,9 @@ export default async function GruppeDetailPage({
       <HinweiseBox eintraege={hinweise} />
 
       {eigeneFreiwerdende.length > 0 ? (
-        <section className="flex flex-col gap-2">
+        <section id="nachfolge" className="flex flex-col gap-2 scroll-mt-20">
           <h2 className="font-heading text-sm font-medium text-muted-foreground">
-            Nächste freie Plätze &amp; Nachrücker-Vorschläge
+            Nächste freie Plätze &amp; Nachfolge
           </h2>
           <ul className="flex flex-col gap-2">
             {eigeneFreiwerdende.map((f) => (
@@ -464,14 +479,32 @@ export default async function GruppeDetailPage({
                   {monatLang(f.monat)}: {f.anzahl === 1 ? "1 Platz wird frei" : `${f.anzahl} Plätze werden frei`}
                 </p>
                 {f.abgaenge.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Austritt: {f.abgaenge.map((a) => `${a.name} (${formatDate(a.austritt)})`).join(", ")}
-                  </p>
+                  <ul className="flex flex-col gap-1.5">
+                    {f.abgaenge.slice(0, NACHFOLGE_SICHTBAR).map((a) => (
+                      <li key={a.kindId} className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground">Austritt: {a.name} ({formatDate(a.austritt)})</span>
+                        <NachfolgerZuordnen
+                          austretendId={a.kindId}
+                          austretendName={a.name}
+                          austritt={a.austritt}
+                          nachfolger={a.nachfolger}
+                          optionen={nachrueckerOptionen}
+                          darfBearbeiten={darfBearbeiten}
+                        />
+                      </li>
+                    ))}
+                    {f.abgaenge.length > NACHFOLGE_SICHTBAR ? (
+                      <li className="text-xs text-muted-foreground">
+                        + {f.abgaenge.length - NACHFOLGE_SICHTBAR} weitere Austritte ({f.abgaenge.filter((a) => a.nachfolger).length} mit Nachfolger) — die Nachfolge ordnest du am jeweiligen Kind
+                        zu.
+                      </li>
+                    ) : null}
+                  </ul>
                 ) : null}
-                {f.bereitsEingeplant.length > 0 ? (
+                {f.bereitsEingeplant.filter((e) => !f.abgaenge.some((a) => a.nachfolger?.kindId === e.kindId)).length > 0 ? (
                   <p className="text-sm text-emerald-700 dark:text-emerald-400">
                     Bereits vergeben an:{" "}
-                    {f.bereitsEingeplant.map((e, i) => (
+                    {f.bereitsEingeplant.filter((e) => !f.abgaenge.some((a) => a.nachfolger?.kindId === e.kindId)).map((e, i) => (
                       <span key={e.kindId}>
                         {i > 0 ? ", " : ""}
                         <Link href={`/kinder/${e.kindId}`} className="font-medium underline-offset-2 hover:underline">

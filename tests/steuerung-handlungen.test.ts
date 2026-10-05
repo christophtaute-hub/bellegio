@@ -85,7 +85,7 @@ describe("baueHandlungen", () => {
       gruppeId: "g1",
       gruppeName: "Sterne",
       anzahl: 1,
-      abgaenge: [{ name: "Zoe Baumgart", austritt: "2026-12-31" }],
+      abgaenge: [{ kindId: "k1", name: "Zoe Baumgart", austritt: "2026-12-31", nachfolger: null }],
       bereitsEingeplant: [] as { kindId: string; name: string; eintritt: string }[],
       vorschlaege: [],
     };
@@ -100,7 +100,7 @@ describe("baueHandlungen", () => {
   });
 
   it("viele Austritte werden gekürzt: drei Namen plus Rest", () => {
-    const abgaenge = Array.from({ length: 6 }, (_, i) => ({ name: `Kind ${i}`, austritt: "2027-08-31" }));
+    const abgaenge = Array.from({ length: 6 }, (_, i) => ({ kindId: `k${i}`, name: `Kind ${i}`, austritt: "2027-08-31", nachfolger: null }));
     const liste = baueHandlungen({
       ...leer,
       freiwerdende: [{ monat: "2027-09-01", gruppeId: "g1", gruppeName: "Sterne", anzahl: 6, abgaenge, bereitsEingeplant: [], vorschlaege: [] }],

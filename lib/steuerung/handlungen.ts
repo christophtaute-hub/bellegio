@@ -138,7 +138,7 @@ export function baueHandlungen(e: HandlungsEingabe): Handlung[] {
       titel: `${p.gruppeName}: ${p.anzahl} ${mehrzahl(p.anzahl, "Platz wird", "Plätze werden")} frei (${monatLang(p.monat)})`,
       grund: `${namenKurz(p.abgaenge)} — ${vorschlag ? `Vorschlag: ${vorschlag.name}` : "kein Nachrücker vorgemerkt"}`,
       wann: p.monat,
-      href: `/gruppen/${p.gruppeId}`,
+      href: `/gruppen/${p.gruppeId}#nachfolge`,
       aktion: "Nachfolger zuordnen",
     });
   }

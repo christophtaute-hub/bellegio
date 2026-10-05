@@ -57,7 +57,7 @@ export async function ladeSteuerung(
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id")
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null)
       .limit(3000),
@@ -144,6 +144,7 @@ export async function ladeSteuerung(
       eintritt: k.eintritt,
       austritt: k.austritt,
       wohnort: k.wohnort,
+      ersetztKindId: k.ersetzt_kind_id,
     })),
     start,
     STEUERUNG_MONATE,

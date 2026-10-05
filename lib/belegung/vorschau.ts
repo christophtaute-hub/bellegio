@@ -12,6 +12,8 @@ export type VorschauKind = {
   eintritt: string | null;
   austritt: string | null;
   wohnort: string | null;
+  /** Nachrücker: das austretende Kind, dessen Platz er übernimmt (feste Zuordnung). */
+  ersetztKindId?: string | null;
 };
 
 export type VorschauGruppe = {
@@ -47,7 +49,7 @@ export type FreiwerdenderPlatz = {
   gruppeId: string;
   gruppeName: string;
   anzahl: number;
-  abgaenge: { name: string; austritt: string }[];
+  abgaenge: { kindId: string; name: string; austritt: string; nachfolger: { kindId: string; name: string; eintritt: string | null } | null }[];
   /** Nachrücker, die für diese Gruppe bereits zu diesem Monat eingeplant sind. */
   bereitsEingeplant: { kindId: string; name: string; eintritt: string }[];
   vorschlaege: NachrueckerVorschlag[];
@@ -105,10 +107,34 @@ export function berechneBelegungsVorschau(
       const vorher = vorherigerMonat(monat);
       const abgaenge = aktive
         .filter((k) => k.gruppeId === zeile.gruppe.id && k.austritt !== null && k.austritt > vorher && k.austritt <= monat)
-        .map((k) => ({ name: `${k.vorname} ${k.nachname}`, austritt: k.austritt as string }));
-      const bereitsEingeplant = geplante
-        .filter((k) => k.gruppeId === zeile.gruppe.id && k.eintritt !== null && k.eintritt > vorher && k.eintritt <= monat && istAnwesend(k, monat))
-        .map((k) => ({ kindId: k.id, name: `${k.vorname} ${k.nachname}`, eintritt: k.eintritt as string }));
+        .map((k) => {
+          const nachfolger = geplante.find((n) => n.ersetztKindId === k.id) ?? null;
+          return {
+            kindId: k.id,
+            name: `${k.vorname} ${k.nachname}`,
+            austritt: k.austritt as string,
+            nachfolger: nachfolger ? { kindId: nachfolger.id, name: `${nachfolger.vorname} ${nachfolger.nachname}`, eintritt: nachfolger.eintritt } : null,
+          };
+        });
+      // Feste Zuordnungen („B rückt für A nach“) zählen immer als eingeplant, auch wenn der Eintritt nicht im selben Monat liegt;
+      // darüber hinaus gilt wie bisher ein Nachrücker, der in diesem Monat eintritt.
+      const festeNachfolger = abgaenge.flatMap((a) => (a.nachfolger ? [a.nachfolger] : []));
+      const festeIds = new Set(festeNachfolger.map((n) => n.kindId));
+      const bereitsEingeplant = [
+        ...festeNachfolger.map((n) => ({ kindId: n.kindId, name: n.name, eintritt: n.eintritt ?? monat })),
+        ...geplante
+          .filter(
+            (k) =>
+              !festeIds.has(k.id) &&
+              !k.ersetztKindId &&
+              k.gruppeId === zeile.gruppe.id &&
+              k.eintritt !== null &&
+              k.eintritt > vorher &&
+              k.eintritt <= monat &&
+              istAnwesend(k, monat)
+          )
+          .map((k) => ({ kindId: k.id, name: `${k.vorname} ${k.nachname}`, eintritt: k.eintritt as string })),
+      ];
       const nochOffen = zuwachs - bereitsEingeplant.length;
 
       const anwesendeAktive = aktive.filter((k) => k.gruppeId === zeile.gruppe.id && istAnwesend(k, monat));
@@ -125,8 +151,8 @@ export function berechneBelegungsVorschau(
         nochOffen <= 0
           ? []
           : geplante
-              // Wer zu diesem Monat schon eingetreten ist, hat seinen Platz.
-              .filter((k) => !istAnwesend(k, monat))
+              // Wer zu diesem Monat schon eingetreten ist, hat seinen Platz; wer fest einem anderen Kind nachfolgt, ist vergeben.
+              .filter((k) => !istAnwesend(k, monat) && !k.ersetztKindId)
               .map((k) => {
                 const passung = bewertePassung(
                   { geburtsdatum: k.geburtsdatum, geschlecht: k.geschlecht },

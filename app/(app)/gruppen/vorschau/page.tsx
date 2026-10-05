@@ -60,7 +60,7 @@ export default async function BelegungsVorschauPage() {
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id")
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null)
       .limit(3000),
@@ -91,6 +91,7 @@ export default async function BelegungsVorschauPage() {
       eintritt: k.eintritt,
       austritt: k.austritt,
       wohnort: k.wohnort,
+      ersetztKindId: k.ersetzt_kind_id,
     })),
     start,
     MONATE,
@@ -173,13 +174,13 @@ export default async function BelegungsVorschauPage() {
                 </p>
                 {f.abgaenge.length > 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Austritt: {f.abgaenge.map((a) => `${a.name} (${formatDate(a.austritt)})`).join(", ")}
+                    Austritt: {f.abgaenge.map((a) => `${a.name} (${formatDate(a.austritt)})${a.nachfolger ? ` → rückt nach: ${a.nachfolger.name}` : ""}`).join(", ")}
                   </p>
                 ) : null}
-                {f.bereitsEingeplant.length > 0 ? (
+                {f.bereitsEingeplant.filter((e) => !f.abgaenge.some((a) => a.nachfolger?.kindId === e.kindId)).length > 0 ? (
                   <p className="text-sm text-emerald-700 dark:text-emerald-400">
                     Bereits vergeben an:{" "}
-                    {f.bereitsEingeplant.map((e, i) => (
+                    {f.bereitsEingeplant.filter((e) => !f.abgaenge.some((a) => a.nachfolger?.kindId === e.kindId)).map((e, i) => (
                       <span key={e.kindId}>
                         {i > 0 ? ", " : ""}
                         <Link href={`/kinder/${e.kindId}`} className="font-medium underline-offset-2 hover:underline">

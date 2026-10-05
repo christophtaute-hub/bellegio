@@ -46,6 +46,10 @@ export type KindZeile = {
   booking_time_bands: { label: string } | null;
   weighting_factor_label?: string | null;
   weighting_factor_code?: string | null;
+  /** Aktives Kind: fester Nachfolger („B rückt nach“). */
+  nachfolgerName?: string | null;
+  /** Nachrücker: das austretende Kind, für das er nachrückt. */
+  ersetztName?: string | null;
 };
 
 export type FreieZeile = { frei: true; platz: number };
@@ -214,6 +218,14 @@ export function KinderTable({
                         </div>
                       </TooltipContent>
                     </Tooltip>
+                    {kind.nachfolgerName ? (
+                      <span className={cn("block text-xs font-normal", warnung === "rot" ? "text-destructive-foreground/90" : "text-emerald-700 dark:text-emerald-400")}>
+                        → Nachfolger: {kind.nachfolgerName}
+                      </span>
+                    ) : null}
+                    {kind.ersetztName ? (
+                      <span className="block text-xs font-normal text-emerald-700 dark:text-emerald-400">rückt nach für {kind.ersetztName}</span>
+                    ) : null}
                   </TableCell>
                   <TableCell className="text-center">
                     <span title={GESCHLECHT_LABEL[kind.geschlecht] ?? kind.geschlecht}>
