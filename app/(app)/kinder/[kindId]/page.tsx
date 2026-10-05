@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { WechselKarte } from "@/components/kinder/wechsel-karte";
+import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { NachfolgerZuordnen } from "@/components/gruppen/nachfolger-zuordnen";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -131,6 +133,44 @@ export default async function KindDetailPage({
       : Promise.resolve({ data: null }),
   ]);
 
+  // Interner Wechsel (Krippe → Kindergarten): nur für aktive Krippenkinder berechnen
+  const istKrippenKind = kind.status === "aktiv" && gruppenArtById[kind.gruppe_id ?? ""] === "krippe";
+  let wechselGeplant: { nachGruppeName: string; abDatum: string } | null = null;
+  let wechselVorschlag: Awaited<ReturnType<typeof ladeWechselDaten>>["vorschlaege"][number] | null = null;
+  let wechselOhnePlatz: { fruehesterTermin: string; austritt: string } | null = null;
+  if (istKrippenKind && einrichtungId) {
+    const heute = toIsoDateString(new Date());
+    const { data: alleKinder } = await supabase
+      .from("kinder")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id")
+      .eq("einrichtung_id", einrichtungId)
+      .is("archived_at", null)
+      .limit(3000);
+    const wd = await ladeWechselDaten(supabase, einrichtungId, {
+      gruppen: (gruppen ?? []).map((g) => ({ id: g.id, name: g.name, gruppenart: g.gruppenart, sollplatze: Number(g.sollplatze) })),
+      kinder: (alleKinder ?? []).map((k) => ({
+        id: k.id,
+        vorname: k.vorname,
+        nachname: k.nachname,
+        geburtsdatum: k.geburtsdatum,
+        geschlecht: k.geschlecht,
+        status: k.status,
+        gruppeId: k.gruppe_id,
+        eintritt: k.eintritt,
+        austritt: k.austritt,
+        wohnort: k.wohnort,
+        ersetztKindId: k.ersetzt_kind_id,
+      })),
+      startMonat: `${heute.slice(0, 7)}-01`,
+      monate: 18,
+      heute,
+    });
+    wechselGeplant = wd.geplant.find((w) => w.kindId === kind.id) ?? null;
+    wechselVorschlag = wd.vorschlaege.find((v) => v.kindId === kind.id) ?? null;
+    const op = wd.ohnePlatz.find((o) => o.kindId === kind.id);
+    wechselOhnePlatz = op ? { fruehesterTermin: op.fruehesterTermin, austritt: op.austritt } : null;
+  }
+
   const { data: auditLog } = await supabase
     .from("kinder_audit_log")
     .select("id, changed_at, old_data, new_data, user_profiles(full_name)")
@@ -214,6 +254,17 @@ export default async function KindDetailPage({
           { label: "Wohnort", wert: kind.wohnort ?? "" },
         ]}
       />
+      {istKrippenKind ? (
+        <WechselKarte
+          kindId={kind.id}
+          kindName={`${kind.vorname} ${kind.nachname}`}
+          geplant={wechselGeplant}
+          vorschlag={wechselVorschlag}
+          ohnePlatz={wechselOhnePlatz}
+          aktuellerAustritt={kind.austritt}
+          darfBearbeiten={darfBelegungBearbeiten}
+        />
+      ) : null}
       {kind.status === "aktiv" && kind.austritt ? (
         <section id="nachfolge" className="flex flex-col gap-2 rounded-2xl border bg-card p-4 print:hidden">
           <h2 className="font-heading text-base text-primary">Nachfolge</h2>

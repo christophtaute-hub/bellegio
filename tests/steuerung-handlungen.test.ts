@@ -57,6 +57,16 @@ describe("baueHandlungen", () => {
     expect(liste[0].grund).toContain("fehlen rund 32");
   });
 
+  it("bei einem Stichtag in der Zukunft heißt es „zum Stichtag“ statt „jetzt“", () => {
+    const liste = baueHandlungen({
+      ...leer,
+      stichtag: "2027-09-15",
+      heute: "2026-10-05",
+      gruppen: [gruppe({ monate: [monat("2027-09-01", "rot", 10, 80)] })],
+    });
+    expect(liste[0].titel).toBe("Sterne: Schon zum Stichtag fehlt Personal");
+  });
+
   it("Bayern-Gruppenwert ist nur ein Hinweis, keine Warnung", () => {
     const liste = baueHandlungen({
       ...leer,
@@ -107,6 +117,33 @@ describe("baueHandlungen", () => {
     });
     expect(liste[0].grund).toContain("+ 3 weitere");
     expect(liste[0].grund).not.toContain("Kind 5");
+  });
+
+  it("interne Wechsel: Vorschlag als Hinweis, fehlender Platz als Warnung — beide führen zum Kind", () => {
+    const liste = baueHandlungen({
+      ...leer,
+      wechsel: {
+        vorschlaege: [
+          {
+            kindId: "k1",
+            name: "Mia Frank",
+            vonGruppeId: "kr",
+            vonGruppeName: "Krippe",
+            nachGruppeId: "kg",
+            nachGruppeName: "Kindergarten",
+            abDatum: "2027-07-01",
+            neuerAustritt: "2030-09-01",
+            ersetztKind: { kindId: "k9", name: "Nils Winter", austritt: "2027-06-30" },
+          },
+        ],
+        ohnePlatz: [{ kindId: "k2", name: "Ole Pohl", vonGruppeName: "Krippe", fruehesterTermin: "2027-05-01", austritt: "2027-09-01" }],
+      },
+    });
+    const vorschlag = liste.find((h) => h.id === "wechsel-k1");
+    expect(vorschlag).toMatchObject({ ton: "info", href: "/kinder/k1#wechsel", aktion: "Wechsel planen" });
+    expect(vorschlag?.titel).toBe("Mia Frank: Wechsel Krippe → Kindergarten ab Juli 2027 möglich");
+    expect(vorschlag?.grund).toContain("Nils Winter");
+    expect(liste.find((h) => h.id === "wechsel-ohne-platz-k2")).toMatchObject({ ton: "warn", href: "/kinder/k2#wechsel" });
   });
 
   it("Kinder ohne Buchungszeit: höchstens drei namentlich, der Rest als Sammelaufgabe", () => {

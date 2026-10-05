@@ -9,7 +9,9 @@ import { personalKennzahl, type PersonalKennzahl } from "@/lib/dashboard/persona
 import { ladeFinanzenHeute } from "@/lib/finanzen/finanzen-heute";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 import { AUSFALLZEIT_ART_LABEL } from "@/lib/constants";
+import { toIsoDateString } from "@/lib/kita-datum";
 import { ersterKritischerMonat, type GruppeStatus } from "@/lib/steuerung/gruppen-status";
+import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { baueHandlungen, type GruppenVerlauf, type Handlung } from "@/lib/steuerung/handlungen";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 
@@ -131,9 +133,8 @@ export async function ladeSteuerung(
     einrichtung?.bundesland_code === "bw" && einrichtung.standort_gemeinde && einrichtung.auswaertigen_quote_prozent !== null
       ? { standortGemeinde: einrichtung.standort_gemeinde, quoteProzent: Number(einrichtung.auswaertigen_quote_prozent) }
       : undefined;
-  const { freiwerdende } = berechneBelegungsVorschau(
-    gruppenListe.map((g) => ({ id: g.id, name: g.name, gruppenart: g.gruppenart, sollplatze: Number(g.sollplatze) })),
-    kinderListe.map((k) => ({
+  const vorschauGruppen = gruppenListe.map((g) => ({ id: g.id, name: g.name, gruppenart: g.gruppenart, sollplatze: Number(g.sollplatze) }));
+  const vorschauKinder = kinderListe.map((k) => ({
       id: k.id,
       vorname: k.vorname,
       nachname: k.nachname,
@@ -145,11 +146,15 @@ export async function ladeSteuerung(
       austritt: k.austritt,
       wohnort: k.wohnort,
       ersetztKindId: k.ersetzt_kind_id,
-    })),
-    start,
-    STEUERUNG_MONATE,
-    auswaertigen
-  );
+    }));
+  const { freiwerdende } = berechneBelegungsVorschau(vorschauGruppen, vorschauKinder, start, STEUERUNG_MONATE, auswaertigen);
+  const wechsel = await ladeWechselDaten(supabase, einrichtungId, {
+    gruppen: vorschauGruppen,
+    kinder: vorschauKinder,
+    startMonat: start,
+    monate: STEUERUNG_MONATE,
+    heute: toIsoDateString(new Date()),
+  });
 
   // Datenlücken (namentlich)
   const kindName = new Map(kinderListe.map((k) => [k.id, `${k.vorname} ${k.nachname}`]));
@@ -186,10 +191,12 @@ export async function ladeSteuerung(
 
   const handlungen = baueHandlungen({
     stichtag,
+    heute: toIsoDateString(new Date()),
     ausblick,
     verursacherIds,
     gruppen: gruppenVerlauf,
     freiwerdende,
+    wechsel: { vorschlaege: wechsel.vorschlaege, ohnePlatz: wechsel.ohnePlatz },
     kinderOhneBuchungszeit,
     langzeit,
     verguetungFehlt,

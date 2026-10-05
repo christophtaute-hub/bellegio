@@ -21,7 +21,6 @@ import { HinweiseBox, type HinweisEintrag } from "@/components/gruppen/hinweise-
 import {
   austrittWarnung,
   verlaengerungWarnung,
-  krippenUebergangWarnung,
   formatDate,
   toIsoDateString,
   parseIsoDate,
@@ -320,14 +319,6 @@ export default async function GruppeDetailPage({
         grund: "Vertrag/Buchung läuft ab",
         datum: kind.vertrag_gueltig_bis,
         aktion: "Verlängerung oder Nachfolge klären",
-      });
-    }
-    if (gruppe.gruppenart === "krippe" && krippenUebergangWarnung(kind.geburtsdatum) === "rot") {
-      eintraege.push({
-        id: kind.id,
-        name: `${kind.vorname} ${kind.nachname}`,
-        grund: "Wird 3 — Krippe/Kindergarten prüfen",
-        datum: kind.geburtsdatum,
       });
     }
     return eintraege;

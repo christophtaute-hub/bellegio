@@ -13,7 +13,6 @@ import { meldeFehler } from "@/lib/toast";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
-import { KrippenUebergangHinweis } from "@/components/kinder/krippen-uebergang-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
 import { toIsoDateString, vorgeschlagenerAustritt } from "@/lib/kita-datum";
 
@@ -301,13 +300,6 @@ export function KindForm({
           standortGemeinde={auswaertigenQuote.standortGemeinde}
           auswaertigenQuoteProzent={auswaertigenQuote.auswaertigenQuoteProzent}
           bestehendeWohnorte={auswaertigenQuote.bestehendeWohnorte}
-        />
-      ) : null}
-
-      {watchedStatus === "aktiv" && gruppenArtById[watchedGruppeId] === "krippe" ? (
-        <KrippenUebergangHinweis
-          geburtsdatum={watchedGeburtsdatum}
-          gruppenMitKindern={gruppenMitKindern}
         />
       ) : null}
 

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { sollHistorieGeschriebenWerden } from "@/lib/kinder/buchungszeit-historie";
+import { schreibeGruppenHistorie, FRUEHESTES_DATUM } from "@/lib/kinder/gruppen-historie";
 
 export type KindInput = {
   vorname: string;
@@ -149,6 +150,11 @@ export async function createKind(input: KindInput) {
     input.buchungszeit_band_id,
     input.buchungszeit_wirksam_ab || input.eintritt
   );
+  if (input.gruppe_id) {
+    await supabase
+      .from("kind_gruppen_historie")
+      .upsert({ kind_id: kind.id, gruppe_id: input.gruppe_id, gueltig_ab: input.eintritt || FRUEHESTES_DATUM }, { onConflict: "kind_id,gueltig_ab" });
+  }
 
   revalidatePath("/kinder");
   revalidatePath("/gruppen");
@@ -163,7 +169,7 @@ export async function updateKind(kindId: string, input: KindInput) {
 
   const { data: bisher } = await supabase
     .from("kinder")
-    .select("buchungszeit_band_id")
+    .select("buchungszeit_band_id, gruppe_id, eintritt")
     .eq("id", kindId)
     .single();
 
@@ -200,6 +206,10 @@ export async function updateKind(kindId: string, input: KindInput) {
     input.buchungszeit_band_id,
     input.buchungszeit_wirksam_ab
   );
+  await schreibeGruppenHistorie(supabase, kindId, bisher?.gruppe_id ?? null, input.gruppe_id, {
+    eintritt: bisher?.eintritt ?? input.eintritt,
+    heute,
+  });
 
   revalidatePath("/kinder");
   revalidatePath(`/kinder/${kindId}`);
@@ -256,7 +266,7 @@ export async function ordneNachfolgerZu(austretendId: string, nachfolgerId: stri
   if (nachfolgerId) {
     const { data: nachfolger } = await supabase
       .from("kinder")
-      .select("id, einrichtung_id, status, eintritt")
+      .select("id, einrichtung_id, status, eintritt, gruppe_id")
       .eq("id", nachfolgerId)
       .maybeSingle();
     if (!nachfolger || nachfolger.einrichtung_id !== einrichtungId) return { ok: false, error: "Der Nachrücker wurde nicht gefunden." };
@@ -274,11 +284,85 @@ export async function ordneNachfolgerZu(austretendId: string, nachfolgerId: stri
     }
     const { error } = await supabase.from("kinder").update(update).eq("id", nachfolgerId);
     if (error) return { ok: false, error: "Die Zuordnung konnte nicht gespeichert werden." };
+    await schreibeGruppenHistorie(supabase, nachfolgerId, nachfolger.gruppe_id, austretend.gruppe_id, {
+      eintritt: update.eintritt ?? nachfolger.eintritt,
+      heute: toIsoDateString(new Date()),
+      geplanteLoeschen: false,
+    });
   }
 
   revalidatePath("/gruppen");
   revalidatePath("/dashboard");
   revalidatePath(`/kinder/${austretendId}`);
   if (nachfolgerId) revalidatePath(`/kinder/${nachfolgerId}`);
+  return { ok: true };
+}
+
+export type WechselErgebnis = { ok: true } | { ok: false; error: string };
+
+/** Plant den Wechsel eines Kindes in eine andere Gruppe (z. B. Krippe → Kindergarten) zum Monatsersten `abDatum`. Belegung,
+ * Forecast und Gruppen-Ampel rechnen ab dem Termin mit der neuen Gruppe (Gruppenhistorie). Optional wird das Austrittsdatum auf
+ * das Kindergartenende (Einschulung) gesetzt — bei Krippenkindern steht dort sonst der 3. Geburtstag. Liegt der Termin heute oder
+ * in der Vergangenheit, wirkt der Wechsel sofort. Ein früher geplanter, noch nicht wirksamer Wechsel wird ersetzt. */
+export async function planeGruppenwechsel(
+  kindId: string,
+  nachGruppeId: string,
+  abDatum: string,
+  neuerAustritt: string | null
+): Promise<WechselErgebnis> {
+  if (!/^\d{4}-\d{2}-01$/.test(abDatum)) return { ok: false, error: "Der Wechsel gilt ab einem Monatsersten." };
+  if (neuerAustritt && (!/^\d{4}-\d{2}-\d{2}$/.test(neuerAustritt) || neuerAustritt <= abDatum)) {
+    return { ok: false, error: "Das neue Austrittsdatum muss nach dem Wechsel liegen." };
+  }
+  const supabase = await createClient();
+  const einrichtungId = await getActiveEinrichtungId();
+  const heute = toIsoDateString(new Date());
+
+  const { data: kind } = await supabase
+    .from("kinder")
+    .select("id, einrichtung_id, status, gruppe_id, eintritt")
+    .eq("id", kindId)
+    .maybeSingle();
+  if (!kind || kind.einrichtung_id !== einrichtungId) return { ok: false, error: "Das Kind wurde nicht gefunden." };
+  if (kind.status !== "aktiv") return { ok: false, error: "Nur ein aktives Kind kann die Gruppe wechseln." };
+  if (kind.gruppe_id === nachGruppeId) return { ok: false, error: "Das Kind ist bereits in dieser Gruppe." };
+
+  const { data: ziel } = await supabase.from("gruppen").select("id, einrichtung_id").eq("id", nachGruppeId).maybeSingle();
+  if (!ziel || ziel.einrichtung_id !== einrichtungId) return { ok: false, error: "Die Zielgruppe wurde nicht gefunden." };
+
+  await schreibeGruppenHistorie(supabase, kindId, kind.gruppe_id, nachGruppeId, {
+    eintritt: kind.eintritt,
+    heute,
+    wirksamAb: abDatum,
+  });
+
+  const update: { gruppe_id?: string; austritt?: string } = {};
+  if (abDatum <= heute) update.gruppe_id = nachGruppeId;
+  if (neuerAustritt) update.austritt = neuerAustritt;
+  if (Object.keys(update).length > 0) {
+    const { error } = await supabase.from("kinder").update(update).eq("id", kindId);
+    if (error) return { ok: false, error: "Der Wechsel konnte nicht gespeichert werden." };
+  }
+
+  revalidatePath("/gruppen");
+  revalidatePath("/dashboard");
+  revalidatePath("/kinder");
+  revalidatePath(`/kinder/${kindId}`);
+  return { ok: true };
+}
+
+/** Nimmt einen noch nicht wirksamen Wechsel zurück. Ein bereits geändertes Austrittsdatum bleibt bestehen (bitte am Kind prüfen). */
+export async function nimmGruppenwechselZurueck(kindId: string): Promise<WechselErgebnis> {
+  const supabase = await createClient();
+  const einrichtungId = await getActiveEinrichtungId();
+  const { data: kind } = await supabase.from("kinder").select("id, einrichtung_id").eq("id", kindId).maybeSingle();
+  if (!kind || kind.einrichtung_id !== einrichtungId) return { ok: false, error: "Das Kind wurde nicht gefunden." };
+
+  const { error } = await supabase.from("kind_gruppen_historie").delete().eq("kind_id", kindId).gt("gueltig_ab", toIsoDateString(new Date()));
+  if (error) return { ok: false, error: "Der Wechsel konnte nicht zurückgenommen werden." };
+
+  revalidatePath("/gruppen");
+  revalidatePath("/dashboard");
+  revalidatePath(`/kinder/${kindId}`);
   return { ok: true };
 }

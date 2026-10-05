@@ -3,6 +3,7 @@ import type { FreiwerdenderPlatz } from "@/lib/belegung/vorschau";
 import type { LangzeitHinweis } from "@/lib/team/langzeithinweise";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 import { ersterKritischerMonat } from "@/lib/steuerung/gruppen-status";
+import type { WechselOhnePlatz, WechselVorschlag } from "@/lib/belegung/wechsel-vorschlaege";
 
 export type HandlungsBereich = "Personal" | "Belegung" | "Daten";
 
@@ -34,6 +35,8 @@ export type GruppenVerlauf = {
 
 export type HandlungsEingabe = {
   stichtag: string;
+  /** Heutiges Datum — wenn der Stichtag in der Zukunft liegt, heißt „sofort“ „schon zum Stichtag“ statt „schon jetzt“. */
+  heute?: string;
   ausblick: Pick<AusblickErgebnis, "satz" | "ersterEngpass" | "ersteWarnung" | "ursache" | "verursacher">;
   /** Austritts-Verursacher mit Personal-ID, falls bekannt (für den Direktlink). */
   verursacherIds: Record<string, string>;
@@ -41,6 +44,8 @@ export type HandlungsEingabe = {
   freiwerdende: FreiwerdenderPlatz[];
   kinderOhneBuchungszeit: { id: string; name: string }[];
   langzeit: (LangzeitHinweis & { artLabel: string })[];
+  /** Interne Wechsel (Krippe → Kindergarten): Vorschläge und Fälle ohne absehbaren Platz. */
+  wechsel?: { vorschlaege: WechselVorschlag[]; ohnePlatz: WechselOhnePlatz[] };
   /** null = kein Finanzen-Recht (dann keine Vergütungs-Aufgaben). */
   verguetungFehlt: { id: string; name: string }[] | null;
   foerderbetragFehlt: boolean | null;
@@ -69,6 +74,7 @@ const mehrzahl = (n: number, einzahl: string, plural: string) => (n === 1 ? einz
 export function baueHandlungen(e: HandlungsEingabe): Handlung[] {
   const liste: Handlung[] = [];
   const stichtagMonat = `${e.stichtag.slice(0, 7)}-01`;
+  const sofortWort = e.heute && e.stichtag > e.heute ? "Schon zum Stichtag" : "Schon jetzt";
 
   // 1. Personal der ganzen Einrichtung (Ausblick)
   const kritisch = e.ausblick.ersterEngpass ?? e.ausblick.ersteWarnung;
@@ -99,7 +105,7 @@ export function baueHandlungen(e: HandlungsEingabe): Handlung[] {
           bereich: "Personal",
           // Bayern kennt den Schlüssel nur für die Einrichtung: ein Gruppen-Richtwert ist ein Hinweis, keine Warnung.
           ton: k.ampel === "rot" && g.modell !== "bayern" ? "warn" : "info",
-          titel: `${g.name}: ${sofort ? "Schon jetzt" : `Ab ${monatLang(k.monat)}`} ${k.ampel === "rot" ? "fehlt Personal" : "wird das Personal knapp"}`,
+          titel: `${g.name}: ${sofort ? sofortWort : `Ab ${monatLang(k.monat)}`} ${k.ampel === "rot" ? "fehlt Personal" : "wird das Personal knapp"}`,
           grund: `Ist ${zahl(monat.istStunden, 1)} von ${zahl(monat.sollStunden, 1)} Wochenstunden${fehlt > 0 ? ` — es fehlen rund ${zahl(Math.ceil(fehlt))}` : ""}`,
           wann: k.monat,
           href: `/gruppen/${g.gruppeId}`,
@@ -140,6 +146,34 @@ export function baueHandlungen(e: HandlungsEingabe): Handlung[] {
       wann: p.monat,
       href: `/gruppen/${p.gruppeId}#nachfolge`,
       aktion: "Nachfolger zuordnen",
+    });
+  }
+
+  // 3b. Interne Wechsel: Vorschläge (info) und Kinder, für die kein Kindergartenplatz absehbar ist (Warnung)
+  for (const o of (e.wechsel?.ohnePlatz ?? []).slice(0, MAX_NAMENTLICH)) {
+    liste.push({
+      id: `wechsel-ohne-platz-${o.kindId}`,
+      bereich: "Belegung",
+      ton: "warn",
+      titel: `${o.name}: Kein Kindergartenplatz bis zum Austritt`,
+      grund: `Kann ab ${monatLang(o.fruehesterTermin)} wechseln, aber vor dem Austritt am ${datumKurz(o.austritt)} wird kein Platz frei`,
+      wann: o.fruehesterTermin,
+      href: `/kinder/${o.kindId}#wechsel`,
+      aktion: "Kind öffnen",
+    });
+  }
+  for (const v of (e.wechsel?.vorschlaege ?? []).slice(0, MAX_NAMENTLICH)) {
+    liste.push({
+      id: `wechsel-${v.kindId}`,
+      bereich: "Belegung",
+      ton: "info",
+      titel: `${v.name}: Wechsel ${v.vonGruppeName} → ${v.nachGruppeName} ab ${monatLang(v.abDatum)} möglich`,
+      grund: v.ersetztKind
+        ? `Platz wird frei durch ${v.ersetztKind.name} (${datumKurz(v.ersetztKind.austritt)}); der Krippenplatz wird frei`
+        : "Kindergartenplatz ist frei; der Krippenplatz wird frei",
+      wann: v.abDatum,
+      href: `/kinder/${v.kindId}#wechsel`,
+      aktion: "Wechsel planen",
     });
   }
 

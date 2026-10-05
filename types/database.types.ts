@@ -701,6 +701,45 @@ export type Database = {
           },
         ]
       }
+      kind_gruppen_historie: {
+        Row: {
+          created_at: string
+          gruppe_id: string | null
+          gueltig_ab: string
+          id: string
+          kind_id: string
+        }
+        Insert: {
+          created_at?: string
+          gruppe_id?: string | null
+          gueltig_ab: string
+          id?: string
+          kind_id: string
+        }
+        Update: {
+          created_at?: string
+          gruppe_id?: string | null
+          gueltig_ab?: string
+          id?: string
+          kind_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kind_gruppen_historie_gruppe_id_fkey"
+            columns: ["gruppe_id"]
+            isOneToOne: false
+            referencedRelation: "gruppen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kind_gruppen_historie_kind_id_fkey"
+            columns: ["kind_id"]
+            isOneToOne: false
+            referencedRelation: "kinder"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_notizen_verlauf: {
         Row: {
           erstellt_am: string

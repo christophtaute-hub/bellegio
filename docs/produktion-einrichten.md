@@ -119,3 +119,7 @@ Browser-Test: Login auf bellegio.de, Einladung eines Testnutzers mit echter Mail
 
 Testträger, Testkitas, Demo-Daten, Test-/Demo-Konten, Demo-Rechnungen. Produktion startet leer und wird über die App
 (Betreiber legt Kunde an, Träger-Admin legt Einrichtungen/Gruppen an, Import) befüllt.
+
+## Hinweis zu pg_cron (seit Milestone 33)
+
+Die Migration `20261005100000_kind_gruppen_historie.sql` aktiviert die Erweiterung `pg_cron` und plant täglich um 00:05 UTC `public.wende_gruppenwechsel_an()` ein (zieht `kinder.gruppe_id` auf die heute gültige Gruppe nach). Im Produktionsprojekt prüfen, dass der Job nach dem Einspielen der Migrationen existiert: `select * from cron.job;`.
