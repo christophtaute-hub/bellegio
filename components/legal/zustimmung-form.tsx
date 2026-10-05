@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,7 +36,7 @@ export function ZustimmungForm() {
         {DOKUMENTE.map((d) => (
           <li key={d.key}>
             <label className="flex items-start gap-3 rounded-xl border bg-card p-4 text-sm">
-              <input type="checkbox" className="mt-0.5" checked={Boolean(haken[d.key])} onChange={(e) => setHaken((h) => ({ ...h, [d.key]: e.target.checked }))} />
+              <Switch className="mt-0.5" checked={Boolean(haken[d.key])} onCheckedChange={(an) => setHaken((h) => ({ ...h, [d.key]: an }))} />
               <span>
                 Ich habe die{" "}
                 <Link href={d.href} target="_blank" className="text-primary underline">

@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
@@ -242,7 +243,7 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
           ) : null}
 
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={nurProbleme} onChange={(e) => setNurProbleme(e.target.checked)} />
+            <Switch checked={nurProbleme} onCheckedChange={setNurProbleme} />
             Nur Zeilen mit Hinweis, Fehler oder Dublette zeigen
           </label>
 

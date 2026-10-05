@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -178,7 +179,7 @@ export function GruppeForm({
           ) : null}
           {bwForm?.altersmischungMoeglich ? (
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
-              <input type="checkbox" checked={werte.bwAltersmischung} onChange={(e) => setze("bwAltersmischung", e.target.checked)} />
+              <Switch checked={werte.bwAltersmischung} onCheckedChange={(an) => setze("bwAltersmischung", an)} />
               Altersmischung (Kinder unter und über drei Jahren in einer Gruppe)
             </label>
           ) : null}

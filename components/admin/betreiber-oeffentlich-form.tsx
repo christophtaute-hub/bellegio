@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,7 @@ export function BetreiberOeffentlichForm({
       </div>
 
       <label className="flex items-start gap-2 rounded-xl border bg-secondary/40 p-4 text-sm">
-        <input type="checkbox" className="mt-0.5" checked={w.rechtstexte_geprueft} onChange={(e) => setze("rechtstexte_geprueft", e.target.checked)} />
+        <Switch className="mt-0.5" checked={w.rechtstexte_geprueft} onCheckedChange={(an) => setze("rechtstexte_geprueft", an)} />
         <span>
           <strong>Rechtstexte juristisch geprüft und freigegeben.</strong> Erst dann verschwindet der Entwurfshinweis auf Impressum, Datenschutz, AGB, AVV und
           Sicherheitsseite, und Träger-Administratoren müssen AGB und AVV beim nächsten Login bestätigen.

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
 import { meldeFehler } from "@/lib/toast";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
@@ -339,7 +339,7 @@ export function KindForm({
               htmlFor={`weighting-${factor.id}`}
               className="flex items-center gap-2 text-sm"
             >
-              <Checkbox
+              <Switch
                 id={`weighting-${factor.id}`}
                 checked={selectedWeightingFactors.includes(factor.id)}
                 onCheckedChange={(checked) => {
@@ -361,7 +361,7 @@ export function KindForm({
       </Field>
 
       <label htmlFor="hat_behinderung" className="flex items-center gap-2 text-sm">
-        <Checkbox
+        <Switch
           id="hat_behinderung"
           checked={watch("hat_behinderung")}
           onCheckedChange={(checked) =>

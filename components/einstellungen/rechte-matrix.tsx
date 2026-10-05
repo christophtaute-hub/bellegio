@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { Fragment, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -338,12 +339,10 @@ function KannRechteVerwaltenToggle({
 
   return (
     <label className="flex w-fit items-center gap-2 text-sm">
-      <input
-        type="checkbox"
+      <Switch
         defaultChecked={wert}
         disabled={isPending}
-        onChange={(event) => {
-          const neuerWert = event.target.checked;
+        onCheckedChange={(neuerWert) => {
           setError(null);
           startTransition(async () => {
             try {
@@ -377,12 +376,10 @@ function LokalerAdminToggle({
   return (
     <div className="flex flex-col gap-1">
       <label className="flex w-fit items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+        <Switch
           defaultChecked={wert}
           disabled={isPending}
-          onChange={(event) => {
-            const neuerWert = event.target.checked;
+          onCheckedChange={(neuerWert) => {
             setError(null);
             startTransition(async () => {
               try {

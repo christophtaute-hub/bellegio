@@ -18,6 +18,7 @@ import {
   type KinderTableRow,
 } from "@/components/gruppen/kinder-table";
 import { HinweiseBox, type HinweisEintrag } from "@/components/gruppen/hinweise-box";
+import { HinweisLeiste } from "@/components/ui/hinweis-leiste";
 import {
   austrittWarnung,
   verlaengerungWarnung,
@@ -456,10 +457,22 @@ export default async function GruppeDetailPage({
         />
       ) : null}
 
-      <HinweiseBox eintraege={hinweise} />
-
+      {hinweise.length + eigeneFreiwerdende.length > 0 ? (
+        <HinweisLeiste
+          titel="Hinweise zu dieser Gruppe"
+          beschreibung="Bald fällige Austritte und frei werdende Plätze — hier ordnest du auch die Nachfolge zu."
+          zusammenfassung={
+            eigeneFreiwerdende.length > 0
+              ? `${monatLang(eigeneFreiwerdende[0].monat)}: ${eigeneFreiwerdende[0].anzahl === 1 ? "1 Platz wird frei" : `${eigeneFreiwerdende[0].anzahl} Plätze werden frei`}${hinweise.length > 0 ? ` · ${hinweise.length} bald fällig` : ""}`
+              : `${hinweise.length} bald fällig`
+          }
+          anzahl={hinweise.length + eigeneFreiwerdende.length}
+          dringend={hinweise.length > 0}
+          oeffneBeiHash="nachfolge"
+        >
+          <HinweiseBox eintraege={hinweise} />
       {eigeneFreiwerdende.length > 0 ? (
-        <section id="nachfolge" className="flex flex-col gap-2 scroll-mt-20">
+        <section id="nachfolge" className="flex flex-col gap-2">
           <h2 className="font-heading text-sm font-medium text-muted-foreground">
             Nächste freie Plätze &amp; Nachfolge
           </h2>
@@ -533,6 +546,8 @@ export default async function GruppeDetailPage({
             Alle Gruppen &amp; mehr Monate ansehen →
           </Link>
         </section>
+      ) : null}
+        </HinweisLeiste>
       ) : null}
 
       <form className="flex flex-wrap items-end gap-3 print:hidden" method="get">

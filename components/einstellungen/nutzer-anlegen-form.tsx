@@ -1,5 +1,6 @@
 "use client";
 
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -190,10 +191,9 @@ export function NutzerAnlegenForm({
                     <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm">
                       {gruppe.einrichtungen.map((e) => (
                         <label key={e.id} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
+                          <Switch
                             checked={gewaehlt.includes(e.id)}
-                            onChange={(ev) => setGewaehlt((alt) => (ev.target.checked ? [...alt, e.id] : alt.filter((id) => id !== e.id)))}
+                            onCheckedChange={(an) => setGewaehlt((alt) => (an ? [...alt, e.id] : alt.filter((id) => id !== e.id)))}
                           />
                           {e.name}
                         </label>

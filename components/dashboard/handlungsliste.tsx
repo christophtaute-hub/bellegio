@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, CheckCircle2, Info } from "lucide-react";
+import { AlertTriangle, ArrowRight, Info } from "lucide-react";
+import { HinweisLeiste } from "@/components/ui/hinweis-leiste";
 import type { Handlung } from "@/lib/steuerung/handlungen";
 import { cn } from "cn";
-
-const SICHTBAR = 7;
 
 function monatKurz(iso: string): string {
   const [jahr, m] = iso.split("-").map(Number);
@@ -39,45 +38,29 @@ function Zeile({ h }: { h: Handlung }) {
   );
 }
 
-/** Die Handlungsliste: was ist das Problem, warum, und wohin muss ich klicken. Jede Zeile führt direkt zum Datensatz
- * (Kind, Gruppe, Person). Warnungen stehen oben; mehr als sieben Zeilen klappen auf. */
+/** Die Handlungsliste als schmale Leiste: eine Zeile mit dem Wichtigsten, alle Hinweise öffnen sich im Dialog. Jede Zeile
+ * führt direkt zum Datensatz (Kind, Gruppe, Person); Warnungen stehen oben. */
 export function Handlungsliste({ handlungen }: { handlungen: Handlung[] }) {
-  const sichtbar = handlungen.slice(0, SICHTBAR);
-  const rest = handlungen.slice(SICHTBAR);
   const warnungen = handlungen.filter((h) => h.ton === "warn").length;
+  const wichtigste = handlungen[0];
+  const zusammenfassung =
+    handlungen.length === 0
+      ? "Alles in Ordnung — in den nächsten Monaten ist nichts zu tun."
+      : `${wichtigste.titel}${handlungen.length > 1 ? ` · und ${handlungen.length - 1} weitere` : ""}`;
 
   return (
-    <section className="flex flex-col gap-2 rounded-2xl border bg-card p-4 md:p-5" aria-labelledby="handlungen-titel">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 px-3">
-        <h2 id="handlungen-titel" className="font-heading text-lg text-primary">
-          Was jetzt zu tun ist
-        </h2>
-        {handlungen.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {warnungen > 0 ? `${warnungen} dringend, ` : ""}
-            {handlungen.length} insgesamt
-          </p>
-        ) : null}
-      </div>
-      {handlungen.length === 0 ? (
-        <p className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-          <CheckCircle2 className="size-4 text-emerald-600" aria-hidden />
-          Alles in Ordnung — in den nächsten Monaten ist nichts zu tun.
-        </p>
-      ) : (
-        <>
-          <ul className="flex flex-col">{sichtbar.map((h) => <Zeile key={h.id} h={h} />)}</ul>
-          {rest.length > 0 ? (
-            <details className="group">
-              <summary className="cursor-pointer list-none px-3 py-1.5 text-sm text-primary hover:underline">
-                <span className="group-open:hidden">Weitere {rest.length} anzeigen</span>
-                <span className="hidden group-open:inline">Weniger anzeigen</span>
-              </summary>
-              <ul className="flex flex-col">{rest.map((h) => <Zeile key={h.id} h={h} />)}</ul>
-            </details>
-          ) : null}
-        </>
-      )}
-    </section>
+    <HinweisLeiste
+      titel="Was jetzt zu tun ist"
+      beschreibung={warnungen > 0 ? `${warnungen} dringend, ${handlungen.length} insgesamt` : `${handlungen.length} insgesamt`}
+      zusammenfassung={zusammenfassung}
+      anzahl={handlungen.length}
+      dringend={warnungen > 0}
+    >
+      <ul className="-mx-2 flex flex-col">
+        {handlungen.map((h) => (
+          <Zeile key={h.id} h={h} />
+        ))}
+      </ul>
+    </HinweisLeiste>
   );
 }
