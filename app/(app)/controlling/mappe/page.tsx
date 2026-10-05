@@ -11,6 +11,7 @@ import { getKategorisierung } from "@/lib/controlling/jahreskategorisierung";
 import { ForecastTable } from "@/components/forecast/forecast-table";
 import { KalenderjahrKategorisierungTabelle } from "@/components/forecast/kalenderjahr-kategorisierung-tabelle";
 import { MappeExportButtons, type AuditMonat } from "@/components/controlling/mappe-export-buttons";
+import { RechtsstandHinweise } from "@/components/forecast/rechtsstand-hinweise";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import {
   Table,
@@ -154,6 +155,7 @@ export default async function PruefungsmappePage({
 
       <section className="flex flex-col gap-3 print:break-after-page">
         <h2 className="font-heading text-xl text-primary">1. Belegung und Personal je Monat</h2>
+        <RechtsstandHinweise bundeslandCode={einrichtung?.bundesland_code ?? "by"} monate={months.map((m) => m.month)} zeigeFinanzen={zeigeFinanzen} />
         <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} />
       </section>
 

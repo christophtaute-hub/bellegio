@@ -72,7 +72,7 @@ export const AUSFALLZEIT_ART_LABEL: Record<string, string> = {
 
 /** Stand der hinterlegten Gesetzeswerte und Rechenwege (Anlagen zu BayKiBiG/AVBayKiBiG, KiTaVO, KiBiz). Bei jeder
  * Prüfung oder Änderung der Werte aktualisieren — der Stand steht in Dokumentation und Prüfungsmappe. */
-export const RECHENWERTE_STAND = "September 2026";
+export const RECHENWERTE_STAND = "01.10.2026";
 
 export const PLANUNGSHILFE_HINWEIS =
   "Planungshilfe, keine Rechts- oder Behördenauskunft. Die Werte beruhen auf den genannten Quellen; vor Meldungen und Förderanträgen mit dem zuständigen Jugendamt abgleichen.";

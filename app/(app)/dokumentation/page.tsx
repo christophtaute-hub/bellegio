@@ -253,7 +253,10 @@ export default async function DokumentationPage() {
             Basiswert, Buchungszeit- und Gewichtungsfaktor“. Der Qualitätsbonus erhöht den Basiswert („Basiswert plus“,
             Art. 23 Abs. 1 BayKiBiG) und wird deshalb mit den Faktoren multipliziert. Amtliche Werte für die Förderabschläge
             2026 (BayMBl. 2025 Nr. 557): Basiswert 1.563,88 € (gilt für 3–4 Std. Buchungszeit, Faktor 1,0), Qualitätsbonus
-            268,01 €. Beide ändern sich jährlich und sind in Bellegio versioniert hinterlegt. Bellegio zeigt den
+            268,01 €. Ab 01.01.2027 gilt die Reform: Der Qualitätsbonus beträgt vorläufig 693,28 € (2027), 852,36 € (2028) und
+            857,87 € (2029) und wird dem Basiswert aufgeschlagen; der Basiswert 2027 ist vom Ministerium noch nicht
+            bekanntgegeben und in Bellegio bis dahin mit dem Wert von 2026 fortgeschrieben (Quellen: Handreichung des StMAS,
+            IFKM). Alle Werte sind in Bellegio je Gültigkeitsdatum hinterlegt. Bellegio zeigt den
             Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen. Bei mehreren Gewichtungsmerkmalen
             gilt der höchste Faktor.
           </p>
@@ -261,7 +264,7 @@ export default async function DokumentationPage() {
             <strong className="text-foreground">Nicht abgebildet:</strong> der Eigenanteil der Gemeinde (Art. 22 BayKiBiG: der
             Anspruch des Trägers ist die staatliche Förderung zuzüglich eines gemeindlichen Anteils — dessen Höhe regelt die
             Gemeinde), Sonderfälle wie die Erhöhung von Buchungszeitfaktoren nach § 24 AVBayKiBiG (dort entfällt der
-            Qualitätsbonus) sowie die Reform zum 01.01.2027 (u. a. Teamkräftepauschale). Der berechnete Wert ersetzt keinen
+            Qualitätsbonus) sowie die neue Teamkräftepauschale ab 2027, der Wegfall des Elternbeitragszuschusses und der U3-Bundesmittel. Der berechnete Wert ersetzt keinen
             Blick in den eigenen Zuwendungsbescheid — bei Abweichung lässt sich unter Einrichtung → Finanzen ein
             manueller Förderbetrag hinterlegen, der die Formel überschreibt.
           </p>

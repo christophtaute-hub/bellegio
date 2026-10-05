@@ -5,6 +5,7 @@ import { loeseZeitraumAuf, zeitraumEnde, type ZeitraumParameter } from "@/lib/co
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
 import { ForecastTable } from "@/components/forecast/forecast-table";
+import { RechtsstandHinweise } from "@/components/forecast/rechtsstand-hinweise";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import { ExportButtons } from "@/components/forecast/export-buttons";
 import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
@@ -42,7 +43,7 @@ export default async function ControllingPage({
   const { data: einrichtung } = einrichtungId
     ? await supabase
         .from("einrichtungen")
-        .select("kita_year_start_month")
+        .select("kita_year_start_month, bundesland_code")
         .eq("id", einrichtungId)
         .single()
     : { data: null };
@@ -88,6 +89,8 @@ export default async function ControllingPage({
         aktuellesJahr={heute.getUTCFullYear()}
         beschreibung={`${zeitraum.label}: ${formatDate(zeitraum.von)} – ${formatDate(zeitraumEnde(zeitraum))}`}
       />
+
+      <RechtsstandHinweise bundeslandCode={einrichtung?.bundesland_code ?? "by"} monate={months.map((m) => m.month)} zeigeFinanzen={zeigeFinanzen} />
 
       {months.length > 0 ? (
         <ForecastTable months={months} zeigeFinanzen={zeigeFinanzen} />
