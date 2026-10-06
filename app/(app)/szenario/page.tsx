@@ -1,7 +1,11 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { KitajahrPlanung } from "@/components/szenario/kitajahr-planung";
+import { ladeKitajahrPlanung } from "@/lib/planung/lade-kitajahr";
+import { kitajahrBeginnIso, kitajahrLabel, kitajahrStartJahr } from "@/lib/kita-datum";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { toIsoDateString } from "@/lib/kita-datum";
-import { canUseSzenarioRechner, canViewFinanzen, canViewGehaelter } from "@/lib/server/current-user-role";
+import { canUseSzenarioRechner, canViewFinanzen, canViewGehaelter, getZugriff } from "@/lib/server/current-user-role";
 import { getKinderPresenceAtDate, type PresenceRow } from "@/lib/dashboard/presence";
 import { getTeamPresenceForMonth, getStaffingRules, type TeamPresenceRow } from "@/lib/team/anstellungsschluessel";
 import { getBWPersonalschluesselTabelle } from "@/lib/team/personalschluessel-bw";
@@ -74,7 +78,7 @@ async function ladeFinanzenFuerSzenario(
   };
 }
 
-export default async function SzenarioPage() {
+async function WasWaereWennInhalt() {
   const einrichtungId = await getActiveEinrichtungId();
   const supabase = await createClient();
   const erlaubt = einrichtungId
@@ -309,16 +313,84 @@ export default async function SzenarioPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">
-          Szenario-Rechner
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Vorbefüllt mit den echten heutigen Zahlen — Änderungen hier werden
-          nirgends gespeichert, rein zum Durchrechnen.
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Vorbefüllt mit den echten heutigen Zahlen — Änderungen hier werden nirgends gespeichert, rein zum Durchrechnen.
+      </p>
       {inhalt}
+    </div>
+  );
+}
+
+/** Reiter „Kitajahr planen“: Vorschlag aus den bekannten Veränderungen, eigene Planzahlen, Personalbedarf. */
+async function PlanungInhalt({ jahrParam }: { jahrParam?: string }) {
+  const einrichtungId = await getActiveEinrichtungId();
+  if (!einrichtungId) return null;
+  const supabase = await createClient();
+  const [{ data: einrichtung }, zeigeFinanzen, zugriff] = await Promise.all([
+    supabase.from("einrichtungen").select("kita_year_start_month").eq("id", einrichtungId).single(),
+    canViewFinanzen(supabase, einrichtungId),
+    getZugriff(supabase, einrichtungId, "szenario"),
+  ]);
+  const startMonat = einrichtung?.kita_year_start_month ?? 9;
+  const heute = new Date();
+  const aktuellesJahr = kitajahrStartJahr(heute, startMonat);
+  const gewaehlt = [aktuellesJahr, aktuellesJahr + 1, aktuellesJahr + 2].find((j) => j === Number(jahrParam)) ?? aktuellesJahr + 1;
+  const start = kitajahrBeginnIso(gewaehlt, startMonat);
+
+  const daten = await ladeKitajahrPlanung(supabase, einrichtungId, start, zeigeFinanzen);
+  if (!daten) return <p className="text-sm text-muted-foreground">Für diese Einrichtung gibt es noch keine Daten für eine Planung.</p>;
+
+  return (
+    <KitajahrPlanung
+      key={start}
+      einrichtungId={einrichtungId}
+      kitajahrStart={start}
+      kitajahrLabel={kitajahrLabel(gewaehlt, startMonat)}
+      auswahl={[aktuellesJahr, aktuellesJahr + 1, aktuellesJahr + 2].map((j) => ({ jahr: j, label: kitajahrLabel(j, startMonat), aktiv: j === gewaehlt }))}
+      eingabe={daten.eingabe}
+      gespeichert={daten.gespeichert}
+      gespeichertAm={daten.gespeichertAm}
+      kostenJeWochenstunde={daten.kostenJeWochenstunde}
+      darfBearbeiten={zugriff === "bearbeiten"}
+    />
+  );
+}
+
+export default async function SzenarioPage({ searchParams }: { searchParams: Promise<{ reiter?: string; jahr?: string }> }) {
+  const { reiter, jahr } = await searchParams;
+  const einrichtungId = await getActiveEinrichtungId();
+  const supabase = await createClient();
+  const erlaubt = einrichtungId ? await canUseSzenarioRechner(supabase, einrichtungId) : false;
+
+  if (!erlaubt) {
+    return (
+      <div className="flex flex-col gap-2">
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Planung</h1>
+        <p className="text-sm text-muted-foreground">Für diesen Bereich hast du keinen Zugriff auf die aktuelle Einrichtung.</p>
+      </div>
+    );
+  }
+
+  const wasWaereWenn = reiter === "wenn";
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="font-heading text-3xl tracking-tight text-primary">Planung</h1>
+      <nav className="flex gap-1 border-b" aria-label="Planung">
+        {[
+          { href: "/szenario", label: "Kitajahr planen", aktiv: !wasWaereWenn },
+          { href: "/szenario?reiter=wenn", label: "Was wäre wenn", aktiv: wasWaereWenn },
+        ].map((t) => (
+          <Link
+            key={t.href}
+            href={t.href}
+            aria-current={t.aktiv ? "page" : undefined}
+            className={`-mb-px border-b-2 px-3 py-2 text-sm transition-colors ${t.aktiv ? "border-primary font-medium text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+      {wasWaereWenn ? <WasWaereWennInhalt /> : <PlanungInhalt jahrParam={jahr} />}
     </div>
   );
 }

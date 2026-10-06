@@ -746,6 +746,38 @@ export type Database = {
           },
         ]
       }
+      kitajahr_planung: {
+        Row: {
+          daten: Json
+          einrichtung_id: string
+          kitajahr_start: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          daten?: Json
+          einrichtung_id: string
+          kitajahr_start: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          daten?: Json
+          einrichtung_id?: string
+          kitajahr_start?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kitajahr_planung_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_gruppen_historie: {
         Row: {
           created_at: string
