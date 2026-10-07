@@ -111,8 +111,12 @@ const AMPEL_TEXT = PERSONAL_STATUS;
 
 function finanzRows(months: ForecastMonth[]): { label: string; values: (string | number)[] }[] {
   const runde = (wert: number, stellen: number) => Number(wert.toFixed(stellen));
+  const mitBeitraegen = months.some((m) => m.finanzen?.elternbeitraegeMonat != null);
   return [
     { label: "Fördererlöse", values: months.map((m) => (m.finanzen ? runde(m.finanzen.foerdererloeseMonat, 2) : "")) },
+    ...(mitBeitraegen
+      ? [{ label: "Elternbeiträge", values: months.map((m) => (m.finanzen?.elternbeitraegeMonat != null ? runde(m.finanzen.elternbeitraegeMonat, 2) : "")) }]
+      : []),
     { label: "Personalkosten", values: months.map((m) => (m.finanzen ? runde(m.finanzen.personalkostenMonat, 2) : "")) },
     { label: "Ergebnis", values: months.map((m) => (m.finanzen ? runde(m.finanzen.ergebnisMonat, 2) : "")) },
   ];

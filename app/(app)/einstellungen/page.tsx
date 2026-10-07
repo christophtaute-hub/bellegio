@@ -4,6 +4,9 @@ import { getCurrentUserRole, canViewFinanzen, canWriteFinanzen } from "@/lib/ser
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
+import { BeitraegeEditor } from "@/components/einrichtung/beitraege-editor";
+import { ladeBeitragszeilen, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { toIsoDateString } from "@/lib/kita-datum";
 import {
   FoerderungManuellEditor,
   LohnnebenkostenEditor,
@@ -40,6 +43,22 @@ export default async function EinstellungenPage() {
     : { data: null };
 
   const istTraegerAdmin = eigenesProfil?.role === "traeger_admin";
+
+  // Preisliste (Elternbeiträge): Bänder des Bundeslands + die aktuell gültige Fassung (sonst die jüngste vorhandene)
+  const beitragsDaten =
+    zeigeFinanzen && einrichtungId && einrichtung
+      ? await (async () => {
+          const [{ data: baender }, zeilen] = await Promise.all([
+            supabase.from("booking_time_bands").select("id, label, sort_order").eq("bundesland_code", einrichtung.bundesland_code).order("sort_order"),
+            ladeBeitragszeilen(supabase, einrichtungId),
+          ]);
+          const versionen = [...new Set(zeilen.map((z) => z.gueltigAb))].sort().reverse();
+          const heute = toIsoDateString(new Date());
+          const angezeigt = versionen.find((v) => v <= heute) ?? versionen[0] ?? heute;
+          const preise = Object.fromEntries(preiseAmStichtag(zeilen.filter((z) => z.gueltigAb === angezeigt), angezeigt));
+          return { baender: (baender ?? []).map((b) => ({ id: b.id, label: b.label })), preise, angezeigt, versionen };
+        })()
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,6 +166,17 @@ export default async function EinstellungenPage() {
               canEdit={bearbeiteFinanzen}
             />
           </div>
+          {beitragsDaten && beitragsDaten.baender.length > 0 ? (
+            <BeitraegeEditor
+              key={beitragsDaten.angezeigt}
+              einrichtungId={einrichtungId}
+              baender={beitragsDaten.baender}
+              preise={beitragsDaten.preise}
+              gueltigAb={beitragsDaten.angezeigt}
+              versionen={beitragsDaten.versionen}
+              canEdit={bearbeiteFinanzen}
+            />
+          ) : null}
         </section>
       ) : null}
     </div>

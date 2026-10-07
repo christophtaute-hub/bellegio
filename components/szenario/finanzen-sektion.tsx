@@ -1,7 +1,7 @@
 "use client";
 
 import { Wallet } from "lucide-react";
-import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
+import { ergebnisHinweis } from "@/lib/finanzen/hinweise";
 import { MetricCard } from "@/components/ui/metric-card";
 import { berechneSzenarioErgebnis, type Ergebnis, type SzenarioPersonalZeile } from "@/lib/finanzen/ergebnis";
 
@@ -32,8 +32,9 @@ export function FinanzenSektion({
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
 }) {
+  const elternbeitraege = finanzenHeute.elternbeitraegeMonat ?? null;
   const { personalkostenSimuliert, ergebnisSimuliert, personalkostenNichtErfasst } = berechneSzenarioErgebnis(
-    finanzenHeute.foerdererloeseMonat,
+    finanzenHeute.foerdererloeseMonat + (elternbeitraege ?? 0),
     personal,
     vollzeitWochenstunden,
     lohnnebenkostenProzent,
@@ -44,13 +45,14 @@ export function FinanzenSektion({
     <section className="flex flex-col gap-4">
       <h2 className="font-heading text-lg text-primary">Finanzen</h2>
       <p className="text-xs text-muted-foreground">
-        Fördererlöse bleiben auf dem heutigen realen Wert fixiert (in diesem Rechner nicht mitsimulierbar).
+        Fördererlöse und Elternbeiträge bleiben auf dem heutigen realen Wert fixiert (in diesem Rechner nicht mitsimulierbar).
         {gehaelterAusgeblendet
           ? "Personalkosten rechnen mit den durchschnittlichen Kosten je Wochenstunde deines Teams (Einzelgehälter sind für dich nicht sichtbar), inklusive Lohnnebenkosten und Jahressonderzahlung."
           : "Personalkosten sind die echte Summe aus den Gehalt-Feldern beim Personal oben — bei bestehenden Mitarbeitenden mit ihrem echten Vollzeit-Gehalt vorbefüllt, bei neu hinzugefügten Zeilen frei editierbar, inklusive Lohnnebenkosten und Jahressonderzahlung."}
       </p>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <MetricCard label="Fördererlöse (heute, real)" value={formatEuro(finanzenHeute.foerdererloeseMonat)} icon={<Wallet />} />
+        {elternbeitraege !== null ? <MetricCard label="Elternbeiträge (heute, real)" value={formatEuro(elternbeitraege)} icon={<Wallet />} /> : null}
         <MetricCard label="Personalkosten (simuliert)" value={formatEuro(personalkostenSimuliert)} icon={<Wallet />} />
         <MetricCard
           label="Ergebnis (simuliert)"
@@ -59,7 +61,7 @@ export function FinanzenSektion({
           tone={ergebnisSimuliert < 0 ? "warn" : "default"}
         />
       </div>
-      <p className="text-xs text-muted-foreground">{ERGEBNIS_HINWEIS}</p>
+      <p className="text-xs text-muted-foreground">{ergebnisHinweis(elternbeitraege !== null)}</p>
       {personalkostenNichtErfasst > 0 ? (
         <p className="text-xs text-muted-foreground">
           {personalkostenNichtErfasst} Personal-Zeile{personalkostenNichtErfasst === 1 ? "" : "n"} ohne Gehalt-Angabe

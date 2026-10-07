@@ -92,6 +92,13 @@ async function main() {
       .single();
     if (error || !e) throw new Error(error?.message ?? "Einrichtung nicht kopiert.");
 
+    // Preisliste (Elternbeiträge)
+    const { data: beitraege } = await sb.from("einrichtung_beitraege").select("booking_time_band_id, betrag_monat, gueltig_ab").eq("einrichtung_id", q.id);
+    if ((beitraege ?? []).length > 0) {
+      const { error: be } = await sb.from("einrichtung_beitraege").insert((beitraege ?? []).map((b) => ({ ...b, einrichtung_id: e.id })));
+      if (be) throw new Error(be.message);
+    }
+
     // Gruppen
     const { data: gruppen } = await sb.from("gruppen").select("*").eq("einrichtung_id", q.id).is("archived_at", null);
     const gruppeNeu = new Map<string, string>();

@@ -1,4 +1,4 @@
-import { ERGEBNIS_HINWEIS } from "@/lib/finanzen/hinweise";
+import { ergebnisHinweis } from "@/lib/finanzen/hinweise";
 import {
   Table,
   TableBody,
@@ -370,6 +370,7 @@ function formatEuro(value: number): string {
  * damit "sieht alles außer Finanzsicht" auch optisch stimmt. */
 function FinanzenZeilen({ months }: { months: Zeitreihe }) {
   const nichtErfasstMax = Math.max(0, ...months.map((m) => m.finanzen?.personalkostenNichtErfasst ?? 0));
+  const mitBeitraegen = months.some((m) => m.finanzen?.elternbeitraegeMonat !== null && m.finanzen?.elternbeitraegeMonat !== undefined);
 
   return (
     <>
@@ -381,6 +382,16 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
           </TableCell>
         ))}
       </TableRow>
+      {mitBeitraegen ? (
+        <TableRow>
+          <LabelCell>Elternbeiträge</LabelCell>
+          {months.map((m) => (
+            <TableCell key={m.month} className="text-right tabular-nums">
+              {m.finanzen?.elternbeitraegeMonat != null ? formatEuro(m.finanzen.elternbeitraegeMonat) : "–"}
+            </TableCell>
+          ))}
+        </TableRow>
+      ) : null}
       <TableRow>
         <LabelCell>Personalkosten</LabelCell>
         {months.map((m) => (
@@ -408,13 +419,13 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
       </TableRow>
       <TableRow>
         <TableCell colSpan={months.length + 1} className="sticky left-0 z-10 bg-card text-xs text-muted-foreground">
-          {ERGEBNIS_HINWEIS}
+          <div className="max-w-3xl whitespace-normal">{ergebnisHinweis(mitBeitraegen)}</div>
         </TableCell>
       </TableRow>
       {nichtErfasstMax > 0 ? (
         <TableRow>
           <TableCell colSpan={months.length + 1} className="sticky left-0 z-10 bg-card text-xs text-muted-foreground">
-            Bis zu {nichtErfasstMax} Mitarbeitende ohne erfasste Vergütung — fließen nicht in die Personalkosten ein.
+            <div className="max-w-3xl whitespace-normal">Bis zu {nichtErfasstMax} Mitarbeitende ohne erfasste Vergütung — fließen nicht in die Personalkosten ein.</div>
           </TableCell>
         </TableRow>
       ) : null}

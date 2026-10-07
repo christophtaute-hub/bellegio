@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { formatDate } from "@/lib/kita-datum";
+import { formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { loeseZeitraumAuf, zeitraumEnde, type ZeitraumParameter } from "@/lib/controlling/zeitraum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
 import { ForecastKompakt, ForecastTable } from "@/components/forecast/forecast-table";
 import { RechtsstandHinweise } from "@/components/forecast/rechtsstand-hinweise";
+import { BeitraegeJeGruppeTabelle } from "@/components/forecast/beitraege-je-gruppe";
+import { beitraegeJeGruppe, berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import { ExportButtons } from "@/components/forecast/export-buttons";
 import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
@@ -57,6 +60,20 @@ export default async function ControllingPage({
   const months = einrichtungId
     ? await buildForecastMonths(supabase, einrichtungId, zeitraum.von, zeitraum.monate, zeigeFinanzen)
     : [];
+
+  // Elternbeiträge je Gruppe (nur mit Recht „Finanzübersicht“ und vorhandener Preisliste)
+  let beitraege: { zeilen: ReturnType<typeof beitraegeJeGruppe>; ohnePreis: number } | null = null;
+  if (zeigeFinanzen && einrichtungId) {
+    const heuteIso = toIsoDateString(heute);
+    const preise = preiseAmStichtag(await ladeBeitragszeilen(supabase, einrichtungId), heuteIso);
+    if (preise.size > 0) {
+      const [rows, { data: gruppenListe }] = await Promise.all([
+        getKinderPresenceAtDate(supabase, einrichtungId, heuteIso),
+        supabase.from("gruppen").select("id, name").eq("einrichtung_id", einrichtungId).is("archived_at", null),
+      ]);
+      beitraege = { zeilen: beitraegeJeGruppe(rows, preise, gruppenListe ?? []), ohnePreis: berechneElternbeitraege(rows, preise).kinderOhnePreis };
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,6 +138,8 @@ export default async function ControllingPage({
           Keine Daten verfügbar.
         </p>
       )}
+
+      {beitraege ? <BeitraegeJeGruppeTabelle zeilen={beitraege.zeilen} kinderOhnePreis={beitraege.ohnePreis} /> : null}
 
       {alleKennzahlen && months.length > 0 ? (
         <div className="flex flex-col gap-3">
