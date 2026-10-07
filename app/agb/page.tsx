@@ -23,7 +23,7 @@ export default async function AgbPage() {
         <p>
           Bellegio stellt dem Kunden die Anwendung als Software-as-a-Service über das Internet bereit. Der Leistungsumfang ergibt sich aus der jeweils
           vereinbarten Bestellung und der Leistungsbeschreibung auf der Website: Belegung, Personal, Controlling, Szenario-Rechner sowie die
-          zugehörigen Auswertungen und Exporte für die Bundesländer Bayern, Baden-Württemberg und Nordrhein-Westfalen. Bellegio entwickelt die Anwendung
+          zugehörigen Auswertungen und Exporte für die jeweils hinterlegten Bundesländer (derzeit Bayern, Baden-Württemberg und Nordrhein-Westfalen). Bellegio entwickelt die Anwendung
           weiter und darf Funktionen anpassen, soweit der vereinbarte Leistungsumfang nicht wesentlich eingeschränkt wird.
         </p>
       </Abschnitt>

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { href: "/#kind", label: "Kind" },
   { href: "/#team", label: "Personal" },
-  { href: "/#bundeslaender", label: "Bundesländer" },
+  { href: "/#bundeslaender", label: "Landesrecht" },
   { href: "/#einblicke", label: "Einblicke" },
   { href: "/#preise", label: "Preise" },
 ];

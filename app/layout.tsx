@@ -16,18 +16,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://bellegio.de"),
   title: {
-    default: "Bellegio — Kita-Controlling für Bayern, Baden-Württemberg und NRW",
+    default: "Bellegio — Kita-Controlling nach dem Landesrecht deiner Einrichtung",
     template: "%s — Bellegio",
   },
   description:
-    "Belegung, Personalschlüssel und Meldewesen für Kindertagesstätten — mit dem passenden Rechenweg für Bayern, Baden-Württemberg und Nordrhein-Westfalen. Jedes Kind im Blick, jede Fachkraft am richtigen Platz.",
+    "Belegung, Personalschlüssel, Finanzen und Meldewesen für Kindertagesstätten — gerechnet nach dem Landesrecht deiner Einrichtung. Jedes Kind im Blick, jede Fachkraft am richtigen Platz.",
   keywords: [
     "Kita-Software",
     "Kita-Controlling",
     "Personalschlüssel Kita",
-    "Anstellungsschlüssel BayKiBiG",
-    "KiTaVO Baden-Württemberg",
-    "KiBiz NRW",
+    "Landesrecht Kita",
+    "Kita-Personalplanung",
     "Belegungsmanagement Kindertagesstätte",
     "Kinder- und Jugendhilfestatistik",
   ],
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Bellegio — Jedes Kind im Blick. Jede Fachkraft am richtigen Platz.",
     description:
-      "Belegung, Personalschlüssel und Meldewesen für Kindertagesstätten in Bayern, Baden-Württemberg und Nordrhein-Westfalen.",
+      "Belegung, Personalschlüssel, Finanzen und Meldewesen für Kindertagesstätten — nach dem Landesrecht deiner Einrichtung.",
     url: "/",
     siteName: "Bellegio",
     locale: "de_DE",
@@ -47,7 +46,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "Bellegio — Jedes Kind im Blick. Jede Fachkraft am richtigen Platz.",
     description:
-      "Belegung, Personalschlüssel und Meldewesen für Kindertagesstätten in Bayern, Baden-Württemberg und Nordrhein-Westfalen.",
+      "Belegung, Personalschlüssel, Finanzen und Meldewesen für Kindertagesstätten — nach dem Landesrecht deiner Einrichtung.",
   },
 };
 

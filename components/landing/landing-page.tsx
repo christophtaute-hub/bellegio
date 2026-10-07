@@ -53,7 +53,7 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
             "Nachrücker erhalten eine Empfehlung, in welche Gruppe sie nach Alter und Geschlecht am besten passen",
             "I-Status ist in allen Bundesländern ein eigenes Merkmal — auch in der Statistik",
             "Der Änderungsverlauf jedes Kindes lässt sich mit einem Klick ausdrucken",
-            "In Baden-Württemberg behältst du die Quote auswärtiger Kinder im Blick",
+            "Wo Kommunen die Quote auswärtiger Kinder begrenzen, behältst du sie im Blick",
           ]}
           mockups={[<KindMockup key="kind" />]}
         />
@@ -64,9 +64,9 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
           titel="Der Personalschlüssel ist kein Bauchgefühl."
           text="Bellegio rechnet aus, ob dein Personal reicht — heute und in den kommenden Monaten. So siehst du Engpässe, bevor sie zum Problem werden."
           punkte={[
-            "Personal-Ausblick: ein Satz sagt dir, ab wann dein Personal nicht mehr reicht — mit Verlauf für die nächsten 18 Monate",
+            "Ein Satz sagt dir, ab wann dein Personal nicht mehr reicht — mit Ringen und Verlauf für bis zu 24 Monate",
             "Austritte, Teilzeit und Ausfallzeiten fließen direkt in die Rechnung ein",
-            "Im Szenario-Rechner spielst du Änderungen durch, ohne echte Daten anzufassen",
+            "In der Planung spielst du Änderungen und das nächste Kitajahr durch, ohne echte Daten anzufassen",
             "Jede Änderung am Personal wird protokolliert",
           ]}
           mockups={[<TeamMockup key="team" />, <AusblickMockup key="ausblick" />]}
@@ -78,13 +78,13 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
           spiegeln
           eyebrow="Finanzen im Blick"
           titel="Was kostet dein Personal — und was kommt rein?"
-          text="Fördererlöse und Personalkosten stehen neben der Belegung. Im Szenario-Rechner siehst du, was eine zusätzliche Fachkraft oder ein Austritt für das Ergebnis bedeutet."
+          text="Fördererlöse und Personalkosten stehen neben der Belegung. In der Planung siehst du, was eine zusätzliche Fachkraft oder ein Austritt für das Ergebnis bedeutet."
           punkte={[
-            "Fördererlöse nach den Regeln des Bundeslands (Bayern, NRW) oder als eigener Betrag (Baden-Württemberg)",
+            "Fördererlöse nach den hinterlegten Regeln des Landes — oder als eigener Betrag, wo es keine Landesformel gibt",
             "Personalkosten nach TVöD SuE oder mit eigenem Gehalt je Mitarbeitendem, inklusive Lohnnebenkosten",
-            "Szenario-Rechner mit Gehaltsfeld je Zeile — ohne echte Daten anzufassen",
+            "Planung mit Gehaltsfeld je Zeile — ohne echte Daten anzufassen",
             "Finanzen sehen nur Nutzer mit eigenem Recht, getrennt von Belegung und Personal",
-            "Planungsgröße: Elternbeiträge, kommunale Anteile und Sachkosten sind nicht enthalten",
+            "Elternbeiträge trägst du als eigene Preisliste ein; kommunale Anteile und Sachkosten sind nicht enthalten",
           ]}
           mockups={[<FinanzenMockup key="finanzen" />, <SzenarioFinanzenMockup key="szenario" />]}
         />
@@ -93,17 +93,18 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
           <div className="mx-auto grid max-w-6xl gap-12 px-6 lg:grid-cols-2 lg:gap-16">
             <div className="flex flex-col gap-6">
               <Reveal>
-                <p className="text-sm font-medium tracking-wide text-primary uppercase">Ein Tool, drei Rechenwege</p>
+                <p className="text-sm font-medium tracking-wide text-primary uppercase">Landesrecht je Einrichtung</p>
               </Reveal>
               <Reveal delay={80}>
                 <h2 className="font-heading text-4xl leading-[1.05] font-semibold tracking-tight text-balance md:text-6xl">
-                  Jedes Land rechnet anders. Bellegio kennt alle drei.
+                  Jedes Land rechnet anders. Bellegio passt sich an.
                 </h2>
               </Reveal>
               <Reveal delay={160}>
                 <p className="max-w-md text-lg text-muted-foreground">
-                  Bayern, Baden-Württemberg und Nordrhein-Westfalen folgen völlig unterschiedlichen Gesetzen.
-                  Bellegio zeigt in jedem Land nur die passende Berechnung — mit Formel und Quelle.
+                  Förderung und Personalschlüssel folgen in jedem Land anderen Gesetzen. Bellegio zeigt je Einrichtung nur die passende
+                  Berechnung — mit Formel und Quelle. Hier drei Beispiele; welche Länder hinterlegt sind, zeigt dir die Demo. Dein Land
+                  fehlt? Sprich uns an.
                 </p>
               </Reveal>
             </div>
@@ -131,7 +132,7 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
           spiegeln
           eyebrow="Meldewesen ohne Excel"
           titel="Die Statistik aus einem Guss."
-          text="Kinder nach Wochenstunden, Monat für Monat und inklusive Kindern mit I-Status — in allen drei Bundesländern gleich aufgebaut und mit einem Klick als Excel oder PDF exportiert."
+          text="Kinder nach Wochenstunden, Monat für Monat und inklusive Kindern mit I-Status — in jedem Bundesland gleich aufgebaut und mit einem Klick als Excel oder PDF exportiert."
           punkte={[
             "Controlling je Monat: Kopfzahl sowie ungewichtete und gewichtete Buchungsstunden je Gruppenart",
             "Kategorisierung nach Kalenderjahr von Januar bis Dezember, inklusive I-Status",

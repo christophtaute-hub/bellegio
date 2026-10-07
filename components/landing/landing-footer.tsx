@@ -4,7 +4,7 @@ export function LandingFooter() {
   return (
     <footer className="border-t px-6 py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
-        <span>© {new Date().getFullYear()} Bellegio · Kita-Controlling für Bayern, Baden-Württemberg und Nordrhein-Westfalen</span>
+        <span>© {new Date().getFullYear()} Bellegio · Kita-Controlling nach dem Landesrecht deiner Einrichtung</span>
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <Link href="/impressum" className="hover:text-foreground">
             Impressum

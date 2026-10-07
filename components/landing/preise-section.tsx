@@ -7,9 +7,9 @@ import { hatPreise, STAFFEL_GRENZE_1, STAFFEL_GRENZE_2, type Listenpreise } from
 import { formatEuro } from "@/lib/admin/abrechnung";
 
 const ENTHALTEN = [
-  "Alle drei Bundesländer: Bayern, Baden-Württemberg und Nordrhein-Westfalen",
-  "Belegung, Personal, Controlling und Szenario-Rechner",
-  "Personal-Ausblick und Belegungs-Vorschau",
+  "Alle hinterlegten Bundesländer und alle Module — ohne Aufpreis",
+  "Belegung, Personal, Controlling und Planung",
+  "Kitajahr-Planung, Personal-Vorausschau und Belegungs-Vorschau",
   "Prüfungsmappe, Kategorisierung und Excel-Export",
   "Import deiner bestehenden Excel-Listen",
   "Rechte je Bereich und Einrichtung, Änderungsprotokoll",

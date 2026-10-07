@@ -11,7 +11,7 @@ export function AusblickMockup() {
     <BrowserFrame>
       <Image
         src={ausblick}
-        alt="Personal-Ausblick im Bellegio-Dashboard: reicht das Personal in den nächsten 18 Monaten?"
+        alt="Kinder und Personal im Bellegio-Dashboard: Verlauf und Ampel für die nächsten 18 Monate"
         className="h-auto w-full"
       />
     </BrowserFrame>

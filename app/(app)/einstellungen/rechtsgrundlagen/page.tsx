@@ -435,9 +435,9 @@ export default async function DokumentationPage() {
           </h3>
           <p className="text-sm text-muted-foreground">
             Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
-            gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
-            Baden-Württemberg&ldquo; (Demo-Zugang demo@bellegio.de), live
-            nachvollziehbar im Team/Dashboard dieser Einrichtung.
+            gerechnet. Entspricht genau der Beispiel-Einrichtung &bdquo;Testkita
+            Baden-Württemberg&ldquo; aus der Demo, live nachvollziehbar im
+            Team/Dashboard dieser Einrichtung.
           </p>
           <div className="flex flex-col gap-1 font-mono text-sm">
             <p>Regelgruppe, keine AM, 6 Std./Tag (Referenz, ohne Randzeit-Trennung) → Soll-VZÄ 1,80</p>
@@ -518,7 +518,7 @@ export default async function DokumentationPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
           <h3 className="font-heading text-lg text-primary">
-            Fördererlöse (Milestone 29c)
+            Fördererlöse
           </h3>
           <p className="text-sm text-muted-foreground">
             Für Baden-Württemberg gibt es keine landesweite Förderformel — §8 KiTaG regelt nur Mindestanteile an
@@ -607,9 +607,9 @@ export default async function DokumentationPage() {
           </h3>
           <p className="text-sm text-muted-foreground">
             Zur Nachvollziehbarkeit — kein amtliches Beispiel, sondern selbst
-            gerechnet. Entspricht genau der Demo-Einrichtung &bdquo;Testkita
-            Nordrhein-Westfalen&ldquo; (Demo-Zugang demo@bellegio.de), live
-            nachvollziehbar im Team/Dashboard dieser Einrichtung.
+            gerechnet. Entspricht genau der Beispiel-Einrichtung &bdquo;Testkita
+            Nordrhein-Westfalen&ldquo; aus der Demo, live nachvollziehbar im
+            Team/Dashboard dieser Einrichtung.
           </p>
           <div className="flex flex-col gap-1 font-mono text-sm">
             <p>Gruppe I, GF I, 35 Std./Wo. → 77 FK + 7 Leitung = 84,0 Soll-FK</p>
@@ -639,7 +639,7 @@ export default async function DokumentationPage() {
             Wichtiger Hinweis zur Quellenlage
           </h3>
           <p className="text-sm text-muted-foreground">
-            Die Stunden-Tabelle stammt aus Praktiker-Quellen (Kitazentrale),
+            Die Stunden-Tabelle stammt aus Fachquellen (Kitazentrale),
             nicht direkt aus der Primär-PDF der Anlage zu § 33 KiBiz — die
             Textextraktion aus dem offiziellen PDF ist an eingebetteten
             Schriftarten gescheitert. Vor einer echten Kunden-Einrichtung in
@@ -819,7 +819,7 @@ export default async function DokumentationPage() {
 
       <section className="flex flex-col gap-6">
         <h2 className="font-heading text-2xl text-primary">
-          Personalkosten (Milestone 29c)
+          Personalkosten
         </h2>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">

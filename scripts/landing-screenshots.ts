@@ -22,10 +22,9 @@ const DEMO_TRAEGER = "Bellegio Demo";
 const CHROME_PATH = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const OUT_DIR = join(process.cwd(), "public", "images", "landing");
 
-/** Welche Demo-Kita für welche Aufnahme: Bayern für die Bayern-spezifischen Seiten, NRW für Übersicht und Finanzen (positives
- * Ergebnis ohne manuellen Förderbetrag). */
+/** Alle Aufnahmen stammen aus der Demo-Kita in Bayern: Dort zeigt das Cockpit den Personalengpass ab April 2027, und die
+ * Preisliste liefert Elternbeiträge im Controlling. */
 const BAYERN = "Testkita Bayern";
-const NRW = "Kita Löwenzahn";
 
 async function sitzungsCookies(): Promise<{ name: string; value: string }[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -149,22 +148,24 @@ async function main() {
     await el.screenshot({ path: ziel(dateiname) });
   }
 
-  // --- Löwenzahn (NRW): Dashboard, Übersicht, Suche, Finanzen ---
-  await waehle(NRW);
+  // --- Dashboard, Finanzen, Suche (Testkita Bayern: zeigt den Engpass ab April 2027 und Elternbeiträge) ---
+  await waehle(BAYERN);
   await sichern("dashboard.png", async () => {
-    await oeffne("/dashboard", "Personal-Ausblick");
+    await page.setViewport({ width: 1440, height: 1180, deviceScaleFactor: 2 });
+    await oeffne("/dashboard?monate=12", "Kinder & Personal");
     await page.screenshot({ path: ziel("dashboard.png") });
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
   await sichern("finanzen-uebersicht.png", async () => {
-    await oeffne("/dashboard?modus=finanzen", "Fördererlöse");
-    await abschnitt("finanzen-uebersicht.png", "Übersicht");
+    await oeffne("/controlling", "Fördererlöse");
+    await elementOben("finanzen-uebersicht.png", ".overflow-x-auto.rounded-lg.border", 520);
   });
   await sichern("szenario-finanzen.png", async () => {
-    await oeffne("/szenario", "Personalkosten (simuliert)");
+    await oeffne("/szenario?reiter=wenn", "Personalkosten (simuliert)");
     await abschnitt("szenario-finanzen.png", "Finanzen");
   });
   await sichern("suche.png", async () => {
-    await oeffne("/dashboard", "Personal-Ausblick");
+    await oeffne("/dashboard", "Kinder & Personal");
     await page.keyboard.down("Meta");
     await page.keyboard.press("k");
     await page.keyboard.up("Meta");
@@ -193,8 +194,8 @@ async function main() {
   // --- Testkita Bayern: Team, Ausblick, Vorschau, Controlling, Kind ---
   await waehle(BAYERN);
   await sichern("personal-ausblick.png", async () => {
-    await oeffne("/dashboard", "Personal-Ausblick");
-    await abschnitt("personal-ausblick.png", "Personal-Ausblick");
+    await oeffne("/dashboard?monate=18", "Kinder & Personal");
+    await abschnitt("personal-ausblick.png", "Kinder & Personal");
   });
   await sichern("team.png", async () => {
     await oeffne("/team", "Anstellungsschlüssel");
@@ -205,12 +206,12 @@ async function main() {
     await page.screenshot({ path: ziel("belegungs-vorschau.png") });
   });
   await sichern("controlling.png", async () => {
-    await oeffne("/controlling", "KINDER (KOPFZAHL)");
+    await oeffne("/controlling?ansicht=alle", "KINDER (KOPFZAHL)");
     await elementOben("controlling.png", ".overflow-x-auto.rounded-lg.border", 980);
   });
   await sichern("kategorisierung.png", async () => {
-    await oeffne("/controlling", "Kategorisierung nach Kalenderjahr");
-    await abschnitt("kategorisierung.png", "Kategorisierung nach Kalenderjahr");
+    await oeffne("/controlling/mappe", "Kategorisierung nach Wochenstunden");
+    await abschnitt("kategorisierung.png", "Kategorisierung nach Wochenstunden");
   });
   await sichern("pruefungsmappe.png", async () => {
     await oeffne("/controlling/mappe", "Prüfungsmappe");

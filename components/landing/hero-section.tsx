@@ -11,7 +11,7 @@ export function HeroSection() {
 
       <div className="relative mx-auto flex max-w-6xl flex-col items-center gap-7 px-6 pt-20 text-center md:pt-28">
         <div className="flex flex-wrap items-center justify-center gap-2 text-xs tracking-wide text-white/70 uppercase">
-          {["Bayern", "Baden-Württemberg", "Nordrhein-Westfalen"].map((land) => (
+          {["Belegung", "Personal", "Finanzen", "Meldewesen"].map((land) => (
             <span key={land} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5">
               {land}
             </span>
@@ -24,7 +24,7 @@ export function HeroSection() {
         </h1>
         <p className="max-w-2xl text-lg text-white/60 md:text-xl">
           Bellegio bringt Belegung, Personalschlüssel, Finanzen und Meldewesen zusammen — für eine Kita oder einen ganzen
-          Träger, und in jedem Bundesland nach dem Recht, das dort gilt.
+          Träger, gerechnet nach dem Landesrecht deiner Einrichtung.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button

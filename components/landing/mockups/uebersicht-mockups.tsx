@@ -33,7 +33,7 @@ export function FinanzenMockup() {
     <BrowserFrame>
       <Image
         src={finanzenUebersicht}
-        alt="Bellegio-Übersicht Finanzen: Fördererlöse und Personalkosten im Jahresverlauf"
+        alt="Bellegio Controlling: Fördererlöse, Elternbeiträge, Personalkosten und Ergebnis je Monat"
         className="h-auto w-full"
       />
     </BrowserFrame>
@@ -45,7 +45,7 @@ export function SzenarioFinanzenMockup() {
     <BrowserFrame>
       <Image
         src={szenarioFinanzen}
-        alt="Szenario-Rechner in Bellegio: Fördererlöse, simulierte Personalkosten und Ergebnis"
+        alt="Planung in Bellegio (Was wäre wenn): Fördererlöse, simulierte Personalkosten und Ergebnis"
         className="h-auto w-full"
       />
     </BrowserFrame>

@@ -7,7 +7,7 @@ import dashboard from "@/public/images/landing/dashboard.png";
 export function DashboardMockup() {
   return (
     <BrowserFrame>
-      <Image src={dashboard} alt="Bellegio Dashboard: Kennzahlen, Personal-Ausblick und Buchungszeit-Verteilung einer Kita" className="h-auto w-full" priority />
+      <Image src={dashboard} alt="Bellegio Dashboard: Kinder und Personal als Ringe, Verlauf über die nächsten Monate und Hinweis, ab wann Personal fehlt" className="h-auto w-full" priority />
     </BrowserFrame>
   );
 }
