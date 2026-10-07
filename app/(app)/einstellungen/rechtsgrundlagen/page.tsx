@@ -647,14 +647,16 @@ export default async function DokumentationPage() {
             Wichtiger Hinweis zur Quellenlage
           </h3>
           <p className="text-sm text-muted-foreground">
-            Die Stunden-Tabelle stammt aus Fachquellen (Kitazentrale),
-            nicht direkt aus der Primär-PDF der Anlage zu § 33 KiBiz — die
-            Textextraktion aus dem offiziellen PDF ist an eingebetteten
-            Schriftarten gescheitert. Vor einer echten Kunden-Einrichtung in
-            NRW sollte die Tabelle mit dem Original abgeglichen werden. Die
-            Leitungsfreistellung (+5/+7/+9 Std.) wurde hier einheitlich auf
-            alle drei Gruppenformen angewendet, da unklar blieb, für welche
-            Gruppenform(en) genau sie in welcher Höhe gilt. Eine
+            Die Stunden-Tabelle wurde im Oktober 2026 gegen die Anlage zu § 33 Absatz 1
+            KiBiz in der amtlichen Fassung (recht.nrw.de) geprüft: Mindestanzahl
+            Fachkraftstunden 55,0 / 77,0 / 99,0 je Gruppe in den Gruppenformen I und II,
+            27,5 / 38,5 / 49,5 in Gruppenform III (dort zusätzlich Ergänzungskraftstunden in
+            gleicher Höhe, § 36 Abs. 4), Leitungsstunden je Gruppe 5 / 7 / 9 in allen drei
+            Gruppenformen. Die Kindpauschalen der Anlage sind Werte von 2020; Bellegio rechnet
+            mit den fortgeschriebenen Beträgen des jeweiligen Kindergartenjahres (einheitliche
+            Fortschreibungsrate nach § 37 KiBiz), die aus den Mitteilungen der Jugendämter stammen
+            und sich zur Anlage durchgehend um denselben Faktor unterscheiden. Die Jahresbeträge
+            selbst sind nicht gegen den Erlass des Ministeriums geprüft. Eine
             KiBiz-Reform wurde am 16.07.2026 verabschiedet und tritt für die
             Buchungszeiten/Personalstunden erst zu Beginn des Kitajahres
             2027/2028 (Sommer 2027) in Kraft — bis dahin gilt die oben
@@ -848,9 +850,10 @@ export default async function DokumentationPage() {
             Wichtiger Hinweis zur Quellenlage
           </h3>
           <p className="text-sm text-muted-foreground">
-            Die hinterlegte TVöD-SuE-Tabelle (Entgeltgruppen S3–S18, Stufen 1–6, Stand 01.05.2026) stammt aus einer
-            Sekundärquelle (öffentlicher-dienst.info) und wurde nicht direkt gegen die primäre VKA/dbb-Entgelttabelle
-            geprüft — vor Produktivbetrieb einmal gegenchecken. TVöD ist außerdem kein Universal-Tarif: kirchliche
+            Die hinterlegte TVöD-SuE-Tabelle (Entgeltgruppen S 2 bis S 18 ohne S 5, S 6 und S 10, Stufen 1–6, gültig ab
+            01.05.2026) wurde im Oktober 2026 gegen die amtliche VKA-Entgelttabelle geprüft (Quelle: Entgelttabellen 2026
+            der Stadt Böblingen, Stichprobe S 8a zusätzlich gegen eine zweite Veröffentlichung). Werte vor dem 01.05.2026
+            sind nicht hinterlegt. TVöD ist außerdem kein Universal-Tarif: kirchliche
             Träger (Caritas/Diakonie) zahlen meist nach AVR, private Träger frei — für diese Fälle das manuelle
             Monatsgehalt je Mitarbeiter nutzen statt Entgeltgruppe/Stufe.
           </p>
