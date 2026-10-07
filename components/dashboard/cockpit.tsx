@@ -25,6 +25,35 @@ const WORT_KLASSE: Record<MonatsStatus, string> = {
   ueberhang: "text-sky-700 dark:text-sky-400",
 };
 
+/** Ist und Soll nebeneinander, dazu der Unterschied — damit auf einen Blick klar ist, wie weit man vom Soll entfernt ist. */
+function IstSoll({ ist, soll, einheit, titel }: { ist: number; soll: number; einheit: string; titel?: string }) {
+  const diff = ist - soll;
+  const fmt = (n: number) => n.toLocaleString("de-DE");
+  return (
+    <div className="flex flex-col gap-0.5">
+      {titel ? <span className="text-xs font-medium">{titel}</span> : null}
+      <div className="flex items-baseline gap-4">
+        <span className="flex flex-col">
+          <span className="text-xl font-semibold tabular-nums leading-tight">{fmt(ist)}</span>
+          <span className="text-[11px] text-muted-foreground">Ist</span>
+        </span>
+        <span className="flex flex-col">
+          <span className="text-xl font-semibold tabular-nums leading-tight text-muted-foreground">{fmt(soll)}</span>
+          <span className="text-[11px] text-muted-foreground">Soll</span>
+        </span>
+        <span className="flex flex-col">
+          <span className={cn("text-xl font-semibold tabular-nums leading-tight", diff < 0 ? "text-destructive" : diff > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground")}>
+            {diff > 0 ? "+" : ""}
+            {fmt(diff)}
+          </span>
+          <span className="text-[11px] text-muted-foreground">Unterschied</span>
+        </span>
+      </div>
+      <span className="text-[11px] text-muted-foreground">{einheit}</span>
+    </div>
+  );
+}
+
 function jetztStatus(c: CockpitDaten): MonatsStatus {
   return c.monate[0]?.status ?? "ok";
 }
@@ -66,6 +95,7 @@ export function Cockpit({
     status: m.status,
   }));
 
+  const kinderProzent = jetzt.plaetze > 0 ? Math.round((jetzt.kinder / jetzt.plaetze) * 100) : 0;
   const SatzIcon = satz.ton === "ok" ? CheckCircle2 : satz.ton === "info" ? Info : AlertTriangle;
 
   return (
@@ -99,25 +129,35 @@ export function Cockpit({
       <div className="grid gap-4 md:grid-cols-2">
         <Link href="/gruppen" className="flex items-center gap-5 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70">
           <Ring anteil={jetzt.plaetze > 0 ? jetzt.kinder / jetzt.plaetze : 0} farbe={belegungFarbe} beschreibung={`${jetzt.kinder} von ${jetzt.plaetze} Plätzen belegt`}>
-            <span className="text-4xl font-semibold tabular-nums leading-none">{jetzt.kinder}</span>
-            <span className="mt-1 text-xs text-muted-foreground">von {jetzt.plaetze}</span>
+            <span className="flex items-baseline text-4xl font-semibold tabular-nums leading-none">
+              {kinderProzent}
+              <span className="ml-0.5 text-xl font-medium text-muted-foreground">%</span>
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">belegt</span>
           </Ring>
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-sm text-muted-foreground">Kinder</span>
-            <span className={cn("text-lg font-semibold", jetzt.belegungTon === "zuviel" && "text-destructive")}>{jetzt.belegungWort}</span>
-            <span className="text-xs text-muted-foreground">Plätze belegt</span>
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm text-muted-foreground">Kinder</span>
+              <span className={cn("text-lg font-semibold", jetzt.belegungTon === "zuviel" && "text-destructive")}>{jetzt.belegungWort}</span>
+            </div>
+            <IstSoll ist={jetzt.kinder} soll={jetzt.plaetze} einheit="Plätze" />
           </div>
         </Link>
 
         <Link href="/team" className="flex items-center gap-5 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70">
           <Ring anteil={jetzt.personalProzent / 100} farbe={personalFarbe} beschreibung={`Personal: ${jetzt.personalProzent} Prozent des nötigen`}>
-            <span className="text-4xl font-semibold tabular-nums leading-none">{jetzt.personalProzent}</span>
-            <span className="mt-1 text-xs text-muted-foreground">Prozent</span>
+            <span className="flex items-baseline text-4xl font-semibold tabular-nums leading-none">
+              {jetzt.personalProzent}
+              <span className="ml-0.5 text-xl font-medium text-muted-foreground">%</span>
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">vom Bedarf</span>
           </Ring>
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="text-sm text-muted-foreground">Personal</span>
-            <span className={cn("text-lg font-semibold", WORT_KLASSE[status])}>{jetzt.personalWort}</span>
-            <span className="text-xs text-muted-foreground">{jetzt.personalKlartext}</span>
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm text-muted-foreground">Personal</span>
+              <span className={cn("text-lg font-semibold", WORT_KLASSE[status])}>{jetzt.personalWort}</span>
+            </div>
+            <IstSoll ist={jetzt.personalIst} soll={jetzt.personalSoll} einheit="Wochenstunden" />
             <span className="text-[11px] text-muted-foreground/80">
               {jetzt.fachKennzahl.label}: {jetzt.fachKennzahl.value}
             </span>
@@ -193,6 +233,7 @@ export function Cockpit({
             Personal (vom nötigen)
           </span>
           <span>Über der Linie: genug. Darunter: zu wenig.</span>
+          <span>Zahl unter dem Punkt: Kinder / Plätze · Farbe: Personal</span>
         </div>
 
         <div className="-mx-1 overflow-x-auto px-1 pb-1">
@@ -209,7 +250,10 @@ export function Cockpit({
                   )}
                 >
                   <span className={cn("size-3 rounded-full", PUNKT[m.status])} aria-hidden />
-                  <span className="text-sm font-semibold tabular-nums">{m.kinder}</span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {m.kinder}
+                    <span className="text-[11px] font-normal text-muted-foreground">/{m.plaetze}</span>
+                  </span>
                   <span className="text-[11px] text-muted-foreground">{i === 0 ? jetztLabel : m.label}</span>
                   <span className="sr-only">{WORT[m.status]}</span>
                 </button>
@@ -222,11 +266,12 @@ export function Cockpit({
           <div className="flex flex-col gap-1 rounded-2xl border p-4" aria-live="polite">
             <p className="flex flex-wrap items-center gap-x-2 text-sm">
               <span className="font-semibold">{gewaehlt === 0 ? jetztLabel : aktuell.label}</span>
-              <span className="text-muted-foreground">
-                {aktuell.kinder} von {aktuell.plaetze} Plätzen
-              </span>
               <span className={cn("font-medium", WORT_KLASSE[aktuell.status])}>· {WORT[aktuell.status]}</span>
             </p>
+            <div className="flex flex-wrap gap-x-8 gap-y-2 py-1">
+              <IstSoll ist={aktuell.kinder} soll={aktuell.plaetze} einheit="Plätze" titel="Kinder" />
+              <IstSoll ist={aktuell.personalIst} soll={aktuell.personalSoll} einheit="Wochenstunden" titel="Personal" />
+            </div>
             <p className="text-sm">{aktuell.text}</p>
             {aktuell.ereignisse.length > 0 ? <p className="text-sm text-muted-foreground">{aktuell.ereignisse.join(" · ")}</p> : null}
             <p className="text-[11px] text-muted-foreground/80">{aktuell.fachlich}</p>

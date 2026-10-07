@@ -13,6 +13,9 @@ export type CockpitMonat = {
   plaetze: number;
   belegungProzent: number;
   personalProzent: number;
+  /** Personal in Wochenstunden: vorhanden (Ist) und nötig (Soll). */
+  personalIst: number;
+  personalSoll: number;
   status: MonatsStatus;
   /** Ein Satz in Alltagssprache. */
   text: string;
@@ -28,6 +31,9 @@ export type CockpitDaten = {
     belegungWort: string;
     belegungTon: "ok" | "voll" | "frei" | "zuviel";
     personalProzent: number;
+    /** Wochenstunden Personal: vorhanden (Ist) und nötig (Soll). */
+    personalIst: number;
+    personalSoll: number;
     personalAmpel: Ampel;
     personalWort: string;
     /** „172 von 192 nötigen Wochenstunden“ */
@@ -88,6 +94,8 @@ export function baueCockpit(daten: SteuerungsDaten): CockpitDaten {
       plaetze,
       belegungProzent: plaetze > 0 ? Math.round((m.kinder / plaetze) * 100) : 0,
       personalProzent: prozent(m.istStunden, m.sollStunden),
+      personalIst: Math.round(m.istStunden),
+      personalSoll: Math.round(m.sollStunden),
       status,
       text: textFuer(m, status, vollzeitWochenstunden),
       fachlich: m.detail,
@@ -117,6 +125,8 @@ export function baueCockpit(daten: SteuerungsDaten): CockpitDaten {
       belegungWort: belegung.wort,
       belegungTon: belegung.ton,
       personalProzent: erster ? prozent(erster.istStunden, erster.sollStunden) : 100,
+      personalIst: erster ? Math.round(erster.istStunden) : 0,
+      personalSoll: erster ? Math.round(erster.sollStunden) : 0,
       personalAmpel: ampel,
       personalWort: ampel === "gruen" && ueberhangJetzt ? UEBERHANG_STATUS : PERSONAL_STATUS[ampel],
       personalKlartext: erster
