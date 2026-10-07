@@ -1,16 +1,16 @@
 # Bellegio — Risiken beim Verkauf und was noch fehlt
 
-Stand: 04.10.2026. Ehrliche Einschätzung, nach Gewicht sortiert. „Risiko“ heißt: Kann einen Verkauf verhindern, Ärger oder Haftung auslösen. „Lücke“ heißt: Es fehlt etwas, das Kunden erwarten oder das den Betrieb absichert.
+Stand: 07.10.2026 (zuletzt aktualisiert nach Milestone 33 und der Quellenprüfung). Ehrliche Einschätzung, nach Gewicht sortiert. „Risiko“ heißt: Kann einen Verkauf verhindern, Ärger oder Haftung auslösen. „Lücke“ heißt: Es fehlt etwas, das Kunden erwarten oder das den Betrieb absichert.
 
 ## A. Die größten Risiken
 
 ### 1. Rechenergebnisse, auf die sich Kunden verlassen (fachlich + Haftung)
-- **Keine Fachperson hat die Gesetzeswerte geprüft.** Alle Formeln und Tabellen habe ich aus Gesetzestexten und amtlichen Veröffentlichungen abgeleitet und gegen unabhängige Nachrechnungen geprüft ([zahlenabgleich-demo.md](zahlenabgleich-demo.md)). Das beweist Konsistenz, nicht Richtigkeit gegenüber einer Förderstelle.
-- **Bayern:** Jahresbetrag und „Basiswert plus“ sind jetzt aus Art. 21/23 BayKiBiG belegt. **Nicht abgebildet:** Eigenanteil der Gemeinde (Art. 22), Sonderfälle nach § 24 AVBayKiBiG, die **Reform zum 01.01.2027**. Sobald die gilt, stimmen die Förderzahlen nicht mehr, bis wir sie nachgezogen haben.
+- **Keine Fachperson hat die Gesetzeswerte geprüft.** Alle Formeln und Tabellen habe ich aus Gesetzestexten und amtlichen Veröffentlichungen abgeleitet und gegen unabhängige Nachrechnungen geprüft ([zahlenabgleich-demo.md](zahlenabgleich-demo.md)). Das beweist Konsistenz, nicht Richtigkeit gegenüber einer Förderstelle. **Neu seit 07.10.:** Die NRW-Personalstunden sind gegen die amtliche Anlage zu § 33 KiBiz geprüft (stimmen), die TVöD-SuE-Tabelle gegen die amtliche VKA-Tabelle (war um 20 % zu hoch und ist korrigiert). Der Basisfaktor in Bayern (unter 3 / ab 3 Jahren) wird aus dem Geburtsdatum nach Art. 21 Abs. 5 BayKiBiG abgeleitet.
+- **Bayern:** Jahresbetrag und „Basiswert plus“ sind jetzt aus Art. 21/23 BayKiBiG belegt. **Nicht abgebildet:** Eigenanteil der Gemeinde (Art. 22), Sonderfälle nach § 24 AVBayKiBiG, die Teamkräftepauschale der Reform. Der Qualitätsbonus 2027–2029 ist mit vorläufigen Werten hinterlegt, der Basiswert 2027 ist noch nicht bekanntgegeben und bis dahin mit dem Wert von 2026 fortgeschrieben (das Controlling weist darauf hin).
 - **NRW:** Kindpauschalen stammen aus einer kommunalen Beschlussvorlage, nicht aus KiBiz.web. Die Pauschale ist **nicht** das, was ein Träger bekommt (Land, Jugendamt, Träger und Eltern tragen sie gemeinsam). Einzelintegration, Mietzuschlag, §§ 34/35 fehlen. Die **KiBiz-Reform 2027/28** ist offen.
 - **Baden-Württemberg:** Keine Landesformel für den Fördererlös, nur ein manueller Betrag. Die Ausnahmeregelung nach § 1a KiTaVO läuft bis 31.08.2027.
-- **TVöD-Tabelle** nicht gegen die Primärquelle (VKA/dbb) geprüft; kirchliche und private Träger zahlen oft anders (manuelles Gehalt ist möglich).
-- **Das „Ergebnis“ ist nur Fördererlöse minus Personalkosten.** Elternbeiträge, kommunale Anteile, Sachkosten fehlen. Ein negativer Wert sieht wie ein Defizit aus (Hinweis steht jetzt an der Zahl).
+- **TVöD-Tabelle:** geprüft und korrigiert (siehe oben). Werte vor dem 01.05.2026 fehlen; kirchliche und private Träger zahlen oft anders (manuelles Gehalt ist möglich).
+- **Das „Ergebnis“ ist Fördererlöse (plus Elternbeiträge laut eigener Preisliste, falls hinterlegt) minus Personalkosten.** Kommunale Anteile und Sachkosten fehlen. Ein negativer Wert sieht wie ein Defizit aus (Hinweis steht an der Zahl).
 - **Folge:** Wer sich auf Zahlen verlässt und sich verrechnet, wird den Anbieter fragen. Nötig: klare Kennzeichnung als **Planungshilfe**, Haftungsbegrenzung in den AGB, Pilot mit echter Meldung, jährliche Pflege der Werte (Basiswert, Pauschalen, Tarif).
 
 ### 2. Datenschutz mit Kinder- und Gesundheitsdaten
@@ -41,7 +41,7 @@ Stand: 04.10.2026. Ehrliche Einschätzung, nach Gewicht sortiert. „Risiko“ h
 
 - **Abrechnung/Steuer:** Rechnungen als PDF mit Nummernkreis und Sperre nach Freigabe vorhanden. **Nicht abgestimmt** mit dem Steuerberater (§ 14 UStG, Kleinunternehmerfrage). **E-Rechnung** (ZUGFeRD/XRechnung) ist im B2B Pflicht auf dem Weg und fehlt. Keine Zahlungsabwicklung (SEPA).
 - **Performance:** Dashboard und Controlling rechnen den Forecast beim Aufruf (ca. 4–9 Sekunden pro Einrichtung auf dem Entwicklungsrechner). Die Träger-Übersicht berechnet mehrere Kacheln. Mit 20+ Einrichtungen und vielen Nutzern **ungetestet**.
-- **Wartbarkeit:** Ein Entwickler (Bus-Faktor 1), ein junges Framework (Next 16 mit Änderungen gegenüber dem Üblichen). Tests: 291 automatische Tests und drei SQL-Rechtetests, aber **keine End-to-End-Tests**, keine Lasttests.
+- **Wartbarkeit:** Ein Entwickler (Bus-Faktor 1), ein junges Framework (Next 16 mit Änderungen gegenüber dem Üblichen). Tests: 351 automatische Tests und sieben SQL-Prüfungen (Rechte, Löschung, Basisfaktor), aber **keine End-to-End-Tests**, keine Lasttests.
 - **Barrierefreiheit** nicht geprüft; öffentliche und kirchliche Träger fragen oft danach. Mobile Nutzung nur grob geprüft.
 - **Datenqualität:** Der Import prüft Pflichtfelder, aber echte Kunden-Excel sehen anders aus. Fehler im Import sind Support-Aufwand.
 - **Aktualität der Gesetze:** Jedes Jahr ändern sich Basiswert, Pauschalen, Tarif; Reformen in BY (2027) und NRW (2027/28) stehen an. Das ist laufende Arbeit und eine Zusage an Kunden.
@@ -63,7 +63,7 @@ Stand: 04.10.2026. Ehrliche Einschätzung, nach Gewicht sortiert. „Risiko“ h
 10. Performance-Test mit 20+ Einrichtungen; ggf. Forecast zwischenspeichern.
 
 **Später (Wachstum)**
-11. Elternbeiträge/kommunaler Anteil, damit das Ergebnis vollständig ist.
+11. Kommunaler Anteil und Sachkosten, damit das Ergebnis vollständig ist (Elternbeiträge sind als Preisliste möglich).
 12. Export in die Formate der **Landesportale**, Schnittstellen/Import aus gängigen Verwaltungsprogrammen.
 13. Weitere Bundesländer; Träger-Cockpit; Springer-/Ausfallplanung; E-Rechnung; SEPA; Barrierefreiheit; End-to-End-Tests.
 

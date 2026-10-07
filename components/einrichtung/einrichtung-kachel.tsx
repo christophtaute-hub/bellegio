@@ -15,6 +15,11 @@ async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string
   const auslastung = k.sollplaetze > 0 ? Math.min(100, Math.round((k.kinderGesamt / k.sollplaetze) * 100)) : 0;
   const ueberbelegt = k.sollplaetze > 0 && k.kinderGesamt > k.sollplaetze;
 
+  // Frisch angelegte Einrichtung ohne Gruppen: nicht „0 / 0 — voll belegt“, sondern der nächste Schritt
+  if (k.sollplaetze === 0) {
+    return <p className="text-sm text-muted-foreground">Noch keine Gruppen angelegt — öffnen und die ersten Schritte durchgehen.</p>;
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">

@@ -49,6 +49,28 @@ async function main() {
   if (preise?.grundgebuehr_pro_einrichtung == null) probleme.push("Listenpreise nicht gesetzt (Landingpage zeigt „Preise folgen“).");
   else ok("Listenpreise gesetzt.");
 
+  // Referenzdaten: kommen aus den Migrationen — fehlen sie, wurden nicht alle Migrationen eingespielt
+  const erwartet: { tabelle: keyof Database["public"]["Tables"]; anzahl: number }[] = [
+    { tabelle: "booking_time_bands", anzahl: 18 },
+    { tabelle: "weighting_factors", anzahl: 6 },
+    { tabelle: "bw_personalschluessel", anzahl: 8 },
+    { tabelle: "nrw_personalstunden", anzahl: 9 },
+    { tabelle: "nrw_kindpauschalen", anzahl: 9 },
+    { tabelle: "tvoed_sue_entgelt", anzahl: 96 },
+    { tabelle: "bayern_foerderung_basiswert", anzahl: 1 },
+    { tabelle: "bayern_foerderung_basiswert_historie", anzahl: 3 },
+  ];
+  for (const e of erwartet) {
+    const { count } = await sb.from(e.tabelle).select("*", { count: "exact", head: true });
+    if (count === e.anzahl) ok(`${e.tabelle}: ${count} Zeilen.`);
+    else probleme.push(`${e.tabelle}: ${count ?? "?"} Zeilen (erwartet: ${e.anzahl}) — Migrationen vollständig eingespielt?`);
+  }
+
+  // Keine Testträger aus der Entwicklungsumgebung
+  const { data: testtraeger } = await sb.from("trager").select("name").in("name", ["Villa Kunterbunt", "Bellegio Demo", "Bellegio Test"]);
+  if ((testtraeger?.length ?? 0) === 0) ok("Keine Test- oder Demo-Träger.");
+  else probleme.push(`Test-/Demo-Träger vorhanden: ${(testtraeger ?? []).map((t) => t.name).join(", ")}`);
+
   if (probleme.length > 0) {
     console.log("\nOffen:");
     for (const p of probleme) console.log(`✗ ${p}`);
