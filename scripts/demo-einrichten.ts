@@ -174,6 +174,21 @@ async function main() {
       if (he) throw new Error(he.message);
     }
 
+    // Gruppen-Historie (geplante interne Wechsel Krippe → Kindergarten)
+    const { data: gruppenHistorie } = await sb
+      .from("kind_gruppen_historie")
+      .select("kind_id, gruppe_id, gueltig_ab")
+      .in("kind_id", Array.from(kindNeu.keys()));
+    const gruppenHistorieZeilen = (gruppenHistorie ?? []).map((h) => ({
+      kind_id: kindNeu.get(h.kind_id)!,
+      gruppe_id: h.gruppe_id ? (gruppeNeu.get(h.gruppe_id) ?? null) : null,
+      gueltig_ab: h.gueltig_ab,
+    }));
+    if (gruppenHistorieZeilen.length > 0) {
+      const { error: ghe } = await sb.from("kind_gruppen_historie").insert(gruppenHistorieZeilen);
+      if (ghe) throw new Error(ghe.message);
+    }
+
     // Notizen-Verlauf
     const { data: notizen } = await sb
       .from("kind_notizen_verlauf")

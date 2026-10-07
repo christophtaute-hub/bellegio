@@ -13,7 +13,7 @@ export type AusblickMonat = {
   fehlendeStunden: number;
   /** Wochenstunden, die das Gesetz mindestens verlangt (ohne Puffer für „mehr als nötig“). */
   sollStunden: number;
-  /** Wochenstunden Personal über dem Bedarf — nur gesetzt, wenn der Überhang deutlich ist (mind. 8 Std. und 25 % über dem Bedarf — ein Puffer für Ausfälle ist normal). */
+  /** Wochenstunden Personal über dem Bedarf — nur gesetzt, wenn der Überhang deutlich ist (mind. 8 Std. und 40 % über dem Bedarf — ein Puffer für Urlaub und Krankheit ist normal). */
   ueberhangStunden: number;
   /** Anzahl Kinder in diesem Monat. */
   kinder: number;
@@ -68,7 +68,7 @@ function fehlVerb(wert: number): string {
 }
 
 const UEBERHANG_MIN_STUNDEN = 8;
-const UEBERHANG_MIN_ANTEIL = 0.25;
+const UEBERHANG_MIN_ANTEIL = 0.4;
 
 function ueberhang(ist: number, soll: number, fehlend: number): number {
   if (fehlend > 0) return 0;

@@ -3,7 +3,7 @@
 export function ergebnisHinweis(mitElternbeitraegen: boolean): string {
   return mitElternbeitraegen
     ? "Ergebnis = Fördererlöse + Elternbeiträge (laut eurer Preisliste) − Personalkosten. Kommunaler Anteil und Sachkosten sind nicht enthalten — ein negativer Wert ist daher nicht automatisch ein Defizit."
-    : "Ergebnis = Fördererlöse − Personalkosten. Elternbeiträge, kommunaler Anteil und Sachkosten sind nicht enthalten (Elternbeiträge lassen sich unter Einstellungen → Einrichtung → Finanzen als Preisliste hinterlegen) — ein negativer Wert ist daher kein Defizit der Einrichtung.";
+    : "Ergebnis = Fördererlöse − Personalkosten. Elternbeiträge, kommunaler Anteil und Sachkosten sind nicht enthalten (Elternbeiträge lassen sich unter Einstellungen → Finanzen als Preisliste hinterlegen) — ein negativer Wert ist daher kein Defizit der Einrichtung.";
 }
 
 /** Bisheriger Text ohne Elternbeiträge. */

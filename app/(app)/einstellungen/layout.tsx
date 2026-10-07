@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
+import { canViewFinanzen } from "@/lib/server/current-user-role";
 import { EinstellungenTabs, type EinstellungenTab } from "@/components/einstellungen/einstellungen-tabs";
 
 /** Alles, was früher einzelne Menüpunkte waren, steht jetzt als Reiter unter „Einstellungen“ — jeder sieht nur, was er darf. */
@@ -17,8 +19,12 @@ export default async function EinstellungenLayout({ children }: { children: Reac
       : { count: 0 };
   const darfNutzerVerwalten = istTraegerAdmin || Boolean(profil?.kann_rechte_verwalten) || (lokaleAdminZeilen ?? 0) > 0;
 
+  const einrichtungId = await getActiveEinrichtungId();
+  const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
+
   const tabs: EinstellungenTab[] = [
     { href: "/einstellungen", label: "Einrichtung" },
+    ...(zeigeFinanzen ? [{ href: "/einstellungen/finanzen", label: "Finanzen" }] : []),
     ...(darfNutzerVerwalten ? [{ href: "/einstellungen/nutzer", label: "Nutzer & Rechte" }] : []),
     ...(istTraegerAdmin ? [{ href: "/einstellungen/datenschutz", label: "Datenschutz" }] : []),
     { href: "/einstellungen/rechtsgrundlagen", label: "Rechtsgrundlagen" },

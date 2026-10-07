@@ -1,17 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { getCurrentUserRole, canViewFinanzen, canWriteFinanzen } from "@/lib/server/current-user-role";
+import { getCurrentUserRole } from "@/lib/server/current-user-role";
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
-import { BeitraegeEditor } from "@/components/einrichtung/beitraege-editor";
-import { ladeBeitragszeilen, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
-import { toIsoDateString } from "@/lib/kita-datum";
-import {
-  FoerderungManuellEditor,
-  LohnnebenkostenEditor,
-  JahressonderzahlungEditor,
-} from "@/components/einrichtung/finanzen-editoren";
 
 export default async function EinstellungenPage() {
   const einrichtungId = await getActiveEinrichtungId();
@@ -23,17 +15,11 @@ export default async function EinstellungenPage() {
     ? await supabase
         .from("einrichtungen")
         .select(
-          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel, standort_gemeinde, auswaertigen_quote_prozent, kostenstelle, cluster, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent"
+          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel, standort_gemeinde, auswaertigen_quote_prozent, kostenstelle, cluster"
         )
         .eq("id", einrichtungId)
         .single()
     : { data: null };
-
-  // Bewusst eigene zeigeFinanzen/bearbeiteFinanzen statt der obigen canEdit-Variable
-  // wiederzuverwenden — canEdit stammt von vor dem granularen Rechte-System und würde einen
-  // legitim berechtigten Nicht-Admin fälschlich vom Finanzen-Abschnitt ausschließen.
-  const zeigeFinanzen = einrichtungId ? await canViewFinanzen(supabase, einrichtungId) : false;
-  const bearbeiteFinanzen = einrichtungId ? await canWriteFinanzen(supabase, einrichtungId) : false;
 
   const {
     data: { user: authUser },
@@ -43,22 +29,6 @@ export default async function EinstellungenPage() {
     : { data: null };
 
   const istTraegerAdmin = eigenesProfil?.role === "traeger_admin";
-
-  // Preisliste (Elternbeiträge): Bänder des Bundeslands + die aktuell gültige Fassung (sonst die jüngste vorhandene)
-  const beitragsDaten =
-    zeigeFinanzen && einrichtungId && einrichtung
-      ? await (async () => {
-          const [{ data: baender }, zeilen] = await Promise.all([
-            supabase.from("booking_time_bands").select("id, label, sort_order").eq("bundesland_code", einrichtung.bundesland_code).order("sort_order"),
-            ladeBeitragszeilen(supabase, einrichtungId),
-          ]);
-          const versionen = [...new Set(zeilen.map((z) => z.gueltigAb))].sort().reverse();
-          const heute = toIsoDateString(new Date());
-          const angezeigt = versionen.find((v) => v <= heute) ?? versionen[0] ?? heute;
-          const preise = Object.fromEntries(preiseAmStichtag(zeilen.filter((z) => z.gueltigAb === angezeigt), angezeigt));
-          return { baender: (baender ?? []).map((b) => ({ id: b.id, label: b.label })), preise, angezeigt, versionen };
-        })()
-      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -139,46 +109,6 @@ export default async function EinstellungenPage() {
           Keine Einrichtung ausgewählt.
         </p>
       )}
-
-      {zeigeFinanzen && einrichtungId && einrichtung ? (
-        <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
-          <h2 className="font-heading text-lg text-primary">Finanzen</h2>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Fördererlöse, Lohnnebenkosten und Jahressonderzahlung fließen ins Ergebnis in Controlling
-            ein. Lohnnebenkosten und Jahressonderzahlung sind Schätzwerte mit uneinheitlichen Quellen —
-            bei Bedarf an die eigene Situation anpassen.
-          </p>
-          <div className="flex flex-col gap-3">
-            <FoerderungManuellEditor
-              einrichtungId={einrichtungId}
-              bundeslandCode={einrichtung.bundesland_code}
-              wert={einrichtung.foerderung_monatlich_manuell}
-              canEdit={bearbeiteFinanzen}
-            />
-            <LohnnebenkostenEditor
-              einrichtungId={einrichtungId}
-              prozent={Number(einrichtung.lohnnebenkosten_prozent)}
-              canEdit={bearbeiteFinanzen}
-            />
-            <JahressonderzahlungEditor
-              einrichtungId={einrichtungId}
-              prozent={Number(einrichtung.jahressonderzahlung_prozent)}
-              canEdit={bearbeiteFinanzen}
-            />
-          </div>
-          {beitragsDaten && beitragsDaten.baender.length > 0 ? (
-            <BeitraegeEditor
-              key={beitragsDaten.angezeigt}
-              einrichtungId={einrichtungId}
-              baender={beitragsDaten.baender}
-              preise={beitragsDaten.preise}
-              gueltigAb={beitragsDaten.angezeigt}
-              versionen={beitragsDaten.versionen}
-              canEdit={bearbeiteFinanzen}
-            />
-          ) : null}
-        </section>
-      ) : null}
     </div>
   );
 }

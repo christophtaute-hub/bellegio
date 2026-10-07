@@ -80,7 +80,7 @@ export function berechnePlanung(eingabe: PlanungEingabe, daten: Partial<PlanungD
 
   const unterschied = sollPlan - eingabe.personalIst;
   const luecke = Math.max(0, unterschied);
-  const ueberhang = unterschied < 0 && -unterschied >= Math.max(8, sollPlan * 0.25) ? -unterschied : 0;
+  const ueberhang = unterschied < 0 && -unterschied >= Math.max(8, sollPlan * 0.4) ? -unterschied : 0;
   const geplant = Math.max(0, daten.einstellenGeplant ?? 0);
   const einstellenStunden = Math.max(0, Math.ceil(luecke - geplant));
   const v = eingabe.vollzeitWochenstunden;
