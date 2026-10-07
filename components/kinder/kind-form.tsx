@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { BASIS_FAKTOR, istBasisCode, leiteBasisfaktorAb } from "@/lib/kinder/basisfaktor";
 import { createKind, updateKind, type KindInput } from "@/lib/actions/kinder";
 import { meldeFehler } from "@/lib/toast";
 import { GESCHLECHT_LABEL } from "@/lib/constants";
@@ -146,6 +147,20 @@ export function KindForm({
     const istKrippe = gruppenArtById[watchedGruppeId] === "krippe";
     setValue("austritt", vorgeschlagenerAustritt(watchedGeburtsdatum, istKrippe));
   }, [watchedStatus, watchedGruppeId, watchedGeburtsdatum, watchedAustritt, gruppenArtById, setValue]);
+  // Bayern: der Basisfaktor (unter 3 / ab 3 Jahren) ergibt sich aus Geburtsdatum und Gruppe und wird nicht von Hand gesetzt.
+  const basisfaktorAbgeleitet = weightingFactors.some((f) => f.code === "u3");
+  const basisIds = new Set(weightingFactors.filter((f) => istBasisCode(f.code)).map((f) => f.id));
+  const sichtbareFaktoren = basisfaktorAbgeleitet ? weightingFactors.filter((f) => !basisIds.has(f.id)) : weightingFactors;
+  const abgeleiteterBasisfaktor =
+    basisfaktorAbgeleitet && watchedGeburtsdatum
+      ? BASIS_FAKTOR[
+          leiteBasisfaktorAb({
+            geburtsdatum: watchedGeburtsdatum,
+            stichtag: toIsoDateString(new Date()),
+            gruppenartBeiDrittemGeburtstag: gruppenArtById[watchedGruppeId] ?? null,
+          })
+        ]
+      : null;
   const integrationsfaktorId = weightingFactors.find(
     (f) => f.code === "integrationskinder"
   )?.id;
@@ -169,7 +184,7 @@ export function KindForm({
       buchungszeit_wirksam_ab: values.buchungszeit_wirksam_ab || null,
       wohnort: values.wohnort || null,
       hat_behinderung: values.hat_behinderung,
-      weighting_factor_ids: values.weighting_factor_ids,
+      weighting_factor_ids: basisfaktorAbgeleitet ? values.weighting_factor_ids.filter((id) => !basisIds.has(id)) : values.weighting_factor_ids,
       ersetzt_kind_id: values.status === "nachruecker" ? values.ersetzt_kind_id || null : null,
     };
 
@@ -333,7 +348,20 @@ export function KindForm({
 
       <Field label="Gewichtung">
         <div className="flex flex-col gap-2">
-          {weightingFactors.map((factor) => (
+          {basisfaktorAbgeleitet ? (
+            <p className="rounded-xl bg-secondary/50 px-3 py-2 text-sm">
+              <span className="font-medium">
+                {abgeleiteterBasisfaktor
+                  ? `${abgeleiteterBasisfaktor.label} (${abgeleiteterBasisfaktor.factor.toLocaleString("de-DE", { minimumFractionDigits: 1 })})`
+                  : "Basisfaktor ergibt sich aus dem Geburtsdatum"}
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Automatisch aus Geburtsdatum und Gruppe — in der Krippe gilt 2,0 bis zum Ende des Kindergartenjahres, in dem das Kind drei wird.
+                Besondere Merkmale kannst du unten zusätzlich setzen.
+              </span>
+            </p>
+          ) : null}
+          {sichtbareFaktoren.map((factor) => (
             <label
               key={factor.id}
               htmlFor={`weighting-${factor.id}`}

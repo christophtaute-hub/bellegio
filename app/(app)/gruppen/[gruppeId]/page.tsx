@@ -18,6 +18,7 @@ import {
   type KinderTableRow,
 } from "@/components/gruppen/kinder-table";
 import { HinweiseBox, type HinweisEintrag } from "@/components/gruppen/hinweise-box";
+import { hoechsterFaktor, leiteBasisfaktorAb, type ManuellerFaktor } from "@/lib/kinder/basisfaktor";
 import { HinweisLeiste } from "@/components/ui/hinweis-leiste";
 import {
   austrittWarnung,
@@ -99,25 +100,39 @@ function sortiereFuerAnzeige(zeilen: KindZeile[], spalte: GruppenSortSpalte, ric
   });
 }
 
+/** Höchster Gewichtungsfaktor je Kind. Bayern: der Basisfaktor (unter 3 / ab 3 Jahren) wird aus Geburtsdatum und Gruppe abgeleitet,
+ * nur die Sondermerkmale kommen aus kind_weighting_factors (siehe lib/kinder/basisfaktor.ts). */
 async function resolveWeightingFactors(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  kindIds: string[]
+  kinder: { id: string; geburtsdatum: string }[],
+  kontext: { bayern: boolean; gruppenart: string; kitajahrBeginnMonat: number }
 ): Promise<Map<string, { label: string; code: string }>> {
-  if (kindIds.length === 0) return new Map();
+  if (kinder.length === 0) return new Map();
   const { data } = await supabase
     .from("kind_weighting_factors")
     .select("kind_id, weighting_factors(label, factor, code)")
-    .in("kind_id", kindIds);
+    .in("kind_id", kinder.map((k) => k.id));
 
-  const byKind = new Map<string, { label: string; code: string }>();
-  const maxFactor = new Map<string, number>();
+  const manuellJeKind = new Map<string, ManuellerFaktor[]>();
   for (const row of data ?? []) {
-    const factor = row.weighting_factors?.factor ?? 0;
-    const current = maxFactor.get(row.kind_id) ?? -1;
-    if (factor > current && row.weighting_factors) {
-      maxFactor.set(row.kind_id, factor);
-      byKind.set(row.kind_id, { label: row.weighting_factors.label, code: row.weighting_factors.code });
-    }
+    if (!row.weighting_factors) continue;
+    const liste = manuellJeKind.get(row.kind_id) ?? [];
+    liste.push({ code: row.weighting_factors.code, label: row.weighting_factors.label, factor: Number(row.weighting_factors.factor) });
+    manuellJeKind.set(row.kind_id, liste);
+  }
+  const heute = toIsoDateString(new Date());
+  const byKind = new Map<string, { label: string; code: string }>();
+  for (const kind of kinder) {
+    const basis = kontext.bayern
+      ? leiteBasisfaktorAb({
+          geburtsdatum: kind.geburtsdatum,
+          stichtag: heute,
+          gruppenartBeiDrittemGeburtstag: kontext.gruppenart,
+          kitajahrBeginnMonat: kontext.kitajahrBeginnMonat,
+        })
+      : null;
+    const top = hoechsterFaktor(basis, manuellJeKind.get(kind.id) ?? []);
+    if (top) byKind.set(kind.id, { label: top.label, code: top.code });
   }
   return byKind;
 }
@@ -251,7 +266,11 @@ export default async function GruppeDetailPage({
   const nachrueckerKinder = (nachrueckerKinderRoh ?? []) as RohKind[];
   const allKindIds = [...aktiveKinder.map((k) => k.id), ...nachrueckerKinder.map((k) => k.id)];
   const [weightingLabels, aktuelleNotizen] = await Promise.all([
-    resolveWeightingFactors(supabase, allKindIds),
+    resolveWeightingFactors(supabase, [...aktiveKinder, ...nachrueckerKinder], {
+      bayern: gruppe.einrichtungen?.bundesland_code === "by",
+      gruppenart: gruppe.gruppenart,
+      kitajahrBeginnMonat: kitaYearStartMonth,
+    }),
     resolveAktuelleNotizen(supabase, allKindIds),
   ]);
 

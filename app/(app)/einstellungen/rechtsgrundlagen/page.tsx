@@ -159,6 +159,14 @@ export default async function DokumentationPage() {
             zuzuordnen, zählt ausschließlich der höchste zutreffende Faktor —
             nie die Summe.
           </p>
+          <p className="text-sm text-muted-foreground">
+            Den Basisfaktor (2,0 bzw. 1,0) bestimmt Bellegio selbst aus dem
+            Geburtsdatum: Kinder unter drei Jahren zählen 2,0. Vollendet ein Kind
+            in einer Kinderkrippe das dritte Lebensjahr, gilt 2,0 bis zum Ende des
+            Kindergartenjahres (Art. 21 Abs. 5 BayKiBiG), danach 1,0. Die
+            besonderen Merkmale (Schulkind, Hort, nichtdeutschsprachige Herkunft,
+            Integrationskind) werden weiter bei jedem Kind gesetzt.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">

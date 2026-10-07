@@ -4,7 +4,8 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
-import { austrittWarnung, calculateAgeDecimal, formatDate } from "@/lib/kita-datum";
+import { austrittWarnung, calculateAgeDecimal, formatDate, toIsoDateString } from "@/lib/kita-datum";
+import { BASIS_FAKTOR, istBasisCode, leiteBasisfaktorAb } from "@/lib/kinder/basisfaktor";
 import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { cn } from "cn";
 import {
@@ -167,7 +168,7 @@ export default async function KinderPage({
     einrichtungId
       ? supabase
           .from("einrichtungen")
-          .select("kita_year_start_month")
+          .select("kita_year_start_month, bundesland_code")
           .eq("id", einrichtungId)
           .single()
       : Promise.resolve({ data: null }),
@@ -178,7 +179,7 @@ export default async function KinderPage({
   let query = supabase
     .from("kinder")
     .select(
-      "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name), booking_time_bands(label), kind_weighting_factors(weighting_factors(label))"
+      "id, vorname, nachname, geburtsdatum, geschlecht, eintritt, austritt, status, gruppe_id, gruppen(name, gruppenart), booking_time_bands(label), kind_weighting_factors(weighting_factors(label, code))"
     )
     .eq("einrichtung_id", einrichtungId ?? "")
     .is("archived_at", null);
@@ -309,9 +310,25 @@ export default async function KinderPage({
                     kind.austritt,
                     kitaYearStartMonth
                   );
-                  const gewichtungsfaktoren = kind.kind_weighting_factors
+                  // Bayern: Basisfaktor aus Geburtsdatum und Gruppe, dazu die manuell gesetzten Sondermerkmale
+                  const bayern = einrichtung?.bundesland_code === "by";
+                  const manuell = kind.kind_weighting_factors
+                    .filter((kwf) => kwf.weighting_factors && !(bayern && istBasisCode(kwf.weighting_factors.code)))
                     .map((kwf) => kwf.weighting_factors?.label)
                     .filter((label): label is string => Boolean(label));
+                  const gewichtungsfaktoren = bayern
+                    ? [
+                        BASIS_FAKTOR[
+                          leiteBasisfaktorAb({
+                            geburtsdatum: kind.geburtsdatum,
+                            stichtag: toIsoDateString(new Date()),
+                            gruppenartBeiDrittemGeburtstag: kind.gruppen?.gruppenart ?? null,
+                            kitajahrBeginnMonat: kitaYearStartMonth,
+                          })
+                        ].label,
+                        ...manuell,
+                      ]
+                    : manuell;
                   return (
                     <TableRow
                       key={kind.id}

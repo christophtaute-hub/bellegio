@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { BASIS_FAKTOR, istBasisCode, leiteBasisfaktorAb } from "@/lib/kinder/basisfaktor";
 import { WechselKarte } from "@/components/kinder/wechsel-karte";
 import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { NachfolgerZuordnen } from "@/components/gruppen/nachfolger-zuordnen";
@@ -213,9 +214,24 @@ export default async function KindDetailPage({
     einrichtungId ? canWriteBelegung(supabase, einrichtungId) : false,
   ]);
 
-  const gewichtungsLabels = (weightingFactors ?? [])
-    .filter((w) => (kindWeightingFactors ?? []).some((k) => k.weighting_factor_id === w.id))
-    .map((w) => w.label);
+  const bayernBasisAbgeleitet = (weightingFactors ?? []).some((w) => w.code === "u3");
+  const gewichtungsLabels = [
+    ...(bayernBasisAbgeleitet
+      ? [
+          BASIS_FAKTOR[
+            leiteBasisfaktorAb({
+              geburtsdatum: kind.geburtsdatum,
+              stichtag: toIsoDateString(new Date()),
+              gruppenartBeiDrittemGeburtstag: gruppenArtById[kind.gruppe_id ?? ""] ?? null,
+            })
+          ].label,
+        ]
+      : []),
+    ...(weightingFactors ?? [])
+      .filter((w) => !(bayernBasisAbgeleitet && istBasisCode(w.code)))
+      .filter((w) => (kindWeightingFactors ?? []).some((k) => k.weighting_factor_id === w.id))
+      .map((w) => w.label),
+  ];
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
