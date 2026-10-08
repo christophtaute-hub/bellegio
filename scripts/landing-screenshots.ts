@@ -151,7 +151,7 @@ async function main() {
   // --- Dashboard, Finanzen, Suche (Testkita Bayern: zeigt den Engpass ab April 2027 und Elternbeiträge) ---
   await waehle(BAYERN);
   await sichern("dashboard.png", async () => {
-    await page.setViewport({ width: 1440, height: 1180, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 1440, height: 1260, deviceScaleFactor: 2 });
     await oeffne("/dashboard?monate=12", "Kinder & Personal");
     await page.screenshot({ path: ziel("dashboard.png") });
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
@@ -183,11 +183,11 @@ async function main() {
     await page.keyboard.press("Escape");
   });
   await sichern("einrichtungen.png", async () => {
-    await page.setViewport({ width: 1440, height: 1150, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 2 });
     await oeffne("/einrichtung-auswahl", "Meine Einrichtungen");
-    await page.waitForFunction(() => document.body.innerText.includes("Anstellungsschlüssel"), { timeout: 60000 });
+    await page.waitForFunction(() => document.body.innerText.includes("Personal und Gesetz"), { timeout: 60000 });
     await pause(800);
-    await page.screenshot({ path: ziel("einrichtungen.png"), clip: { x: 170, y: 40, width: 920, height: 930 } });
+    await page.screenshot({ path: ziel("einrichtungen.png"), clip: { x: 170, y: 40, width: 920, height: 962 } });
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
 
