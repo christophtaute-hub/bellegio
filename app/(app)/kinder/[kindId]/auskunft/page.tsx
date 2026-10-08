@@ -77,6 +77,7 @@ export default async function KindAuskunftPage({ params }: { params: Promise<{ k
         { label: "Gewichtung", wert: gewichtungen.join(", ") },
         { label: "I-Status", wert: kind.hat_behinderung ? (kind.i_status_von || kind.i_status_bis ? `Ja (${kind.i_status_von ? `ab ${formatDate(kind.i_status_von)}` : ""}${kind.i_status_von && kind.i_status_bis ? ", " : ""}${kind.i_status_bis ? `bis ${formatDate(kind.i_status_bis)}` : ""})` : "Ja") : "Nein" },
         { label: "Kooperation", wert: kind.kooperation ? "Ja" : "Nein" },
+        { label: "Platz in der Geschwisterreihe", wert: String(kind.geschwister_nummer) },
         { label: "Wohnort", wert: kind.wohnort ?? "" },
         { label: "Einschulungsstatus", wert: kind.einschulungsstatus ?? "" },
         { label: "Notizen (Verlauf)", wert: notizenText },

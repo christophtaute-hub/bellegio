@@ -39,21 +39,58 @@ export function preiseAmStichtag(zeilen: BeitragZeile[], stichtag: string): Prei
   return new Map([...jeSchluessel].map(([key, z]) => [key, z.betrag]));
 }
 
+/** Regeln der Einrichtung rund um den Preis. Prozentwerte = Anteil des Preises, den das Kind zahlt (50 = halber Preis, 0 = frei). */
+export type BeitragsRegeln = {
+  zweitProzent: number | null;
+  abDrittProzent: number | null;
+  /** Letzter Tag, an dem Eltern den Elternbeitragszuschuss erhalten (Bayern bis 31.12.2026); null = kein Zuschuss. */
+  zuschussBis: string | null;
+};
+
+export const KEINE_REGELN: BeitragsRegeln = { zweitProzent: null, abDrittProzent: null, zuschussBis: null };
+
 /** Was man über die Kinder wissen muss, um den richtigen Preis zu wählen. */
 export type KindKontext = {
   /** Gruppenart je Gruppe („krippe“/„kindergarten“ …). */
   gruppenartByGruppeId: Map<string, string | null>;
   /** Kinder, die außerhalb der Standort-Gemeinde wohnen. */
   auswaertigeKindIds: Set<string>;
+  /** Platz in der Geschwisterreihe (1 = zahlt den vollen Preis). */
+  geschwisterByKindId: Map<string, number>;
+  geburtsdatumByKindId: Map<string, string>;
+  regeln: BeitragsRegeln;
 };
 
-export const OHNE_KONTEXT: KindKontext = { gruppenartByGruppeId: new Map(), auswaertigeKindIds: new Set() };
+export const OHNE_KONTEXT: KindKontext = {
+  gruppenartByGruppeId: new Map(),
+  auswaertigeKindIds: new Set(),
+  geschwisterByKindId: new Map(),
+  geburtsdatumByKindId: new Map(),
+  regeln: KEINE_REGELN,
+};
+
+/** Erhalten die Eltern an diesem Stichtag den Elternbeitragszuschuss? Ab dem 1. September des Kalenderjahres, in dem das Kind drei wird, bis zum eingestellten Enddatum. */
+export function erhaeltZuschuss(geburtsdatum: string | undefined, stichtag: string, zuschussBis: string | null): boolean {
+  if (!zuschussBis || !geburtsdatum || stichtag > zuschussBis) return false;
+  return stichtag >= `${Number(geburtsdatum.slice(0, 4)) + 3}-09-01`;
+}
+
+/** Geschwisterermäßigung: das 2. Kind zahlt `zweitProzent`, ab dem 3. Kind `abDrittProzent` des Preises. Kinder mit Zuschuss bekommen sie nicht. */
+export function preisMitGeschwister(preis: number, kindId: string, kontext: KindKontext, stichtag?: string): number {
+  const nummer = kontext.geschwisterByKindId.get(kindId) ?? 1;
+  if (nummer < 2) return preis;
+  const prozent = nummer === 2 ? kontext.regeln.zweitProzent : kontext.regeln.abDrittProzent;
+  if (prozent === null) return preis;
+  if (stichtag && erhaeltZuschuss(kontext.geburtsdatumByKindId.get(kindId), stichtag, kontext.regeln.zuschussBis)) return preis;
+  return (preis * prozent) / 100;
+}
 
 /** Kinder außerhalb der Standort-Gemeinde: Wohnort weicht ab (ohne Groß-/Kleinschreibung). Ein leerer Wohnort zählt als „am Standort“. */
 export function baueKindKontext(
   gruppen: { id: string; gruppenart: string | null }[],
-  kinder: { id: string; wohnort: string | null }[],
-  standortGemeinde: string | null
+  kinder: { id: string; wohnort: string | null; geburtsdatum?: string | null; geschwisterNummer?: number | null }[],
+  standortGemeinde: string | null,
+  regeln: BeitragsRegeln = KEINE_REGELN
 ): KindKontext {
   const standort = standortGemeinde?.trim().toLowerCase() ?? "";
   const auswaertig = new Set<string>();
@@ -63,7 +100,13 @@ export function baueKindKontext(
       if (wohnort && wohnort !== standort) auswaertig.add(k.id);
     }
   }
-  return { gruppenartByGruppeId: new Map(gruppen.map((g) => [g.id, g.gruppenart])), auswaertigeKindIds: auswaertig };
+  return {
+    gruppenartByGruppeId: new Map(gruppen.map((g) => [g.id, g.gruppenart])),
+    auswaertigeKindIds: auswaertig,
+    geschwisterByKindId: new Map(kinder.filter((k) => (k.geschwisterNummer ?? 1) > 1).map((k) => [k.id, k.geschwisterNummer as number])),
+    geburtsdatumByKindId: new Map(kinder.filter((k) => k.geburtsdatum).map((k) => [k.id, k.geburtsdatum as string])),
+    regeln,
+  };
 }
 
 /** Der Preis für ein Kind: erst genau passend (Gruppenart, Wohnsitz), dann ohne Gruppenart, bei Auswärtigen zuletzt der Standardpreis. */
@@ -89,7 +132,12 @@ export type BeitraegeSumme = {
 };
 
 /** Elternbeiträge eines Monats: Summe der Preise aller anwesenden Kinder. */
-export function berechneElternbeitraege(kinderRows: PresenceRow[], preise: PreisTabelle, kontext: KindKontext = OHNE_KONTEXT): BeitraegeSumme {
+export function berechneElternbeitraege(
+  kinderRows: PresenceRow[],
+  preise: PreisTabelle,
+  kontext: KindKontext = OHNE_KONTEXT,
+  stichtag?: string
+): BeitraegeSumme {
   let summe = 0;
   let mit = 0;
   let ohne = 0;
@@ -100,7 +148,7 @@ export function berechneElternbeitraege(kinderRows: PresenceRow[], preise: Preis
     const preis = preisFuerKind(preise, r, kontext);
     if (preis === undefined) ohne += 1;
     else {
-      summe += preis;
+      summe += preisMitGeschwister(preis, r.kind_id, kontext, stichtag);
       mit += 1;
     }
   }
@@ -114,7 +162,8 @@ export function beitraegeJeGruppe(
   kinderRows: PresenceRow[],
   preise: PreisTabelle,
   gruppen: { id: string; name: string }[],
-  kontext: KindKontext = OHNE_KONTEXT
+  kontext: KindKontext = OHNE_KONTEXT,
+  stichtag?: string
 ): BeitraegeJeGruppe[] {
   const proKind = new Map<string, PresenceRow>();
   for (const r of kinderRows) if (!proKind.has(r.kind_id)) proKind.set(r.kind_id, r);
@@ -125,7 +174,7 @@ export function beitraegeJeGruppe(
     w.kinder += 1;
     const preis = preisFuerKind(preise, r, kontext);
     if (preis !== undefined) {
-      w.erloes += preis;
+      w.erloes += preisMitGeschwister(preis, r.kind_id, kontext, stichtag);
       w.mitPreis += 1;
     }
     werte.set(r.gruppe_id, w);

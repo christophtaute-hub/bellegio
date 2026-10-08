@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useTransition } from "react";
 import { cn } from "cn";
+import { startNavigation } from "@/components/layout/navigations-fortschritt";
 
 /** Filterformular, das sich selbst abschickt: Auswahlfelder sofort, Textfelder nach kurzer Pause — ein „Filtern“-Knopf ist nicht nötig.
  * Die Werte landen als Adressparameter (wie bisher), die Seite lädt dabei nicht neu und springt nicht nach oben. */
@@ -20,6 +21,7 @@ export function AutoFilterForm({ children, className }: { children: React.ReactN
     for (const [name, wert] of new FormData(form).entries()) {
       if (typeof wert === "string" && wert !== "") parameter.set(name, wert);
     }
+    startNavigation();
     starte(() => router.replace(`${pfad}?${parameter.toString()}`, { scroll: false }));
   }
 

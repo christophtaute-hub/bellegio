@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baueKindKontext, berechneElternbeitraege, beitraegeJeGruppe, preisSchluessel, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { baueKindKontext, berechneElternbeitraege, beitraegeJeGruppe, erhaeltZuschuss, preisMitGeschwister, preisSchluessel, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
 import type { PresenceRow } from "@/lib/dashboard/presence";
 
 const kind = (id: string, band: string | null, gruppe: string | null = "g1"): PresenceRow => ({
@@ -84,5 +84,39 @@ describe("Preisliste nach Gruppenart und Wohnsitz (Münchner Liste als Beispiel)
   });
   it("ohne Standort-Gemeinde gibt es keine Auswärtigen", () => {
     expect(baueKindKontext([], [{ id: "2", wohnort: "Freising" }], null).auswaertigeKindIds.size).toBe(0);
+  });
+});
+
+describe("Geschwisterermäßigung und Elternbeitragszuschuss", () => {
+  const regeln = { zweitProzent: 50, abDrittProzent: 0, zuschussBis: "2026-12-31" };
+  const kontext = baueKindKontext(
+    [],
+    [
+      { id: "klein", wohnort: null, geburtsdatum: "2024-05-16", geschwisterNummer: 2 },
+      { id: "dritt", wohnort: null, geburtsdatum: "2024-09-01", geschwisterNummer: 3 },
+      { id: "gross", wohnort: null, geburtsdatum: "2020-12-24", geschwisterNummer: 2 },
+      { id: "einzel", wohnort: null, geburtsdatum: "2024-01-01", geschwisterNummer: 1 },
+    ],
+    null,
+    regeln
+  );
+  it("Zuschuss gibt es ab 1. September des Jahres, in dem das Kind drei wird, bis zum Enddatum", () => {
+    expect(erhaeltZuschuss("2023-10-01", "2026-08-31", "2026-12-31")).toBe(false);
+    expect(erhaeltZuschuss("2023-10-01", "2026-09-01", "2026-12-31")).toBe(true);
+    expect(erhaeltZuschuss("2023-10-01", "2027-01-01", "2026-12-31")).toBe(false);
+    expect(erhaeltZuschuss("2023-10-01", "2026-10-01", null)).toBe(false);
+  });
+  it("2. Kind zahlt die Hälfte, ab dem 3. Kind nichts, das 1. Kind den vollen Preis", () => {
+    expect(preisMitGeschwister(200, "klein", kontext, "2026-10-08")).toBe(100);
+    expect(preisMitGeschwister(200, "dritt", kontext, "2026-10-08")).toBe(0);
+    expect(preisMitGeschwister(200, "einzel", kontext, "2026-10-08")).toBe(200);
+  });
+  it("Kinder mit Zuschuss bekommen keine Ermäßigung — nach Ende des Zuschusses schon", () => {
+    expect(preisMitGeschwister(100, "gross", kontext, "2026-10-08")).toBe(100);
+    expect(preisMitGeschwister(100, "gross", kontext, "2027-01-01")).toBe(50);
+  });
+  it("ohne Regeln bleibt der Preis unverändert", () => {
+    const ohne = baueKindKontext([], [{ id: "klein", wohnort: null, geburtsdatum: "2024-05-16", geschwisterNummer: 2 }], null);
+    expect(preisMitGeschwister(200, "klein", ohne, "2026-10-08")).toBe(200);
   });
 });

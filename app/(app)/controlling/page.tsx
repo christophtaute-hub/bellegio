@@ -77,7 +77,7 @@ export default async function ControllingPage({
         supabase.from("gruppen").select("id, name").eq("einrichtung_id", einrichtungId).is("archived_at", null),
         ladeKindKontext(supabase, einrichtungId),
       ]);
-      beitraege = { zeilen: beitraegeJeGruppe(rows, preise, gruppenListe ?? [], kontext), ohnePreis: berechneElternbeitraege(rows, preise, kontext).kinderOhnePreis };
+      beitraege = { zeilen: beitraegeJeGruppe(rows, preise, gruppenListe ?? [], kontext, heuteIso), ohnePreis: berechneElternbeitraege(rows, preise, kontext, heuteIso).kinderOhnePreis };
     }
   }
 

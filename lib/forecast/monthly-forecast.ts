@@ -93,13 +93,25 @@ export type FinanzenBasis = {
 export async function ladeKindKontext(supabase: SupabaseClient<Database>, einrichtungId: string): Promise<KindKontext> {
   const [{ data: gruppen }, { data: einrichtung }] = await Promise.all([
     supabase.from("gruppen").select("id, gruppenart").eq("einrichtung_id", einrichtungId),
-    supabase.from("einrichtungen").select("standort_gemeinde").eq("id", einrichtungId).single(),
+    supabase.from("einrichtungen").select("standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis").eq("id", einrichtungId).single(),
   ]);
   const standort = einrichtung?.standort_gemeinde ?? null;
-  const { data: kinder } = standort
-    ? await supabase.from("kinder").select("id, wohnort").eq("einrichtung_id", einrichtungId).not("wohnort", "is", null).limit(5000)
-    : { data: [] as { id: string; wohnort: string | null }[] };
-  return baueKindKontext(gruppen ?? [], kinder ?? [], standort);
+  const regeln = {
+    zweitProzent: einrichtung?.geschwister_zweit_prozent ?? null,
+    abDrittProzent: einrichtung?.geschwister_ab_dritt_prozent ?? null,
+    zuschussBis: einrichtung?.elternbeitragszuschuss_bis ?? null,
+  };
+  // Kinder nur laden, wenn Wohnsitz oder Geschwisterregeln den Preis beeinflussen können
+  const brauchtKinder = standort !== null || regeln.zweitProzent !== null || regeln.abDrittProzent !== null;
+  const { data: kinder } = brauchtKinder
+    ? await supabase.from("kinder").select("id, wohnort, geburtsdatum, geschwister_nummer").eq("einrichtung_id", einrichtungId).limit(5000)
+    : { data: [] as { id: string; wohnort: string | null; geburtsdatum: string; geschwister_nummer: number }[] };
+  return baueKindKontext(
+    gruppen ?? [],
+    (kinder ?? []).map((k) => ({ id: k.id, wohnort: k.wohnort, geburtsdatum: k.geburtsdatum, geschwisterNummer: k.geschwister_nummer })),
+    standort,
+    regeln
+  );
 }
 
 async function ladeVerguetungFuerSummen(supabase: SupabaseClient<Database>, einrichtungId: string) {
@@ -207,7 +219,7 @@ export function resolveFinanzenMonat(
   );
   const personalkosten = berechnePersonalkostenGesamt(personalkostenErgebnisse, basis.lohnnebenkostenProzent, basis.jahressonderzahlungProzent);
   const preise = preiseAmStichtag(basis.beitraege, stichtag);
-  const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise, basis.kindKontext).summe : null;
+  const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise, basis.kindKontext, stichtag).summe : null;
   return berechneErgebnis(foerdererloeseMonat, personalkosten, elternbeitraege);
 }
 

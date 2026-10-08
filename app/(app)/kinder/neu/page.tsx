@@ -10,7 +10,7 @@ export default async function KindNeuPage() {
   const { data: einrichtung } = einrichtungId
     ? await supabase
         .from("einrichtungen")
-        .select("bundesland_code, standort_gemeinde, auswaertigen_quote_prozent")
+        .select("bundesland_code, standort_gemeinde, auswaertigen_quote_prozent, geschwister_zweit_prozent, geschwister_ab_dritt_prozent")
         .eq("id", einrichtungId)
         .single()
     : { data: null };
@@ -98,6 +98,7 @@ export default async function KindNeuPage() {
           code: w.code,
         }))}
         bundeslandCode={bundeslandCode}
+        zeigeGeschwister={einrichtung?.geschwister_zweit_prozent != null || einrichtung?.geschwister_ab_dritt_prozent != null}
         auswaertigenQuote={auswaertigenQuote}
       />
     </div>

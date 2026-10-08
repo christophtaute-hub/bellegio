@@ -38,6 +38,7 @@ const kindFormSchema = z
     i_status_von: z.string(),
     i_status_bis: z.string(),
     kooperation: z.boolean(),
+    geschwister_nummer: z.string(),
     weighting_factor_ids: z.array(z.string()),
     ersetzt_kind_id: z.string(),
   })
@@ -87,6 +88,7 @@ export function KindForm({
   bookingTimeBands,
   weightingFactors,
   bundeslandCode,
+  zeigeGeschwister,
   auswaertigenQuote,
 }: {
   mode: "create" | "edit";
@@ -102,6 +104,8 @@ export function KindForm({
   weightingFactors: WeightingFactorOption[];
   /** Steuert bundeslandspezifische Felder (Kooperation nur in Baden-Württemberg). */
   bundeslandCode?: string;
+  /** Nur wenn die Einrichtung eine Geschwisterermäßigung hinterlegt hat. */
+  zeigeGeschwister?: boolean;
   auswaertigenQuote?: {
     standortGemeinde: string;
     auswaertigenQuoteProzent: number;
@@ -135,6 +139,7 @@ export function KindForm({
       i_status_von: "",
       i_status_bis: "",
       kooperation: false,
+      geschwister_nummer: "1",
       weighting_factor_ids: [],
       ersetzt_kind_id: "",
       ...defaultValues,
@@ -200,6 +205,7 @@ export function KindForm({
       i_status_von: values.hat_behinderung ? values.i_status_von || null : null,
       i_status_bis: values.hat_behinderung ? values.i_status_bis || null : null,
       kooperation: values.kooperation,
+      geschwister_nummer: Number(values.geschwister_nummer) || 1,
       weighting_factor_ids: basisfaktorAbgeleitet ? values.weighting_factor_ids.filter((id) => !basisIds.has(id)) : values.weighting_factor_ids,
       ersetzt_kind_id: values.status === "nachruecker" ? values.ersetzt_kind_id || null : null,
     };
@@ -433,6 +439,17 @@ export function KindForm({
             Leer lassen, wenn der Zeitraum noch offen ist. Die Statistik zählt das Kind nur in Monaten, in denen der I-Status gilt.
           </p>
         </div>
+      ) : null}
+
+      {zeigeGeschwister ? (
+        <Field id="geschwister_nummer" label="Platz in der Geschwisterreihe">
+          <select id="geschwister_nummer" className={SELECT_CLASS} {...register("geschwister_nummer")}>
+            <option value="1">Kein Geschwisterkind (voller Preis)</option>
+            <option value="2">2. Kind der Familie</option>
+            <option value="3">3. Kind der Familie</option>
+            <option value="4">4. Kind oder weitere</option>
+          </select>
+        </Field>
       ) : null}
 
       {bundeslandCode === "bw" ? (

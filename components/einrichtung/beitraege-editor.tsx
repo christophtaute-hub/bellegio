@@ -21,6 +21,7 @@ export function BeitraegeEditor({
   standortGemeinde,
   nachArtVorbelegt,
   nachWohnsitzVorbelegt,
+  regeln,
   canEdit,
 }: {
   einrichtungId: string;
@@ -33,6 +34,7 @@ export function BeitraegeEditor({
   standortGemeinde: string | null;
   nachArtVorbelegt: boolean;
   nachWohnsitzVorbelegt: boolean;
+  regeln: { zweitProzent: number | null; abDrittProzent: number | null; zuschussBis: string | null };
   canEdit: boolean;
 }) {
   const [datum, setDatum] = useState(gueltigAb);
@@ -40,6 +42,11 @@ export function BeitraegeEditor({
   const [nachWohnsitz, setNachWohnsitz] = useState(nachWohnsitzVorbelegt);
   const [gemeinde, setGemeinde] = useState(standortGemeinde ?? "");
   const [werte, setWerte] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(preise).map(([k, v]) => [k, String(v)])));
+  const [geschwisterAn, setGeschwisterAn] = useState(regeln.zweitProzent !== null || regeln.abDrittProzent !== null);
+  const [zweit, setZweit] = useState(String(regeln.zweitProzent ?? 50));
+  const [abDritt, setAbDritt] = useState(String(regeln.abDrittProzent ?? 0));
+  const [zuschussAn, setZuschussAn] = useState(regeln.zuschussBis !== null);
+  const [zuschussBis, setZuschussBis] = useState(regeln.zuschussBis ?? "2026-12-31");
   const [istPending, starte] = useTransition();
   const hatPreise = Object.keys(preise).length > 0;
 
@@ -67,7 +74,12 @@ export function BeitraegeEditor({
       })
     );
     starte(async () => {
-      const r = await speichereBeitraege(einrichtungId, datum, eintraege, nachWohnsitz ? gemeinde : undefined);
+      const zahl = (t: string) => (t.trim() ? Number(t.replace(",", ".")) : null);
+      const r = await speichereBeitraege(einrichtungId, datum, eintraege, nachWohnsitz ? gemeinde : undefined, {
+        zweitProzent: geschwisterAn ? zahl(zweit) : null,
+        abDrittProzent: geschwisterAn ? zahl(abDritt) : null,
+        zuschussBis: zuschussAn ? zuschussBis : null,
+      });
       if (r.ok) meldeErfolg("Preisliste gespeichert.");
       else meldeFehler(r.error);
     });
@@ -78,8 +90,7 @@ export function BeitraegeEditor({
       <div className="flex flex-col gap-0.5">
         <p className="text-sm font-medium">Elternbeiträge (eure Preisliste)</p>
         <p className="text-xs text-muted-foreground">
-          Monatlicher Beitrag je Buchungszeit. Sobald Preise eingetragen sind, fließen die Elternbeiträge ins Ergebnis ein. Verpflegung, Pflegemittel, Zuschüsse und Geschwisterermäßigung
-          werden nicht eingerechnet. Leer lassen = kein Preis.
+          Monatlicher Beitrag je Buchungszeit. Sobald Preise eingetragen sind, fließen die Elternbeiträge ins Ergebnis ein. Verpflegung und Pflegemittel werden nicht eingerechnet. Leer lassen = kein Preis.
           {hatPreise ? "" : " Aktuell ist keine Preisliste hinterlegt."}
         </p>
       </div>
@@ -98,6 +109,39 @@ export function BeitraegeEditor({
             Standort-Gemeinde (Wohnort der Kinder, die den Standardpreis zahlen)
             <Input className="h-8 w-60" value={gemeinde} disabled={!canEdit} placeholder="z. B. München" onChange={(e) => setGemeinde(e.target.value)} />
           </label>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-2 text-sm">
+        <label className="flex items-center gap-2">
+          <Switch checked={geschwisterAn} onCheckedChange={setGeschwisterAn} disabled={!canEdit} aria-label="Geschwisterermäßigung" />
+          Geschwisterermäßigung
+        </label>
+        {geschwisterAn ? (
+          <div className="flex flex-wrap items-end gap-3 text-xs text-muted-foreground">
+            <label className="flex flex-col gap-1">
+              2. Kind zahlt (% des Preises)
+              <Input inputMode="decimal" className="h-8 w-24 text-right tabular-nums" value={zweit} disabled={!canEdit} onChange={(e) => setZweit(e.target.value)} />
+            </label>
+            <label className="flex flex-col gap-1">
+              ab dem 3. Kind zahlt (%)
+              <Input inputMode="decimal" className="h-8 w-24 text-right tabular-nums" value={abDritt} disabled={!canEdit} onChange={(e) => setAbDritt(e.target.value)} />
+            </label>
+            <p className="max-w-md">Den Platz in der Familie trägst du im Kinderprofil ein. Kinder mit Elternbeitragszuschuss bekommen keine Ermäßigung.</p>
+          </div>
+        ) : null}
+        <label className="flex items-center gap-2">
+          <Switch checked={zuschussAn} onCheckedChange={setZuschussAn} disabled={!canEdit} aria-label="Elternbeitragszuschuss" />
+          Eltern erhalten den Elternbeitragszuschuss (Bayern)
+        </label>
+        {zuschussAn ? (
+          <div className="flex flex-wrap items-end gap-3 text-xs text-muted-foreground">
+            <label className="flex flex-col gap-1">
+              Zuschuss gibt es bis
+              <Input type="date" className="h-8 w-40" value={zuschussBis} disabled={!canEdit} onChange={(e) => setZuschussBis(e.target.value)} />
+            </label>
+            <p className="max-w-md">Ab September des Jahres, in dem das Kind drei wird. Eure Einnahmen bleiben gleich — ihr erhaltet den Zuschuss und gebt ihn weiter.</p>
+          </div>
         ) : null}
       </div>
 

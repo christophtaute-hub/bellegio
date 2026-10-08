@@ -6,6 +6,8 @@ import { getZugriff } from "@/lib/server/current-user-role";
 
 export type BeitraegeErgebnis = { ok: true } | { ok: false; error: string };
 
+export type BeitragsRegelnInput = { zweitProzent: number | null; abDrittProzent: number | null; zuschussBis: string | null };
+
 export type BeitragEintrag = { bandId: string; gruppenart: "krippe" | "kindergarten" | null; auswaertig: boolean; betrag: number | null };
 
 /** Speichert eine Preisliste (Elternbeiträge je Buchungszeit-Band, optional getrennt nach Krippe/Kindergarten und nach Wohnsitz) mit Gültigkeitsdatum.
@@ -15,7 +17,8 @@ export async function speichereBeitraege(
   einrichtungId: string,
   gueltigAb: string,
   eintraege: BeitragEintrag[],
-  standortGemeinde?: string | null
+  standortGemeinde?: string | null,
+  regeln?: BeitragsRegelnInput
 ): Promise<BeitraegeErgebnis> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(gueltigAb)) return { ok: false, error: "Bitte ein gültiges Datum angeben." };
   const supabase = await createClient();
@@ -25,6 +28,17 @@ export async function speichereBeitraege(
   }
   if (eintraege.some((e) => e.gruppenart !== null && e.gruppenart !== "krippe" && e.gruppenart !== "kindergarten")) {
     return { ok: false, error: "Ungültige Gruppenart." };
+  }
+
+  if (regeln) {
+    const prozentOk = (p: number | null) => p === null || (Number.isFinite(p) && p >= 0 && p <= 100);
+    if (!prozentOk(regeln.zweitProzent) || !prozentOk(regeln.abDrittProzent)) return { ok: false, error: "Bitte Prozentwerte von 0 bis 100 angeben." };
+    if (regeln.zuschussBis !== null && !/^\d{4}-\d{2}-\d{2}$/.test(regeln.zuschussBis)) return { ok: false, error: "Bitte ein gültiges Enddatum für den Zuschuss angeben." };
+    const { error } = await supabase
+      .from("einrichtungen")
+      .update({ geschwister_zweit_prozent: regeln.zweitProzent, geschwister_ab_dritt_prozent: regeln.abDrittProzent, elternbeitragszuschuss_bis: regeln.zuschussBis })
+      .eq("id", einrichtungId);
+    if (error) return { ok: false, error: "Die Regeln konnten nicht gespeichert werden." };
   }
 
   if (standortGemeinde !== undefined) {

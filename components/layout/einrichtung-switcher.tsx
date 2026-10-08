@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { endeNavigation, startNavigation } from "@/components/layout/navigations-fortschritt";
 import { usePathname } from "next/navigation";
 import { ArrowLeftRight, Check, Search } from "lucide-react";
 import { setActiveEinrichtung } from "@/lib/actions/einrichtung";
@@ -36,8 +37,13 @@ export function EinrichtungSwitcher({
       setOffen(false);
       return;
     }
+    startNavigation();
     startTransition(async () => {
-      await setActiveEinrichtung(id, pathname);
+      try {
+        await setActiveEinrichtung(id, pathname);
+      } finally {
+        endeNavigation();
+      }
     });
   }
 

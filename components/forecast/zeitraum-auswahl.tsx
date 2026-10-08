@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { startNavigation } from "@/components/layout/navigations-fortschritt";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { zeitraumQuery, type ZeitraumArt } from "@/lib/controlling/zeitraum";
@@ -45,6 +46,7 @@ export function ZeitraumAuswahl({
   const bisOptionen = jahre.filter((j) => j >= neuJahr && j <= neuJahr + 2).reverse();
 
   function anzeigen(a: Exclude<ZeitraumArt, "frei">, j: number, b: number) {
+    startNavigation();
     router.push(`${basePath}?${zeitraumQuery(a, j, Math.min(Math.max(b, j), j + 2))}`);
   }
 
@@ -117,7 +119,10 @@ export function ZeitraumAuswahl({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => router.push(basePath)}
+          onClick={() => {
+            startNavigation();
+            router.push(basePath);
+          }}
           title="Zurück zum laufenden Kitajahr"
         >
           Aktuelles Kitajahr

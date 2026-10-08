@@ -103,6 +103,7 @@ export function EinrichtungKachel({
         await setActiveEinrichtung(id);
       }}
       className="h-full"
+      data-nav
     >
       <button type="submit" className="block h-full w-full text-left">
         <Card className="h-full cursor-pointer gap-0 py-4 transition-shadow hover:shadow-md">

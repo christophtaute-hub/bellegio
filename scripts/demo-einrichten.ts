@@ -87,6 +87,9 @@ async function main() {
         foerderung_monatlich_manuell: q.foerderung_monatlich_manuell,
         lohnnebenkosten_prozent: q.lohnnebenkosten_prozent,
         jahressonderzahlung_prozent: q.jahressonderzahlung_prozent,
+        geschwister_zweit_prozent: q.geschwister_zweit_prozent,
+        geschwister_ab_dritt_prozent: q.geschwister_ab_dritt_prozent,
+        elternbeitragszuschuss_bis: q.elternbeitragszuschuss_bis,
         leitung_name: q.leitung_name,
         telefon: q.telefon,
         email: q.email,
@@ -153,6 +156,7 @@ async function main() {
           i_status_von: k.i_status_von,
           i_status_bis: k.i_status_bis,
           kooperation: k.kooperation,
+          geschwister_nummer: k.geschwister_nummer,
           vertrag_gueltig_bis: k.vertrag_gueltig_bis,
           wohnort: k.wohnort,
         })

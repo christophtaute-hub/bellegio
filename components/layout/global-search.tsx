@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { startNavigation } from "@/components/layout/navigations-fortschritt";
 import { useRouter } from "next/navigation";
 import { Baby, Building2, CornerDownLeft, LayoutGrid, Search, UserCog } from "lucide-react";
 import { oeffneDetailInEinrichtung, setActiveEinrichtung } from "@/lib/actions/einrichtung";
@@ -80,10 +81,14 @@ export function GlobalSearch() {
         label: e.name,
         sub: [e.ort, land].filter(Boolean).join(" · "),
         icon: Building2,
-        offnen: () => startTransition(async () => void (await setActiveEinrichtung(e.id, "/dashboard"))),
+        offnen: () => {
+          startNavigation();
+          startTransition(async () => void (await setActiveEinrichtung(e.id, "/dashboard")));
+        },
       });
     }
     const detail = (einrichtungId: string, pfad: string) => () => {
+      startNavigation();
       if (einrichtungId === ergebnis.aktiveEinrichtungId) router.push(pfad);
       else startTransition(async () => void (await oeffneDetailInEinrichtung(einrichtungId, pfad)));
     };

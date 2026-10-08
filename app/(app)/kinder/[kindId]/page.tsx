@@ -37,7 +37,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung, i_status_von, i_status_bis, kooperation, ersetzt_kind_id"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung, i_status_von, i_status_bis, kooperation, geschwister_nummer, ersetzt_kind_id"
     )
     .eq("id", kindId)
     .single();
@@ -48,7 +48,7 @@ export default async function KindDetailPage({
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("name, bundesland_code, standort_gemeinde, auswaertigen_quote_prozent")
+    .select("name, bundesland_code, standort_gemeinde, auswaertigen_quote_prozent, geschwister_zweit_prozent, geschwister_ab_dritt_prozent")
     .eq("id", einrichtungId ?? "")
     .single();
   const bundeslandCode = einrichtung?.bundesland_code ?? "by";
@@ -267,6 +267,7 @@ export default async function KindDetailPage({
           },
           { label: "Gewichtung", wert: gewichtungsLabels.join(", ") },
           { label: "I-Status", wert: kind.hat_behinderung ? (kind.i_status_von || kind.i_status_bis ? `Ja (${kind.i_status_von ? `ab ${formatDate(kind.i_status_von)}` : ""}${kind.i_status_von && kind.i_status_bis ? ", " : ""}${kind.i_status_bis ? `bis ${formatDate(kind.i_status_bis)}` : ""})` : "Ja") : "Nein" },
+          ...(kind.geschwister_nummer > 1 ? [{ label: "Platz in der Geschwisterreihe", wert: `${kind.geschwister_nummer}. Kind` }] : []),
           ...(bundeslandCode === "bw" ? [{ label: "Kooperation", wert: kind.kooperation ? "Ja" : "Nein" }] : []),
           { label: "Wohnort", wert: kind.wohnort ?? "" },
         ]}
@@ -335,6 +336,7 @@ export default async function KindDetailPage({
           i_status_von: kind.i_status_von ?? "",
           i_status_bis: kind.i_status_bis ?? "",
           kooperation: kind.kooperation,
+          geschwister_nummer: String(kind.geschwister_nummer),
           weighting_factor_ids: (kindWeightingFactors ?? []).map(
             (row) => row.weighting_factor_id
           ),
@@ -354,6 +356,7 @@ export default async function KindDetailPage({
           code: w.code,
         }))}
         bundeslandCode={bundeslandCode}
+        zeigeGeschwister={einrichtung?.geschwister_zweit_prozent != null || einrichtung?.geschwister_ab_dritt_prozent != null || kind.geschwister_nummer > 1}
         auswaertigenQuote={auswaertigenQuote}
       />
       </div>

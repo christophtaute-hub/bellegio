@@ -19,6 +19,7 @@ export const KIND_FELDER: Record<string, string> = {
   i_status_von: "I-Status gültig von",
   i_status_bis: "I-Status gültig bis",
   kooperation: "Kooperation",
+  geschwister_nummer: "Platz in der Geschwisterreihe",
   einschulungsstatus: "Einschulungsstatus",
   betriebszugehoerigkeit: "Betriebszugehörigkeit",
   archived_at: "Archiviert am",

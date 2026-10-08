@@ -21,7 +21,7 @@ export default async function FinanzenEinstellungenPage() {
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde")
+    .select("bundesland_code, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis")
     .eq("id", einrichtungId)
     .single();
 
@@ -89,6 +89,11 @@ export default async function FinanzenEinstellungenPage() {
               standortGemeinde={einrichtung.standort_gemeinde}
               nachArtVorbelegt={beitragsDaten.nachArt}
               nachWohnsitzVorbelegt={beitragsDaten.nachWohnsitz}
+              regeln={{
+                zweitProzent: einrichtung.geschwister_zweit_prozent,
+                abDrittProzent: einrichtung.geschwister_ab_dritt_prozent,
+                zuschussBis: einrichtung.elternbeitragszuschuss_bis,
+              }}
               canEdit={bearbeiteFinanzen}
             />
           ) : null}

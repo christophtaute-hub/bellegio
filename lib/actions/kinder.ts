@@ -28,6 +28,8 @@ export type KindInput = {
   i_status_bis: string | null;
   /** Kooperation (Ja/Nein) — nur in Baden-Württemberg im Formular. */
   kooperation: boolean;
+  /** Platz in der Geschwisterreihe der Familie (1 = zahlt den vollen Preis) — für die Geschwisterermäßigung. */
+  geschwister_nummer: number;
   weighting_factor_ids: string[];
   /** Nur bei Nachrückern: das aktive Kind derselben Gruppe, dessen Platz übernommen wird (optional). */
   ersetzt_kind_id: string | null;
@@ -37,6 +39,9 @@ const GESCHLECHT_WERTE = ["maennlich", "weiblich", "divers", "keine_angabe"];
 
 // Gleiche Regeln wie im Formular — gelten auch, wenn die Action ohne Browser aufgerufen wird.
 function validateKindInput(input: KindInput) {
+  if (!Number.isInteger(input.geschwister_nummer) || input.geschwister_nummer < 1 || input.geschwister_nummer > 10) {
+    throw new Error("Bitte einen gültigen Platz in der Geschwisterreihe wählen.");
+  }
   if (!GESCHLECHT_WERTE.includes(input.geschlecht)) {
     throw new Error("Bitte ein Geschlecht auswählen.");
   }
@@ -145,6 +150,7 @@ export async function createKind(input: KindInput) {
       i_status_von: input.hat_behinderung ? input.i_status_von : null,
       i_status_bis: input.hat_behinderung ? input.i_status_bis : null,
       kooperation: input.kooperation,
+      geschwister_nummer: input.geschwister_nummer,
       ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .select("id")
@@ -207,6 +213,7 @@ export async function updateKind(kindId: string, input: KindInput) {
       i_status_von: input.hat_behinderung ? input.i_status_von : null,
       i_status_bis: input.hat_behinderung ? input.i_status_bis : null,
       kooperation: input.kooperation,
+      geschwister_nummer: input.geschwister_nummer,
       ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .eq("id", kindId);

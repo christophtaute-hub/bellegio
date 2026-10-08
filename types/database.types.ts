@@ -575,6 +575,9 @@ export type Database = {
           created_at: string
           empfohlener_anstellungsschluessel: number
           foerderung_monatlich_manuell: number | null
+          geschwister_ab_dritt_prozent: number | null
+          geschwister_zweit_prozent: number | null
+          elternbeitragszuschuss_bis: string | null
           id: string
           jahressonderzahlung_prozent: number
           kita_year_start_month: number
@@ -604,6 +607,9 @@ export type Database = {
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           foerderung_monatlich_manuell?: number | null
+          geschwister_ab_dritt_prozent?: number | null
+          geschwister_zweit_prozent?: number | null
+          elternbeitragszuschuss_bis?: string | null
           id?: string
           jahressonderzahlung_prozent?: number
           kita_year_start_month?: number
@@ -633,6 +639,9 @@ export type Database = {
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           foerderung_monatlich_manuell?: number | null
+          geschwister_ab_dritt_prozent?: number | null
+          geschwister_zweit_prozent?: number | null
+          elternbeitragszuschuss_bis?: string | null
           id?: string
           jahressonderzahlung_prozent?: number
           kita_year_start_month?: number
@@ -930,6 +939,7 @@ export type Database = {
       kinder: {
         Row: {
           kooperation: boolean
+          geschwister_nummer: number
           i_status_von: string | null
           i_status_bis: string | null
           archived_at: string | null
@@ -957,6 +967,7 @@ export type Database = {
         }
         Insert: {
           kooperation?: boolean
+          geschwister_nummer?: number
           i_status_von?: string | null
           i_status_bis?: string | null
           archived_at?: string | null
@@ -984,6 +995,7 @@ export type Database = {
         }
         Update: {
           kooperation?: boolean
+          geschwister_nummer?: number
           i_status_von?: string | null
           i_status_bis?: string | null
           archived_at?: string | null
