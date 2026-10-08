@@ -87,6 +87,12 @@ async function main() {
         foerderung_monatlich_manuell: q.foerderung_monatlich_manuell,
         lohnnebenkosten_prozent: q.lohnnebenkosten_prozent,
         jahressonderzahlung_prozent: q.jahressonderzahlung_prozent,
+        leitung_name: q.leitung_name,
+        telefon: q.telefon,
+        email: q.email,
+        oeffnungszeiten: q.oeffnungszeiten,
+        schliesszeiten: q.schliesszeiten,
+        basisinfos: q.basisinfos,
       })
       .select("id")
       .single();
@@ -144,6 +150,9 @@ async function main() {
           einschulungsstatus: k.einschulungsstatus,
           betriebszugehoerigkeit: k.betriebszugehoerigkeit,
           hat_behinderung: k.hat_behinderung,
+          i_status_von: k.i_status_von,
+          i_status_bis: k.i_status_bis,
+          kooperation: k.kooperation,
           vertrag_gueltig_bis: k.vertrag_gueltig_bis,
           wohnort: k.wohnort,
         })

@@ -158,7 +158,7 @@ export function GrunddatenEditor({
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="einrichtung-auswaertigen-quote">
-                Auswärtigen-Quote (%) — leer lassen, wenn keine lokale Satzung gilt
+                Zulässiger Anteil auswärtiger Kinder (%) — je Standort, z. B. 10 oder 100; leer = keine Begrenzung
               </Label>
               <Input
                 id="einrichtung-auswaertigen-quote"

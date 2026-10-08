@@ -8,6 +8,8 @@ import { UserMenu } from "@/components/layout/user-menu";
 import { EinrichtungSwitcher } from "@/components/layout/einrichtung-switcher";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { GlobalSearch } from "@/components/layout/global-search";
+import { AutoAktualisieren } from "@/components/layout/auto-aktualisieren";
+import { EinrichtungAufEinenBlick } from "@/components/layout/einrichtung-auf-einen-blick";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
 import { isPlatformOperator, istDemoNutzer } from "@/lib/server/current-user-role";
 
@@ -30,14 +32,14 @@ export default async function AppLayout({
     user
       ? supabase
           .from("user_profiles")
-          .select("full_name, email, trager_id")
+          .select("full_name, email, trager_id, role")
           .eq("id", user.id)
           .single()
       : Promise.resolve({ data: null }),
     activeEinrichtungId
       ? supabase
           .from("einrichtungen")
-          .select("name, bundesland_code")
+          .select("name, bundesland_code, address_street, address_zip, address_city, leitung_name, telefon, email, oeffnungszeiten, schliesszeiten, basisinfos")
           .eq("id", activeEinrichtungId)
           .single()
       : Promise.resolve({ data: null }),
@@ -68,14 +70,25 @@ export default async function AppLayout({
 
   return (
     <SidebarProvider>
+      <AutoAktualisieren />
       <AppSidebar abrechnung={istBetreiber ? "/admin" : null} />
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-12 min-w-0 shrink-0 items-center gap-2 border-b border-black/5 bg-background/80 px-4 backdrop-blur">
           <SidebarTrigger />
           {einrichtung?.name ? (
-            <p className="truncate text-sm font-semibold text-primary">
-              {einrichtung.name}
-            </p>
+            <EinrichtungAufEinenBlick
+              darfPflegen={profile?.role === "traeger_admin"}
+              info={{
+                name: einrichtung.name,
+                adresse: [einrichtung.address_street, [einrichtung.address_zip, einrichtung.address_city].filter(Boolean).join(" ")].filter(Boolean).join(", ") || null,
+                leitung_name: einrichtung.leitung_name,
+                telefon: einrichtung.telefon,
+                email: einrichtung.email,
+                oeffnungszeiten: einrichtung.oeffnungszeiten,
+                schliesszeiten: einrichtung.schliesszeiten,
+                basisinfos: einrichtung.basisinfos,
+              }}
+            />
           ) : null}
           {einrichtung?.bundesland_code ? (
             <BundeslandBadge code={einrichtung.bundesland_code} />

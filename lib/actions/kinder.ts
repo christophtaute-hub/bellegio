@@ -23,6 +23,11 @@ export type KindInput = {
   buchungszeit_wirksam_ab: string | null;
   wohnort: string | null;
   hat_behinderung: boolean;
+  /** Gültigkeitszeitraum des I-Status (nur bei hat_behinderung); leer = unbefristet bzw. ohne Beginn. */
+  i_status_von: string | null;
+  i_status_bis: string | null;
+  /** Kooperation (Ja/Nein) — nur in Baden-Württemberg im Formular. */
+  kooperation: boolean;
   weighting_factor_ids: string[];
   /** Nur bei Nachrückern: das aktive Kind derselben Gruppe, dessen Platz übernommen wird (optional). */
   ersetzt_kind_id: string | null;
@@ -51,6 +56,9 @@ function validateKindInput(input: KindInput) {
         ? "Aktive Kinder brauchen ein Austrittsdatum."
         : "Nachrücker brauchen ein Austrittsdatum."
     );
+  }
+  if (input.hat_behinderung && input.i_status_von && input.i_status_bis && input.i_status_bis < input.i_status_von) {
+    throw new Error("Beim I-Status muss „gültig bis“ nach „gültig von“ liegen.");
   }
   if (input.ersetzt_kind_id && input.status !== "nachruecker") {
     throw new Error("Nur Nachrücker können ein Kind ersetzen.");
@@ -134,6 +142,9 @@ export async function createKind(input: KindInput) {
       buchungszeit_band_id: input.buchungszeit_band_id,
       wohnort: input.wohnort,
       hat_behinderung: input.hat_behinderung,
+      i_status_von: input.hat_behinderung ? input.i_status_von : null,
+      i_status_bis: input.hat_behinderung ? input.i_status_bis : null,
+      kooperation: input.kooperation,
       ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .select("id")
@@ -193,6 +204,9 @@ export async function updateKind(kindId: string, input: KindInput) {
       ...(wirdRueckwirkendOderHeuteWirksam ? { buchungszeit_band_id: input.buchungszeit_band_id } : {}),
       wohnort: input.wohnort,
       hat_behinderung: input.hat_behinderung,
+      i_status_von: input.hat_behinderung ? input.i_status_von : null,
+      i_status_bis: input.hat_behinderung ? input.i_status_bis : null,
+      kooperation: input.kooperation,
       ersetzt_kind_id: input.ersetzt_kind_id,
     })
     .eq("id", kindId);

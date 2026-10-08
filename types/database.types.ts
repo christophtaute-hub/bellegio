@@ -553,6 +553,12 @@ export type Database = {
       }
       einrichtungen: {
         Row: {
+          telefon: string | null
+          email: string | null
+          leitung_name: string | null
+          oeffnungszeiten: string | null
+          schliesszeiten: string | null
+          basisinfos: string | null
           address_city: string | null
           address_street: string | null
           address_zip: string | null
@@ -576,6 +582,12 @@ export type Database = {
           vollzeit_wochenstunden: number
         }
         Insert: {
+          telefon?: string | null
+          email?: string | null
+          leitung_name?: string | null
+          oeffnungszeiten?: string | null
+          schliesszeiten?: string | null
+          basisinfos?: string | null
           address_city?: string | null
           address_street?: string | null
           address_zip?: string | null
@@ -599,6 +611,12 @@ export type Database = {
           vollzeit_wochenstunden?: number
         }
         Update: {
+          telefon?: string | null
+          email?: string | null
+          leitung_name?: string | null
+          oeffnungszeiten?: string | null
+          schliesszeiten?: string | null
+          basisinfos?: string | null
           address_city?: string | null
           address_street?: string | null
           address_zip?: string | null
@@ -905,6 +923,9 @@ export type Database = {
       }
       kinder: {
         Row: {
+          kooperation: boolean
+          i_status_von: string | null
+          i_status_bis: string | null
           archived_at: string | null
           austritt: string | null
           betriebszugehoerigkeit: string | null
@@ -929,6 +950,9 @@ export type Database = {
           wohnort: string | null
         }
         Insert: {
+          kooperation?: boolean
+          i_status_von?: string | null
+          i_status_bis?: string | null
           archived_at?: string | null
           austritt?: string | null
           betriebszugehoerigkeit?: string | null
@@ -953,6 +977,9 @@ export type Database = {
           wohnort?: string | null
         }
         Update: {
+          kooperation?: boolean
+          i_status_von?: string | null
+          i_status_bis?: string | null
           archived_at?: string | null
           austritt?: string | null
           betriebszugehoerigkeit?: string | null

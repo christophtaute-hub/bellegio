@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoFilterForm } from "@/components/shared/auto-filter-form";
 import { oderFilter, suchTokens } from "@/lib/suche/suchbegriff";
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -231,7 +232,7 @@ export default async function KinderPage({
         </div>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3 print:hidden" method="get">
+      <AutoFilterForm className="flex flex-wrap items-end gap-3 print:hidden">
         <input type="hidden" name="sort" value={sort} />
         <input type="hidden" name="dir" value={dir} />
         <div className="flex flex-col gap-1">
@@ -280,10 +281,7 @@ export default async function KinderPage({
             ))}
           </select>
         </div>
-        <Button type="submit" variant="secondary" size="sm">
-          Filtern
-        </Button>
-      </form>
+      </AutoFilterForm>
 
       {kinder && kinder.length > 0 ? (
         <TooltipProvider>

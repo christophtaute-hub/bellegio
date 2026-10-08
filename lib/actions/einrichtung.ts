@@ -98,6 +98,9 @@ export async function updateEinrichtungGrunddaten(
   if (input.kita_year_start_month < 1 || input.kita_year_start_month > 12) {
     throw new Error("Bitte einen gültigen Monat (1–12) angeben.");
   }
+  if (input.auswaertigen_quote_prozent !== null && (input.auswaertigen_quote_prozent < 0 || input.auswaertigen_quote_prozent > 100)) {
+    throw new Error("Die Auswärtigen-Quote muss zwischen 0 und 100 Prozent liegen.");
+  }
 
   const supabase = await createClient();
 
@@ -123,6 +126,43 @@ export async function updateEinrichtungGrunddaten(
   revalidatePath("/einstellungen");
   revalidatePath("/dashboard");
   revalidatePath("/einrichtung-auswahl");
+}
+
+export type EinrichtungInfoInput = {
+  leitung_name: string | null;
+  telefon: string | null;
+  email: string | null;
+  oeffnungszeiten: string | null;
+  schliesszeiten: string | null;
+  basisinfos: string | null;
+};
+
+/** „Einrichtung auf einen Blick“: Kontakt- und Organisationsdaten, die im Kopf jeder Seite erreichbar sind (v. a. für Vertretungskräfte). */
+export async function updateEinrichtungInfo(einrichtungId: string, input: EinrichtungInfoInput) {
+  const bereinigt = (wert: string | null, max: number) => {
+    const t = wert?.trim() ?? "";
+    if (t.length > max) throw new Error(`Eine Angabe ist zu lang (höchstens ${max} Zeichen).`);
+    return t === "" ? null : t;
+  };
+  const email = bereinigt(input.email, 200);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Bitte eine gültige E-Mail-Adresse angeben.");
+
+  const supabase = await createClient();
+  // wie die Grunddaten: nur die Träger-Administration darf ändern (RLS auf einrichtungen)
+  const { error } = await supabase
+    .from("einrichtungen")
+    .update({
+      leitung_name: bereinigt(input.leitung_name, 120),
+      telefon: bereinigt(input.telefon, 60),
+      email,
+      oeffnungszeiten: bereinigt(input.oeffnungszeiten, 1000),
+      schliesszeiten: bereinigt(input.schliesszeiten, 1000),
+      basisinfos: bereinigt(input.basisinfos, 3000),
+    })
+    .eq("id", einrichtungId);
+  if (error) throw new Error("Die Angaben konnten nicht gespeichert werden.");
+
+  revalidatePath("/", "layout");
 }
 
 export async function updateEmpfohlenerAnstellungsschluessel(

@@ -37,7 +37,7 @@ export default async function KindDetailPage({
   const { data: kind } = await supabase
     .from("kinder")
     .select(
-      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung, ersetzt_kind_id"
+      "id, einrichtung_id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung, i_status_von, i_status_bis, kooperation, ersetzt_kind_id"
     )
     .eq("id", kindId)
     .single();
@@ -266,7 +266,8 @@ export default async function KindDetailPage({
             wert: (bookingTimeBands ?? []).find((b) => b.id === kind.buchungszeit_band_id)?.label ?? "",
           },
           { label: "Gewichtung", wert: gewichtungsLabels.join(", ") },
-          { label: "I-Status", wert: kind.hat_behinderung ? "Ja" : "Nein" },
+          { label: "I-Status", wert: kind.hat_behinderung ? (kind.i_status_von || kind.i_status_bis ? `Ja (${kind.i_status_von ? `ab ${formatDate(kind.i_status_von)}` : ""}${kind.i_status_von && kind.i_status_bis ? ", " : ""}${kind.i_status_bis ? `bis ${formatDate(kind.i_status_bis)}` : ""})` : "Ja") : "Nein" },
+          ...(bundeslandCode === "bw" ? [{ label: "Kooperation", wert: kind.kooperation ? "Ja" : "Nein" }] : []),
           { label: "Wohnort", wert: kind.wohnort ?? "" },
         ]}
       />
@@ -331,6 +332,9 @@ export default async function KindDetailPage({
           buchungszeit_band_id: kind.buchungszeit_band_id ?? "",
           wohnort: kind.wohnort ?? "",
           hat_behinderung: kind.hat_behinderung,
+          i_status_von: kind.i_status_von ?? "",
+          i_status_bis: kind.i_status_bis ?? "",
+          kooperation: kind.kooperation,
           weighting_factor_ids: (kindWeightingFactors ?? []).map(
             (row) => row.weighting_factor_id
           ),
@@ -349,6 +353,7 @@ export default async function KindDetailPage({
           label: w.label,
           code: w.code,
         }))}
+        bundeslandCode={bundeslandCode}
         auswaertigenQuote={auswaertigenQuote}
       />
       </div>

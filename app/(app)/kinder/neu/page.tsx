@@ -97,6 +97,7 @@ export default async function KindNeuPage() {
           label: w.label,
           code: w.code,
         }))}
+        bundeslandCode={bundeslandCode}
         auswaertigenQuote={auswaertigenQuote}
       />
     </div>

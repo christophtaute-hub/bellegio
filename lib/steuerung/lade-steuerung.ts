@@ -67,7 +67,7 @@ export async function ladeSteuerung(
       .order("sort_order"),
     supabase
       .from("kinder")
-      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id")
+      .select("id, vorname, nachname, geburtsdatum, geschlecht, status, gruppe_id, eintritt, austritt, wohnort, ersetzt_kind_id, hat_behinderung, i_status_bis")
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null)
       .limit(3000),
@@ -173,6 +173,12 @@ export async function ladeSteuerung(
     .map((r) => ({ id: r.kind_id, name: kindName.get(r.kind_id) ?? "Kind" }))
     .sort((a, b) => a.name.localeCompare(b.name, "de"));
 
+  const istatusGrenze = toIsoDateString(new Date(Date.UTC(Number(stichtag.slice(0, 4)), Number(stichtag.slice(5, 7)) + 2, Number(stichtag.slice(8, 10)))));
+  const istatusLaeuftAb = kinderListe
+    .filter((k) => k.status === "aktiv" && k.hat_behinderung && k.i_status_bis && k.i_status_bis >= stichtag && k.i_status_bis <= istatusGrenze)
+    .map((k) => ({ id: k.id, name: `${k.vorname} ${k.nachname}`, bis: k.i_status_bis as string }))
+    .sort((a, b) => a.bis.localeCompare(b.bis));
+
   const langzeit = ermittleLangzeitHinweise(
     (ausfallRes.data ?? []).map((a) => ({ teamId: a.team.id, name: name(a.team), art: a.art, von: a.von, bis: a.bis })),
     stichtag
@@ -211,6 +217,7 @@ export async function ladeSteuerung(
     freiwerdende,
     wechsel: { vorschlaege: wechsel.vorschlaege, ohnePlatz: wechsel.ohnePlatz },
     kinderOhneBuchungszeit,
+    istatusLaeuftAb,
     langzeit,
     verguetungFehlt,
     foerderbetragFehlt,

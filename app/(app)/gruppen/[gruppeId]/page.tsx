@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { AutoFilterForm } from "@/components/shared/auto-filter-form";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Pencil } from "lucide-react";
@@ -569,7 +570,7 @@ export default async function GruppeDetailPage({
         </HinweisLeiste>
       ) : null}
 
-      <form className="flex flex-wrap items-end gap-3 print:hidden" method="get">
+      <AutoFilterForm className="flex flex-wrap items-end gap-3 print:hidden">
         {sort ? <input type="hidden" name="sort" value={sort} /> : null}
         {sort ? <input type="hidden" name="dir" value={dir} /> : null}
         <div className="flex flex-col gap-1">
@@ -584,15 +585,12 @@ export default async function GruppeDetailPage({
             className="h-8 w-48 rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30"
           />
         </div>
-        <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-          Filtern
-        </button>
         {!istStandardansicht ? (
           <Link href={`/gruppen/${gruppeId}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
             Zurücksetzen (alle Plätze anzeigen)
           </Link>
         ) : null}
-      </form>
+      </AutoFilterForm>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3 rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/5 p-4">

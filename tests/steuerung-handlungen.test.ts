@@ -27,6 +27,13 @@ function gruppe(partial: Partial<GruppenVerlauf>): GruppenVerlauf {
 }
 
 describe("baueHandlungen", () => {
+  it("ablaufender I-Status wird als Hinweis mit Direktlink genannt", () => {
+    const liste = baueHandlungen({ ...leer, istatusLaeuftAb: [{ id: "k1", name: "Mia Berger", bis: "2026-12-31" }] });
+    expect(liste).toHaveLength(1);
+    expect(liste[0]).toMatchObject({ ton: "info", href: "/kinder/k1", wann: "2026-12-01" });
+    expect(liste[0].titel).toBe("Mia Berger: I-Status läuft am 31.12.2026 ab");
+  });
+
   it("ohne Auffälligkeiten ist die Liste leer", () => {
     expect(baueHandlungen({ ...leer, gruppen: [gruppe({})] })).toEqual([]);
   });

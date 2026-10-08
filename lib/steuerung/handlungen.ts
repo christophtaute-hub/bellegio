@@ -44,6 +44,8 @@ export type HandlungsEingabe = {
   freiwerdende: FreiwerdenderPlatz[];
   kinderOhneBuchungszeit: { id: string; name: string }[];
   langzeit: (LangzeitHinweis & { artLabel: string })[];
+  /** Kinder, deren befristeter I-Status in den nächsten Monaten abläuft (Verlängerung prüfen). */
+  istatusLaeuftAb?: { id: string; name: string; bis: string }[];
   /** Interne Wechsel (Krippe → Kindergarten): Vorschläge und Fälle ohne absehbaren Platz. */
   wechsel?: { vorschlaege: WechselVorschlag[]; ohnePlatz: WechselOhnePlatz[] };
   /** null = kein Finanzen-Recht (dann keine Vergütungs-Aufgaben). */
@@ -201,6 +203,18 @@ export function baueHandlungen(e: HandlungsEingabe): Handlung[] {
     sammelTitel: (n) => `${n} weitere Kinder ohne Buchungszeit`,
     sammelHref: "/kinder",
   });
+  for (const k of (e.istatusLaeuftAb ?? []).slice(0, MAX_NAMENTLICH)) {
+    liste.push({
+      id: `istatus-${k.id}`,
+      bereich: "Daten",
+      ton: "info",
+      titel: `${k.name}: I-Status läuft am ${datumKurz(k.bis)} ab`,
+      grund: "Verlängerung prüfen — danach zählt das Kind nicht mehr als I-Kind",
+      wann: `${k.bis.slice(0, 7)}-01`,
+      href: `/kinder/${k.id}`,
+      aktion: "Kind öffnen",
+    });
+  }
   if (e.verguetungFehlt) {
     einzelnUndRest(liste, e.verguetungFehlt, {
       idPrefix: "verguetung",

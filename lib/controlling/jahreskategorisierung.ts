@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { resolveBandAmStichtag, type HistorieEintrag } from "@/lib/kinder/buchungszeit-historie";
+import { istStatusAmStichtag } from "@/lib/kinder/i-status";
 import { versionAmStichtag, type Versioniert } from "@/lib/regelwerk/verlauf";
 
 /**
@@ -192,7 +193,7 @@ export async function getKategorisierung(
   const { data } = await supabase
     .from("kinder")
     .select(
-      "id, hat_behinderung, eintritt, austritt, gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
+      "id, hat_behinderung, i_status_von, i_status_bis, eintritt, austritt, gruppen(bw_oeffnungszeit_stunden, nrw_buchungszeit_stunden)"
     )
     .eq("einrichtung_id", einrichtungId)
     .is("archived_at", null)
@@ -254,7 +255,7 @@ export async function getKategorisierung(
         nichtZugeordnet += 1;
         continue;
       }
-      eintraege.push({ wochenstunden, hatBehinderung: kind.hat_behinderung });
+      eintraege.push({ wochenstunden, hatBehinderung: istStatusAmStichtag(kind, monat) });
     }
 
     return { monat, baender: buildJahreskategorisierung(eintraege), nichtZugeordnet };

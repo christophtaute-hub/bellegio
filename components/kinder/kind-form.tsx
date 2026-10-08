@@ -35,12 +35,19 @@ const kindFormSchema = z
     buchungszeit_wirksam_ab: z.string().min(1, "Bitte ein Datum angeben."),
     wohnort: z.string(),
     hat_behinderung: z.boolean(),
+    i_status_von: z.string(),
+    i_status_bis: z.string(),
+    kooperation: z.boolean(),
     weighting_factor_ids: z.array(z.string()),
     ersetzt_kind_id: z.string(),
   })
   .refine((data) => data.geschlecht !== "", {
     message: "Bitte ein Geschlecht auswählen.",
     path: ["geschlecht"],
+  })
+  .refine((data) => !data.hat_behinderung || !data.i_status_von || !data.i_status_bis || data.i_status_bis >= data.i_status_von, {
+    message: "„Gültig bis“ muss nach „gültig von“ liegen.",
+    path: ["i_status_bis"],
   })
   .refine((data) => data.status !== "aktiv" || data.gruppe_id !== "", {
     message: "Aktive Kinder benötigen eine Gruppe.",
@@ -79,6 +86,7 @@ export function KindForm({
   aktiveKinderZurAuswahl,
   bookingTimeBands,
   weightingFactors,
+  bundeslandCode,
   auswaertigenQuote,
 }: {
   mode: "create" | "edit";
@@ -92,6 +100,8 @@ export function KindForm({
   aktiveKinderZurAuswahl: AktivesKindOption[];
   bookingTimeBands: KindFormOption[];
   weightingFactors: WeightingFactorOption[];
+  /** Steuert bundeslandspezifische Felder (Kooperation nur in Baden-Württemberg). */
+  bundeslandCode?: string;
   auswaertigenQuote?: {
     standortGemeinde: string;
     auswaertigenQuoteProzent: number;
@@ -122,6 +132,9 @@ export function KindForm({
       buchungszeit_wirksam_ab: toIsoDateString(new Date()),
       wohnort: "",
       hat_behinderung: false,
+      i_status_von: "",
+      i_status_bis: "",
+      kooperation: false,
       weighting_factor_ids: [],
       ersetzt_kind_id: "",
       ...defaultValues,
@@ -184,6 +197,9 @@ export function KindForm({
       buchungszeit_wirksam_ab: values.buchungszeit_wirksam_ab || null,
       wohnort: values.wohnort || null,
       hat_behinderung: values.hat_behinderung,
+      i_status_von: values.hat_behinderung ? values.i_status_von || null : null,
+      i_status_bis: values.hat_behinderung ? values.i_status_bis || null : null,
+      kooperation: values.kooperation,
       weighting_factor_ids: basisfaktorAbgeleitet ? values.weighting_factor_ids.filter((id) => !basisIds.has(id)) : values.weighting_factor_ids,
       ersetzt_kind_id: values.status === "nachruecker" ? values.ersetzt_kind_id || null : null,
     };
@@ -392,13 +408,39 @@ export function KindForm({
         <Switch
           id="hat_behinderung"
           checked={watch("hat_behinderung")}
-          onCheckedChange={(checked) =>
-            setValue("hat_behinderung", checked === true)
-          }
+          onCheckedChange={(checked) => {
+            setValue("hat_behinderung", checked === true);
+            // Beim Einschalten sofort einen Beginn vorschlagen; beim Ausschalten den Zeitraum verwerfen
+            if (checked === true && !watch("i_status_von")) setValue("i_status_von", toIsoDateString(new Date()));
+            if (checked !== true) {
+              setValue("i_status_von", "");
+              setValue("i_status_bis", "");
+            }
+          }}
         />
         Kind mit I-Status — bundeslandunabhängig, z.B. für die jährliche
         Kinder- und Jugendhilfestatistik
       </label>
+      {watch("hat_behinderung") ? (
+        <div className="flex flex-wrap items-end gap-3 rounded-xl bg-secondary/50 p-3">
+          <Field label="I-Status gültig von">
+            <Input type="date" className="w-44" {...register("i_status_von")} />
+          </Field>
+          <Field label="gültig bis" error={errors.i_status_bis?.message}>
+            <Input type="date" className="w-44" {...register("i_status_bis")} />
+          </Field>
+          <p className="max-w-xs pb-2 text-xs text-muted-foreground">
+            Leer lassen, wenn der Zeitraum noch offen ist. Die Statistik zählt das Kind nur in Monaten, in denen der I-Status gilt.
+          </p>
+        </div>
+      ) : null}
+
+      {bundeslandCode === "bw" ? (
+        <label htmlFor="kooperation" className="flex items-center gap-2 text-sm">
+          <Switch id="kooperation" checked={watch("kooperation")} onCheckedChange={(checked) => setValue("kooperation", checked === true)} />
+          Kooperation (Ja / Nein)
+        </label>
+      ) : null}
 
       {submitError ? (
         <p className="text-sm text-destructive">{submitError}</p>

@@ -4,6 +4,7 @@ import { getCurrentUserRole } from "@/lib/server/current-user-role";
 import { VollzeitWochenstundenEditor } from "@/components/team/vollzeit-wochenstunden-editor";
 import { EmpfohlenerSchluesselEditor } from "@/components/team/empfohlener-schluessel-editor";
 import { GrunddatenEditor } from "@/components/einrichtung/grunddaten-editor";
+import { EinrichtungInfoEditor } from "@/components/einrichtung/einrichtung-info-editor";
 
 export default async function EinstellungenPage() {
   const einrichtungId = await getActiveEinrichtungId();
@@ -15,7 +16,7 @@ export default async function EinstellungenPage() {
     ? await supabase
         .from("einrichtungen")
         .select(
-          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel, standort_gemeinde, auswaertigen_quote_prozent, kostenstelle, cluster"
+          "name, address_street, address_city, address_zip, kita_year_start_month, bundesland_code, vollzeit_wochenstunden, empfohlener_anstellungsschluessel, standort_gemeinde, auswaertigen_quote_prozent, kostenstelle, cluster, leitung_name, telefon, email, oeffnungszeiten, schliesszeiten, basisinfos"
         )
         .eq("id", einrichtungId)
         .single()
@@ -75,6 +76,27 @@ export default async function EinstellungenPage() {
               cluster: einrichtung.cluster,
             }}
             bundeslandCode={einrichtung.bundesland_code}
+            canEdit={canEdit}
+          />
+        </section>
+      ) : null}
+
+      {einrichtungId && einrichtung ? (
+        <section className="flex flex-col gap-4 rounded-xl border bg-secondary/30 p-6">
+          <h2 className="font-heading text-lg text-primary">Einrichtung auf einen Blick</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Kurzinfo, die alle Nutzer mit einem Klick auf den Einrichtungsnamen oben sehen — besonders hilfreich für Vertretungskräfte.
+          </p>
+          <EinrichtungInfoEditor
+            einrichtungId={einrichtungId}
+            info={{
+              leitung_name: einrichtung.leitung_name,
+              telefon: einrichtung.telefon,
+              email: einrichtung.email,
+              oeffnungszeiten: einrichtung.oeffnungszeiten,
+              schliesszeiten: einrichtung.schliesszeiten,
+              basisinfos: einrichtung.basisinfos,
+            }}
             canEdit={canEdit}
           />
         </section>

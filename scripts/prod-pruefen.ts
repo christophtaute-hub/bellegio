@@ -51,7 +51,7 @@ async function main() {
 
   // Referenzdaten: kommen aus den Migrationen — fehlen sie, wurden nicht alle Migrationen eingespielt
   const erwartet: { tabelle: keyof Database["public"]["Tables"]; anzahl: number }[] = [
-    { tabelle: "booking_time_bands", anzahl: 18 },
+    { tabelle: "booking_time_bands", anzahl: 19 },
     { tabelle: "weighting_factors", anzahl: 6 },
     { tabelle: "bw_personalschluessel", anzahl: 8 },
     { tabelle: "nrw_personalstunden", anzahl: 9 },

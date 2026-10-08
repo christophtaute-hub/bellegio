@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AutoFilterForm } from "@/components/shared/auto-filter-form";
 import { oderFilter, suchTokens } from "@/lib/suche/suchbegriff";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
@@ -149,7 +150,7 @@ export default async function TeamPage({
         />
       ) : null}
 
-      <form className="flex flex-wrap items-end gap-3" method="get">
+      <AutoFilterForm className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="stichtag" value={stichtag} />
         <div className="flex flex-col gap-1">
           <label htmlFor="q" className="text-xs text-muted-foreground">
@@ -197,10 +198,7 @@ export default async function TeamPage({
             ))}
           </select>
         </div>
-        <Button type="submit" variant="secondary" size="sm">
-          Filtern
-        </Button>
-      </form>
+      </AutoFilterForm>
 
       {team && team.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border">
