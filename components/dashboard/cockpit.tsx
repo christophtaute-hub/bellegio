@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
-import { Bar, Cell, ComposedChart, LabelList, Line, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, Cell, ComposedChart, LabelList, Line, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Ring } from "@/components/dashboard/ring";
 import type { CockpitDaten, GeldKarte, MonatsStatus } from "@/lib/steuerung/cockpit";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
@@ -57,10 +57,6 @@ const GESETZ_KLASSE: Record<Ampel, string> = {
 const GESETZ_FUELLUNG: Record<Ampel, string> = { gruen: "bg-emerald-500", gelb: "bg-amber-500", rot: "bg-destructive" };
 
 const euroGanz = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
-function kurzEuro(n: number): string {
-  if (Math.abs(n) >= 1000) return `${(n / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}T€`;
-  return `${Math.round(n)}€`;
-}
 
 /** Messbalken: wie nah ist das Personal an der gesetzlichen Grenze? Der Strich in der Mitte ist die Grenze — links davon ist alles in Ordnung. */
 function GrenzBalken({ anteil, ton }: { anteil: number; ton: Ampel }) {
@@ -127,7 +123,6 @@ type DiagrammPunkt = {
   personalIst: number;
   personalSoll: number;
   status: MonatsStatus;
-  ergebnis: number | null;
 };
 
 /** Ein einfaches Balkendiagramm: Balken = Ist, gestrichelte Stufe = Soll. Klick/Tipp wählt den Monat. */
@@ -140,24 +135,20 @@ function DiagrammKarte({
   gewaehlt,
   onWahl,
   farbe,
-  euro,
 }: {
   titel: string;
   hinweis: string;
   daten: DiagrammPunkt[];
-  wertKey: "kinder" | "personalIst" | "ergebnis";
+  wertKey: "kinder" | "personalIst";
   sollKey?: "plaetze" | "personalSoll";
   gewaehlt: number;
   onWahl: (i: number) => void;
   farbe: (d: DiagrammPunkt) => string;
-  /** Beträge in Euro (Balken dürfen unter null gehen). */
-  euro?: boolean;
 }) {
-  const werte = daten.map((d) => d[wertKey] ?? 0);
+  const werte = daten.map((d) => d[wertKey]);
   const hoechst = Math.max(1, ...werte, ...(sollKey ? daten.map((d) => d[sollKey]) : []));
-  const tiefst = euro ? Math.min(0, ...werte) : 0;
   // Euro-Beträge sind lang: nur bei wenigen Balken beschriften, sonst steht der Wert des gewählten Monats in der Detailkarte.
-  const beschriftet = daten.length <= (euro ? 6 : 12);
+  const beschriftet = daten.length <= 12;
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-secondary/40 p-4">
       <p className="text-sm font-semibold">{titel}</p>
@@ -174,15 +165,14 @@ function DiagrammKarte({
             }}
           >
             <XAxis dataKey="label" tickFormatter={(l: string) => l.split(" ")[0].replace(".", "")} tickLine={false} axisLine={false} interval={daten.length > 12 ? 2 : 0} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-            <YAxis hide domain={[tiefst < 0 ? tiefst * 1.2 : 0, Math.ceil(hoechst * 1.15)]} />
+            <YAxis hide domain={[0, Math.ceil(hoechst * 1.15)]} />
             <Bar dataKey={wertKey} radius={[6, 6, 0, 0]} isAnimationActive={false} cursor="pointer">
               {daten.map((d, i) => (
                 <Cell key={i} fill={farbe(d)} fillOpacity={i === gewaehlt ? 1 : 0.55} />
               ))}
-              {beschriftet ? <LabelList dataKey={wertKey} position="top" fontSize={10} fill="var(--muted-foreground)" formatter={euro ? (v: unknown) => kurzEuro(Number(v)) : undefined} /> : null}
+              {beschriftet ? <LabelList dataKey={wertKey} position="top" fontSize={10} fill="var(--muted-foreground)" /> : null}
             </Bar>
             {sollKey ? <Line type="stepAfter" dataKey={sollKey} stroke="var(--foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} /> : null}
-            {euro ? <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} /> : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -222,7 +212,6 @@ export function Cockpit({
     status === "fehlt" ? "text-destructive" : status === "knapp" ? "text-amber-500" : status === "ueberhang" ? "text-sky-500" : "text-emerald-500";
 
   const daten: DiagrammPunkt[] = reihe.map((m, i) => ({
-    ergebnis: m.ergebnis,
     label: i === 0 ? jetztLabel : m.label,
     kinder: m.kinder,
     plaetze: m.plaetze,
@@ -297,7 +286,7 @@ export function Cockpit({
             </div>
             <GrenzBalken anteil={jetzt.gesetz.anteil} ton={jetzt.gesetz.ton} />
             <span className="text-[11px] text-muted-foreground/80">
-              {jetzt.fachKennzahl.label}: {jetzt.fachKennzahl.value} · {jetzt.personalIst.toLocaleString("de-DE")} von {jetzt.personalSoll.toLocaleString("de-DE")} Wochenstunden
+              {jetzt.personalIst.toLocaleString("de-DE")} von {jetzt.personalSoll.toLocaleString("de-DE")} Wochenstunden
             </span>
           </div>
         </Link>
@@ -331,10 +320,10 @@ export function Cockpit({
       ) : null}
 
       <div className="flex flex-col gap-4">
-        <div className={cn("grid gap-4 lg:grid-cols-2", cockpit.geld && "xl:grid-cols-3")}>
+        <div className="grid gap-4 lg:grid-cols-2">
           <DiagrammKarte
             titel="Kinder"
-            hinweis="Balken: Kinder je Monat · gestrichelt: Plätze"
+            hinweis="Gestrichelt: Plätze"
             daten={daten}
             wertKey="kinder"
             sollKey="plaetze"
@@ -344,7 +333,7 @@ export function Cockpit({
           />
           <DiagrammKarte
             titel="Personal"
-            hinweis="Balken: Wochenstunden vorhanden · gestrichelt: nötig"
+            hinweis="Gestrichelt: nötige Wochenstunden"
             daten={daten}
             wertKey="personalIst"
             sollKey="personalSoll"
@@ -352,27 +341,15 @@ export function Cockpit({
             onWahl={setGewaehlt}
             farbe={(d) => PUNKT_HEX[d.status]}
           />
-          {cockpit.geld ? (
-            <DiagrammKarte
-              titel="Plus oder Minus"
-              hinweis="Balken: Förderung (und Beiträge) minus Personal je Monat"
-              daten={daten}
-              wertKey="ergebnis"
-              gewaehlt={gewaehlt}
-              onWahl={setGewaehlt}
-              farbe={(d) => ((d.ergebnis ?? 0) >= 0 ? "#10b981" : "#dc2626")}
-              euro
-            />
-          ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
-          Rot = zu wenig Personal bzw. überbelegt · gelb = knapp · blau = mehr Personal als nötig · grün = in Ordnung. Auf einen Balken tippen für Details.
+          Tippe auf einen Monat für Details.
         </p>
 
-        {aktuell ? (
+        {aktuell && gewaehlt > 0 ? (
           <div className="flex flex-col gap-1 rounded-2xl border p-4" aria-live="polite">
             <p className="flex flex-wrap items-center gap-x-2 text-sm">
-              <span className="font-semibold">{gewaehlt === 0 ? jetztLabel : aktuell.label}</span>
+              <span className="font-semibold">{aktuell.label}</span>
               <span className={cn("font-medium", WORT_KLASSE[aktuell.status])}>· {WORT[aktuell.status]}</span>
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-2 py-1">
@@ -394,9 +371,7 @@ export function Cockpit({
                 in diesem Monat
               </p>
             ) : null}
-            <p className="text-sm">{aktuell.text}</p>
             {aktuell.ereignisse.length > 0 ? <p className="text-sm text-muted-foreground">{aktuell.ereignisse.join(" · ")}</p> : null}
-            <p className="text-[11px] text-muted-foreground/80">{aktuell.fachlich}</p>
           </div>
         ) : null}
       </div>
