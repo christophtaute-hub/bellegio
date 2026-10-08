@@ -29,7 +29,7 @@ function daten(monate: AusblickMonat[], satz: SteuerungsDaten["ausblick"]["satz"
     vollzeitWochenstunden: 39,
     modell: "bayern",
     belegung: { belegt: 37, sollplaetze: 37, frei: 0 },
-    personal: { kennzahl: { label: "Anstellungsschlüssel", value: "1 : 9,24", warnt: false, trendWert: 9.24 }, ampel: "gruen" },
+    personal: { kennzahl: { label: "Anstellungsschlüssel", value: "1 : 9,24", warnt: false, trendWert: 9.24, gesetz: { ist: "9,2 Kinder je Vollzeitkraft", vorgabe: "erlaubt sind 11,0", anteil: 0.84 } }, ampel: "gruen" },
     finanzen: null,
     handlungen: [],
     gruppen: [],

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
-import { Bar, Cell, ComposedChart, LabelList, Line, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, Cell, ComposedChart, LabelList, Line, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Ring } from "@/components/dashboard/ring";
-import type { CockpitDaten, MonatsStatus } from "@/lib/steuerung/cockpit";
+import type { CockpitDaten, GeldKarte, MonatsStatus } from "@/lib/steuerung/cockpit";
+import type { Ampel } from "@/lib/team/anstellungsschluessel";
 import { cn } from "cn";
 
 const ZEITRAEUME = [3, 6, 9, 12, 18, 24] as const;
@@ -48,6 +49,77 @@ function IstSoll({ ist, soll, einheit, titel }: { ist: number; soll: number; ein
   );
 }
 
+const GESETZ_KLASSE: Record<Ampel, string> = {
+  gruen: "text-emerald-700 dark:text-emerald-400",
+  gelb: "text-amber-700 dark:text-amber-400",
+  rot: "text-destructive",
+};
+const GESETZ_FUELLUNG: Record<Ampel, string> = { gruen: "bg-emerald-500", gelb: "bg-amber-500", rot: "bg-destructive" };
+
+const euroGanz = (n: number) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+function kurzEuro(n: number): string {
+  if (Math.abs(n) >= 1000) return `${(n / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 })}T€`;
+  return `${Math.round(n)}€`;
+}
+
+/** Messbalken: wie nah ist das Personal an der gesetzlichen Grenze? Der Strich in der Mitte ist die Grenze — links davon ist alles in Ordnung. */
+function GrenzBalken({ anteil, ton }: { anteil: number; ton: Ampel }) {
+  const skala = 1.5;
+  const breite = Math.min(100, Math.max(2, (anteil / skala) * 100));
+  const grenze = (1 / skala) * 100;
+  return (
+    <div className="flex flex-col gap-1" role="img" aria-label={`Abstand zur gesetzlichen Grenze: ${Math.round(anteil * 100)} Prozent der Grenze`}>
+      <div className="relative h-2.5 w-full rounded-full bg-secondary">
+        <div className={cn("h-full rounded-full transition-[width] duration-500", GESETZ_FUELLUNG[ton])} style={{ width: `${breite}%` }} />
+        <div className="absolute -top-1 h-4.5 w-0.5 rounded bg-foreground" style={{ left: `${grenze}%` }} aria-hidden />
+      </div>
+      <div className="relative h-3 text-[10px] text-muted-foreground">
+        <span className="absolute -translate-x-1/2" style={{ left: `${grenze}%` }}>
+          Grenze
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** „Plus oder Minus?“ — die Antwort zuerst, darunter die zwei Zahlen, aus denen sie entsteht. */
+function GeldKarteAnsicht({ geld }: { geld: GeldKarte }) {
+  const klasse = geld.ton === "plus" ? "text-emerald-700 dark:text-emerald-400" : geld.ton === "minus" ? "text-destructive" : "text-foreground";
+  const vorzeichen = geld.ergebnis > 0 ? "+" : "";
+  return (
+    <Link
+      href="/controlling"
+      className={cn(
+        "flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-2xl p-5 transition-colors",
+        geld.ton === "minus" ? "bg-destructive/10 hover:bg-destructive/15" : geld.ton === "plus" ? "bg-emerald-500/10 hover:bg-emerald-500/15" : "bg-secondary/40 hover:bg-secondary/70"
+      )}
+    >
+      <div className="flex flex-col gap-0.5">
+        <span className="text-sm text-muted-foreground">Deckt die Förderung das Personal?</span>
+        <span className={cn("text-2xl font-semibold leading-tight", klasse)}>{geld.wort}</span>
+        <span className={cn("text-xl font-semibold tabular-nums", klasse)}>
+          {vorzeichen}
+          {euroGanz(geld.ergebnis)} <span className="text-sm font-normal text-muted-foreground">im Monat</span>
+        </span>
+      </div>
+      <div className="flex gap-6">
+        <span className="flex flex-col">
+          <span className="text-lg font-semibold tabular-nums">{euroGanz(geld.einnahmen)}</span>
+          <span className="text-[11px] text-muted-foreground">{geld.elternbeitraege !== null ? "Förderung + Elternbeiträge" : "Förderung"}</span>
+        </span>
+        <span className="flex flex-col">
+          <span className="text-lg font-semibold tabular-nums">{euroGanz(geld.personalkosten)}</span>
+          <span className="text-[11px] text-muted-foreground">Personalkosten</span>
+        </span>
+      </div>
+      <p className="w-full text-[11px] text-muted-foreground/80">
+        Förderung{geld.elternbeitraege !== null ? " und Elternbeiträge (laut eurer Preisliste)" : ""} minus Personalkosten. Sachkosten und kommunaler Anteil fehlen — das ist kein Jahresabschluss.
+        {geld.nichtErfasst > 0 ? ` Bei ${geld.nichtErfasst} Mitarbeitenden fehlt die Vergütung, die Personalkosten sind deshalb zu niedrig.` : ""}
+      </p>
+    </Link>
+  );
+}
+
 type DiagrammPunkt = {
   label: string;
   kinder: number;
@@ -55,6 +127,7 @@ type DiagrammPunkt = {
   personalIst: number;
   personalSoll: number;
   status: MonatsStatus;
+  ergebnis: number | null;
 };
 
 /** Ein einfaches Balkendiagramm: Balken = Ist, gestrichelte Stufe = Soll. Klick/Tipp wählt den Monat. */
@@ -67,18 +140,24 @@ function DiagrammKarte({
   gewaehlt,
   onWahl,
   farbe,
+  euro,
 }: {
   titel: string;
   hinweis: string;
   daten: DiagrammPunkt[];
-  wertKey: "kinder" | "personalIst";
-  sollKey: "plaetze" | "personalSoll";
+  wertKey: "kinder" | "personalIst" | "ergebnis";
+  sollKey?: "plaetze" | "personalSoll";
   gewaehlt: number;
   onWahl: (i: number) => void;
   farbe: (d: DiagrammPunkt) => string;
+  /** Beträge in Euro (Balken dürfen unter null gehen). */
+  euro?: boolean;
 }) {
-  const hoechst = Math.max(1, ...daten.map((d) => Math.max(d[wertKey], d[sollKey])));
-  const beschriftet = daten.length <= 12;
+  const werte = daten.map((d) => d[wertKey] ?? 0);
+  const hoechst = Math.max(1, ...werte, ...(sollKey ? daten.map((d) => d[sollKey]) : []));
+  const tiefst = euro ? Math.min(0, ...werte) : 0;
+  // Euro-Beträge sind lang: nur bei wenigen Balken beschriften, sonst steht der Wert des gewählten Monats in der Detailkarte.
+  const beschriftet = daten.length <= (euro ? 6 : 12);
   return (
     <div className="flex flex-col gap-1 rounded-2xl bg-secondary/40 p-4">
       <p className="text-sm font-semibold">{titel}</p>
@@ -95,14 +174,15 @@ function DiagrammKarte({
             }}
           >
             <XAxis dataKey="label" tickFormatter={(l: string) => l.split(" ")[0].replace(".", "")} tickLine={false} axisLine={false} interval={daten.length > 12 ? 2 : 0} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-            <YAxis hide domain={[0, Math.ceil(hoechst * 1.15)]} />
+            <YAxis hide domain={[tiefst < 0 ? tiefst * 1.2 : 0, Math.ceil(hoechst * 1.15)]} />
             <Bar dataKey={wertKey} radius={[6, 6, 0, 0]} isAnimationActive={false} cursor="pointer">
               {daten.map((d, i) => (
                 <Cell key={i} fill={farbe(d)} fillOpacity={i === gewaehlt ? 1 : 0.55} />
               ))}
-              {beschriftet ? <LabelList dataKey={wertKey} position="top" fontSize={10} fill="var(--muted-foreground)" /> : null}
+              {beschriftet ? <LabelList dataKey={wertKey} position="top" fontSize={10} fill="var(--muted-foreground)" formatter={euro ? (v: unknown) => kurzEuro(Number(v)) : undefined} /> : null}
             </Bar>
-            <Line type="stepAfter" dataKey={sollKey} stroke="var(--foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+            {sollKey ? <Line type="stepAfter" dataKey={sollKey} stroke="var(--foreground)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} /> : null}
+            {euro ? <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} /> : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -142,6 +222,7 @@ export function Cockpit({
     status === "fehlt" ? "text-destructive" : status === "knapp" ? "text-amber-500" : status === "ueberhang" ? "text-sky-500" : "text-emerald-500";
 
   const daten: DiagrammPunkt[] = reihe.map((m, i) => ({
+    ergebnis: m.ergebnis,
     label: i === 0 ? jetztLabel : m.label,
     kinder: m.kinder,
     plaetze: m.plaetze,
@@ -207,18 +288,22 @@ export function Cockpit({
             </span>
             <span className="mt-1 text-xs text-muted-foreground">vom Bedarf</span>
           </Ring>
-          <div className="flex min-w-0 flex-col gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <span className="text-sm text-muted-foreground">Passt das Personal zum Gesetz?</span>
+            <span className={cn("text-lg font-semibold leading-snug", GESETZ_KLASSE[jetzt.gesetz.ton])}>{jetzt.gesetz.wort}</span>
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm text-muted-foreground">Personal</span>
-              <span className={cn("text-lg font-semibold", WORT_KLASSE[status])}>{jetzt.personalWort}</span>
+              <span className="text-xl font-semibold leading-tight">{jetzt.gesetz.ist}</span>
+              <span className="text-sm text-muted-foreground">{jetzt.gesetz.vorgabe}</span>
             </div>
-            <IstSoll ist={jetzt.personalIst} soll={jetzt.personalSoll} einheit="Wochenstunden" />
+            <GrenzBalken anteil={jetzt.gesetz.anteil} ton={jetzt.gesetz.ton} />
             <span className="text-[11px] text-muted-foreground/80">
-              {jetzt.fachKennzahl.label}: {jetzt.fachKennzahl.value}
+              {jetzt.fachKennzahl.label}: {jetzt.fachKennzahl.value} · {jetzt.personalIst.toLocaleString("de-DE")} von {jetzt.personalSoll.toLocaleString("de-DE")} Wochenstunden
             </span>
           </div>
         </Link>
       </div>
+
+      {cockpit.geld ? <GeldKarteAnsicht geld={cockpit.geld} /> : null}
 
       <p
         className={cn(
@@ -246,7 +331,7 @@ export function Cockpit({
       ) : null}
 
       <div className="flex flex-col gap-4">
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className={cn("grid gap-4 lg:grid-cols-2", cockpit.geld && "xl:grid-cols-3")}>
           <DiagrammKarte
             titel="Kinder"
             hinweis="Balken: Kinder je Monat · gestrichelt: Plätze"
@@ -267,6 +352,18 @@ export function Cockpit({
             onWahl={setGewaehlt}
             farbe={(d) => PUNKT_HEX[d.status]}
           />
+          {cockpit.geld ? (
+            <DiagrammKarte
+              titel="Plus oder Minus"
+              hinweis="Balken: Förderung (und Beiträge) minus Personal je Monat"
+              daten={daten}
+              wertKey="ergebnis"
+              gewaehlt={gewaehlt}
+              onWahl={setGewaehlt}
+              farbe={(d) => ((d.ergebnis ?? 0) >= 0 ? "#10b981" : "#dc2626")}
+              euro
+            />
+          ) : null}
         </div>
         <p className="text-xs text-muted-foreground">
           Rot = zu wenig Personal bzw. überbelegt · gelb = knapp · blau = mehr Personal als nötig · grün = in Ordnung. Auf einen Balken tippen für Details.
@@ -282,6 +379,21 @@ export function Cockpit({
               <IstSoll ist={aktuell.kinder} soll={aktuell.plaetze} einheit="Plätze" titel="Kinder" />
               <IstSoll ist={aktuell.personalIst} soll={aktuell.personalSoll} einheit="Wochenstunden" titel="Personal" />
             </div>
+            {aktuell.gesetz ? (
+              <p className="text-sm">
+                <span className="font-medium">Gesetz:</span> {aktuell.gesetz.ist} — {aktuell.gesetz.vorgabe}
+              </p>
+            ) : null}
+            {aktuell.ergebnis !== null ? (
+              <p className="text-sm">
+                <span className="font-medium">Ergebnis:</span>{" "}
+                <span className={aktuell.ergebnis < 0 ? "font-semibold text-destructive" : "font-semibold text-emerald-700 dark:text-emerald-400"}>
+                  {aktuell.ergebnis > 0 ? "+" : ""}
+                  {euroGanz(aktuell.ergebnis)}
+                </span>{" "}
+                in diesem Monat
+              </p>
+            ) : null}
             <p className="text-sm">{aktuell.text}</p>
             {aktuell.ereignisse.length > 0 ? <p className="text-sm text-muted-foreground">{aktuell.ereignisse.join(" · ")}</p> : null}
             <p className="text-[11px] text-muted-foreground/80">{aktuell.fachlich}</p>

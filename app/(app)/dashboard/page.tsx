@@ -9,7 +9,6 @@ import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { ErsteSchritte } from "@/components/dashboard/erste-schritte";
 import { Cockpit } from "@/components/dashboard/cockpit";
 import { baueCockpit } from "@/lib/steuerung/cockpit";
-import { StatusChips } from "@/components/dashboard/status-chips";
 import { Handlungsliste } from "@/components/dashboard/handlungsliste";
 import { GruppenAmpel } from "@/components/dashboard/gruppen-ampel";
 
@@ -62,7 +61,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             jetztLabel={stichtag === heute ? "Jetzt" : formatDate(stichtag)}
             stichtagParam={stichtag !== heute ? stichtag : null}
           />
-          <StatusChips daten={daten} />
           {/* Der Personal-Engpass der Einrichtung steht schon oben im Cockpit — hier nicht doppelt. */}
           <Handlungsliste handlungen={daten.handlungen.filter((h) => h.id !== "personal-einrichtung")} />
           <GruppenAmpel

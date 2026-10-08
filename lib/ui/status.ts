@@ -10,6 +10,21 @@ export const PERSONAL_STATUS: Record<Ampel, string> = {
 
 export const UEBERHANG_STATUS = "Mehr Personal als nötig";
 
+/** „Passt das Personal zum Gesetz?“ — eine Antwort in Alltagssprache je Ampel. */
+export const GESETZ_STATUS: Record<Ampel, string> = {
+  gruen: "Ja, gesetzlich in Ordnung",
+  gelb: "Knapp an der gesetzlichen Grenze",
+  rot: "Nein, das Personal reicht nicht",
+};
+
+export type PlusMinus = { wort: "Im Plus" | "Im Minus" | "Ausgeglichen"; ton: "plus" | "minus" | "null" };
+
+/** Deckt die Förderung (plus Elternbeiträge) das Personal? Unter einem Euro Unterschied gilt als ausgeglichen. */
+export function plusMinusStatus(ergebnis: number): PlusMinus {
+  if (Math.abs(ergebnis) < 1) return { wort: "Ausgeglichen", ton: "null" };
+  return ergebnis > 0 ? { wort: "Im Plus", ton: "plus" } : { wort: "Im Minus", ton: "minus" };
+}
+
 /** Allgemeine Ampel-Wörter (wenn es nicht speziell um Personal geht). */
 export const AMPEL_STATUS: Record<Ampel, string> = {
   gruen: "In Ordnung",

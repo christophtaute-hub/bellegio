@@ -1,5 +1,6 @@
 import { monatLang, type AusblickMonat } from "@/lib/ausblick/personal-ausblick";
-import { belegungStatus, PERSONAL_STATUS, stellenText, UEBERHANG_STATUS } from "@/lib/ui/status";
+import { belegungStatus, GESETZ_STATUS, PERSONAL_STATUS, plusMinusStatus, stellenText, UEBERHANG_STATUS, type PlusMinus } from "@/lib/ui/status";
+import { personalKennzahl, type GesetzMassstab } from "@/lib/dashboard/personal-kennzahl";
 import type { SteuerungsDaten } from "@/lib/steuerung/lade-steuerung";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
 
@@ -22,6 +23,20 @@ export type CockpitMonat = {
   /** Der Rechenweg des Bundeslands in Fachbegriffen (für Interessierte). */
   fachlich: string;
   ereignisse: string[];
+  /** Gesetzlicher Maßstab dieses Monats („9,3 Kinder je Vollzeitkraft — erlaubt sind 11“). */
+  gesetz?: GesetzMassstab;
+  /** Ergebnis dieses Monats (Förderung + Elternbeiträge − Personalkosten); nur mit Finanz-Recht. */
+  ergebnis: number | null;
+};
+
+/** „Deckt die Förderung das Personal?“ — nur mit Finanz-Recht. */
+export type GeldKarte = PlusMinus & {
+  ergebnis: number;
+  einnahmen: number;
+  elternbeitraege: number | null;
+  personalkosten: number;
+  /** Mitarbeitende ohne erfasste Vergütung — dann sind die Personalkosten zu niedrig. */
+  nichtErfasst: number;
 };
 
 export type CockpitDaten = {
@@ -39,7 +54,11 @@ export type CockpitDaten = {
     /** „172 von 192 nötigen Wochenstunden“ */
     personalKlartext: string;
     fachKennzahl: { label: string; value: string };
+    /** Passt das Personal zum Gesetz? Wort, Zahl und Abstand zur Grenze. */
+    gesetz: GesetzMassstab & { wort: string; ton: Ampel };
   };
+  /** Plus oder Minus (nur mit Finanz-Recht). */
+  geld: GeldKarte | null;
   satz: { ton: "ok" | "warnung" | "engpass" | "info"; text: string };
   monate: CockpitMonat[];
   /** Was hilft? (nur bei Engpass) */
@@ -85,7 +104,7 @@ export function baueCockpit(daten: SteuerungsDaten): CockpitDaten {
     ereignisseJeMonat.set(e.monat, [...(ereignisseJeMonat.get(e.monat) ?? []), e.text]);
   }
 
-  const monate: CockpitMonat[] = daten.ausblick.monate.map((m) => {
+  const monate: CockpitMonat[] = daten.ausblick.monate.map((m, i) => {
     const status = statusVon(m);
     return {
       monat: m.monat,
@@ -100,6 +119,8 @@ export function baueCockpit(daten: SteuerungsDaten): CockpitDaten {
       text: textFuer(m, status, vollzeitWochenstunden),
       fachlich: m.detail,
       ereignisse: ereignisseJeMonat.get(m.monat) ?? [],
+      gesetz: daten.monate[i]?.personal ? personalKennzahl(daten.monate[i].personal).gesetz : undefined,
+      ergebnis: daten.monate[i]?.finanzen ? daten.monate[i].finanzen!.ergebnisMonat : null,
     };
   });
 
@@ -133,7 +154,18 @@ export function baueCockpit(daten: SteuerungsDaten): CockpitDaten {
         ? `${Math.round(erster.istStunden).toLocaleString("de-DE")} von ${Math.round(erster.sollStunden).toLocaleString("de-DE")} nötigen Wochenstunden`
         : "",
       fachKennzahl: { label: daten.personal.kennzahl.label, value: daten.personal.kennzahl.value },
+      gesetz: { ...daten.personal.kennzahl.gesetz, wort: GESETZ_STATUS[ampel], ton: ampel },
     },
+    geld: daten.finanzen
+      ? {
+          ...plusMinusStatus(daten.finanzen.ergebnisMonat),
+          ergebnis: daten.finanzen.ergebnisMonat,
+          einnahmen: daten.finanzen.foerdererloeseMonat + (daten.finanzen.elternbeitraegeMonat ?? 0),
+          elternbeitraege: daten.finanzen.elternbeitraegeMonat ?? null,
+          personalkosten: daten.finanzen.personalkostenMonat,
+          nichtErfasst: daten.finanzen.personalkostenNichtErfasst,
+        }
+      : null,
     satz,
     monate,
     empfehlungen: satz.ton === "engpass" || satz.ton === "warnung" ? daten.ausblick.empfehlungen.slice(0, 2) : [],

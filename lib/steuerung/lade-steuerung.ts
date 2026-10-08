@@ -6,7 +6,6 @@ import { berechneBelegungsVorschau } from "@/lib/belegung/vorschau";
 import { berechnePersonalAusblick, type AusblickAustritt, type AusblickErgebnis } from "@/lib/ausblick/personal-ausblick";
 import { ermittleLangzeitHinweise } from "@/lib/team/langzeithinweise";
 import { personalKennzahl, type PersonalKennzahl } from "@/lib/dashboard/personal-kennzahl";
-import { ladeFinanzenHeute } from "@/lib/finanzen/finanzen-heute";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 import { AUSFALLZEIT_ART_LABEL } from "@/lib/constants";
 import { toIsoDateString } from "@/lib/kita-datum";
@@ -57,7 +56,7 @@ export async function ladeSteuerung(
   optionen: { zeigeFinanzen: boolean; zeigeGehaelter: boolean; monateVoraus?: number }
 ): Promise<SteuerungsDaten> {
   const [monate, kinderHeute, gruppenRes, kinderRes, einrichtungRes, teamRes, ausfallRes] = await Promise.all([
-    buildForecastMonths(supabase, einrichtungId, stichtag, Math.max(STEUERUNG_MONATE, optionen.monateVoraus ?? 0), false, true),
+    buildForecastMonths(supabase, einrichtungId, stichtag, Math.max(STEUERUNG_MONATE, optionen.monateVoraus ?? 0), optionen.zeigeFinanzen, true),
     getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
     supabase
       .from("gruppen")
@@ -205,7 +204,7 @@ export async function ladeSteuerung(
         .sort((a, b) => a.name.localeCompare(b.name, "de"));
     }
     if (einrichtung?.bundesland_code === "bw") foerderbetragFehlt = einrichtung.foerderung_monatlich_manuell == null;
-    finanzen = await ladeFinanzenHeute(supabase, einrichtungId, stichtag, kinderHeute);
+    finanzen = monate[0]?.finanzen ?? null;
   }
 
   const handlungen = baueHandlungen({
