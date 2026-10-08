@@ -18,8 +18,10 @@ function Zahl({ wert }: { wert: number }) {
  * war — die Summenzeilen zeigen den I-Status dagegen immer. */
 export function KalenderjahrKategorisierungTabelle({
   monate,
+  spaltenTitel = "Wochenstunden",
 }: {
   monate: KategorisierungsMonat[];
+  spaltenTitel?: string;
 }) {
   if (monate.length === 0) return null;
 
@@ -48,7 +50,7 @@ export function KalenderjahrKategorisierungTabelle({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky left-0 z-10 bg-card">Wochenstunden</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-card">{spaltenTitel}</TableHead>
               {monate.map((m) => (
                 <TableHead key={m.monat} className="text-right whitespace-nowrap">
                   {monatsKurzLabel(m.monat)}

@@ -21,7 +21,7 @@ export const STEUERUNG_MONATE = 18;
 
 /** Zeiträume, zwischen denen die Vorausschau auf dem Dashboard umschaltbar ist (Monate). */
 export const VORAUSSCHAU_OPTIONEN = [3, 6, 9, 12, 18, 24] as const;
-export const VORAUSSCHAU_STANDARD = 6;
+export const VORAUSSCHAU_STANDARD = 12;
 
 export type GruppenZeile = GruppeStatus & {
   /** Erster Monat, in dem die Gruppe nicht mehr „in Ordnung“ ist (nur bei belastbaren Gruppenwerten). */

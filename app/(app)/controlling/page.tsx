@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
-import { loeseZeitraumAuf, zeitraumEnde, type ZeitraumParameter } from "@/lib/controlling/zeitraum";
+import { loeseZeitraumAuf, zeitraumEnde, zeitraumMonate, type ZeitraumParameter } from "@/lib/controlling/zeitraum";
 import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { canViewControlling, canViewFinanzen } from "@/lib/server/current-user-role";
 import { ForecastKompakt, ForecastTable } from "@/components/forecast/forecast-table";
@@ -12,6 +12,8 @@ import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import { ExportButtons } from "@/components/forecast/export-buttons";
 import { ZeitkategorieTabelle } from "@/components/forecast/zeitkategorie-tabelle";
+import { KalenderjahrKategorisierungTabelle } from "@/components/forecast/kalenderjahr-kategorisierung-tabelle";
+import { getKategorisierung } from "@/lib/controlling/jahreskategorisierung";
 import Link from "next/link";
 import { cn } from "cn";
 import { buttonVariants } from "@/components/ui/button";
@@ -61,6 +63,8 @@ export default async function ControllingPage({
     ? await buildForecastMonths(supabase, einrichtungId, zeitraum.von, zeitraum.monate, zeigeFinanzen)
     : [];
 
+  const kategorisierung = einrichtungId && months.length > 0 ? await getKategorisierung(supabase, einrichtungId, zeitraumMonate(zeitraum)) : [];
+
   // Elternbeiträge je Gruppe (nur mit Recht „Finanzübersicht“ und vorhandener Preisliste)
   let beitraege: { zeilen: ReturnType<typeof beitraegeJeGruppe>; ohnePreis: number } | null = null;
   if (zeigeFinanzen && einrichtungId) {
@@ -92,7 +96,7 @@ export default async function ControllingPage({
       </div>
       <p className="max-w-2xl text-sm text-muted-foreground">
         Belegung, Personal und Ergebnis im Zeitverlauf — Rückblick genauso wie
-        vorausschauende Planung. Die Kategorisierung nach Wochenstunden steht in der{" "}
+        vorausschauende Planung. Darunter siehst du, wie viele Kinder welche Buchungszeit haben (auch Kinder mit I-Status). Zum Drucken und Abgeben gibt es die{" "}
         <Link href="/controlling/mappe" className="text-primary underline-offset-2 hover:underline">
           Prüfungsmappe
         </Link>
@@ -115,7 +119,7 @@ export default async function ControllingPage({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-end gap-1 text-sm print:hidden">
             {[
-              { wert: "kompakt", label: "Kurz" },
+              { wert: "kompakt", label: "Übersicht" },
               { wert: "alle", label: "Alle Kennzahlen" },
             ].map((a) => (
               <Link
@@ -138,6 +142,16 @@ export default async function ControllingPage({
           Keine Daten verfügbar.
         </p>
       )}
+
+      {kategorisierung.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <h2 className="font-heading text-lg text-primary">Kinder nach Buchungszeit</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Wie viele Kinder in welcher Buchungszeit (Stunden pro Woche) betreut werden — für alle Bundesländer gleich, jeweils zum Monatsersten. Kinder mit I-Status sind extra aufgeführt.
+          </p>
+          <KalenderjahrKategorisierungTabelle monate={kategorisierung} spaltenTitel="Buchungszeit (Std. pro Woche)" />
+        </div>
+      ) : null}
 
       {beitraege ? <BeitraegeJeGruppeTabelle zeilen={beitraege.zeilen} kinderOhnePreis={beitraege.ohnePreis} /> : null}
 
