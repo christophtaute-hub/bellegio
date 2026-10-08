@@ -430,28 +430,34 @@ export type Database = {
       }
       einrichtung_beitraege: {
         Row: {
+          auswaertig: boolean
           betrag_monat: number
           booking_time_band_id: string
           created_at: string
           einrichtung_id: string
+          gruppenart: string | null
           gueltig_ab: string
           id: string
           updated_at: string
         }
         Insert: {
+          auswaertig?: boolean
           betrag_monat: number
           booking_time_band_id: string
           created_at?: string
           einrichtung_id: string
+          gruppenart?: string | null
           gueltig_ab?: string
           id?: string
           updated_at?: string
         }
         Update: {
+          auswaertig?: boolean
           betrag_monat?: number
           booking_time_band_id?: string
           created_at?: string
           einrichtung_id?: string
+          gruppenart?: string | null
           gueltig_ab?: string
           id?: string
           updated_at?: string

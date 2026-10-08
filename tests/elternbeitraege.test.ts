@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { berechneElternbeitraege, beitraegeJeGruppe, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { baueKindKontext, berechneElternbeitraege, beitraegeJeGruppe, preisSchluessel, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
 import type { PresenceRow } from "@/lib/dashboard/presence";
 
 const kind = (id: string, band: string | null, gruppe: string | null = "g1"): PresenceRow => ({
@@ -22,8 +22,8 @@ describe("Preisliste", () => {
     { bandId: "b", betrag: 300, gueltigAb: "2000-01-01" },
   ];
   it("gilt die jüngste Fassung, die zum Stichtag schon gültig war", () => {
-    expect(preiseAmStichtag(zeilen, "2026-10-01").get("a")).toBe(200);
-    expect(preiseAmStichtag(zeilen, "2027-01-01").get("a")).toBe(220);
+    expect(preiseAmStichtag(zeilen, "2026-10-01").get(preisSchluessel("a", null, false))).toBe(200);
+    expect(preiseAmStichtag(zeilen, "2027-01-01").get(preisSchluessel("a", null, false))).toBe(220);
   });
   it("ohne Zeilen: keine Preisliste", () => {
     expect(preiseAmStichtag([], "2026-10-01").size).toBe(0);
@@ -31,7 +31,7 @@ describe("Preisliste", () => {
 });
 
 describe("Elternbeiträge", () => {
-  const preise = new Map([["a", 200], ["b", 300]]);
+  const preise = new Map([[preisSchluessel("a", null, false), 200], [preisSchluessel("b", null, false), 300]]);
   it("summiert die Bandpreise und zählt Kinder ohne Preis", () => {
     const r = berechneElternbeitraege([kind("1", "a"), kind("2", "b"), kind("3", null), kind("4", "x")], preise);
     expect(r).toEqual({ summe: 500, kinderMitPreis: 2, kinderOhnePreis: 2 });
@@ -46,5 +46,43 @@ describe("Elternbeiträge", () => {
     ]);
     expect(g.find((x) => x.name === "Sterne")).toMatchObject({ kinder: 2, erloes: 500, durchschnitt: 250 });
     expect(g.find((x) => x.name === "Mond")).toMatchObject({ kinder: 1, erloes: 200, durchschnitt: 200 });
+  });
+});
+
+describe("Preisliste nach Gruppenart und Wohnsitz (Münchner Liste als Beispiel)", () => {
+  // Bänder: k = Krippe 8–9 h (≤45 Std.), g = Kindergarten 6–7 h (≤35 Std.)
+  const preise = new Map([
+    [preisSchluessel("k", "krippe", false), 224],
+    [preisSchluessel("k", "krippe", true), 549],
+    [preisSchluessel("g", "kindergarten", false), 69],
+    [preisSchluessel("g", "kindergarten", true), 192],
+  ]);
+  const kontext = baueKindKontext(
+    [
+      { id: "gk", gruppenart: "krippe" },
+      { id: "gg", gruppenart: "kindergarten" },
+    ],
+    [
+      { id: "1", wohnort: "München" },
+      { id: "2", wohnort: "Freising" },
+      { id: "3", wohnort: " münchen " },
+      { id: "4", wohnort: null },
+    ],
+    "München"
+  );
+  it("erkennt Kinder von außerhalb ohne Groß-/Kleinschreibung; leerer Wohnort zählt zum Standort", () => {
+    expect([...kontext.auswaertigeKindIds]).toEqual(["2"]);
+  });
+  it("wählt den Preis nach Gruppenart und Wohnsitz", () => {
+    const rows = [kind("1", "k", "gk"), kind("2", "k", "gk"), kind("3", "g", "gg"), kind("4", "g", "gg")];
+    const r = berechneElternbeitraege(rows, preise, kontext);
+    expect(r).toEqual({ summe: 224 + 549 + 69 + 69, kinderMitPreis: 4, kinderOhnePreis: 0 });
+  });
+  it("fällt bei fehlendem Auswärts-Preis auf den Standardpreis zurück", () => {
+    const nurStandard = new Map([[preisSchluessel("k", "krippe", false), 224]]);
+    expect(berechneElternbeitraege([kind("2", "k", "gk")], nurStandard, kontext).summe).toBe(224);
+  });
+  it("ohne Standort-Gemeinde gibt es keine Auswärtigen", () => {
+    expect(baueKindKontext([], [{ id: "2", wohnort: "Freising" }], null).auswaertigeKindIds.size).toBe(0);
   });
 });

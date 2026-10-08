@@ -38,8 +38,9 @@ async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string
       </div>
       <div className="flex items-center justify-between gap-2 text-sm">
         <div className="flex min-w-0 flex-col">
-          <span className="text-muted-foreground">{k.personal.label}</span>
-          <span className="truncate font-medium tabular-nums">{k.personal.value}</span>
+          <span className="text-muted-foreground">Personal und Gesetz</span>
+          <span className="truncate font-medium tabular-nums">{k.personal.gesetz.ist}</span>
+          <span className="truncate text-xs text-muted-foreground">{k.personal.gesetz.vorgabe}</span>
         </div>
         <AmpelBadge ampel={k.ampel} />
       </div>

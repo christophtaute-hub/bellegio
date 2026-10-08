@@ -3,41 +3,71 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { speichereBeitraege } from "@/lib/actions/beitraege";
+import { Switch } from "@/components/ui/switch";
+import { speichereBeitraege, type BeitragEintrag } from "@/lib/actions/beitraege";
+import { preisSchluessel } from "@/lib/finanzen/elternbeitraege";
 import { meldeErfolg, meldeFehler } from "@/lib/toast";
 
-/** Interne Preisliste: Elternbeitrag je Monat und Buchungszeit. Ohne Preisliste bleiben Elternbeiträge aus dem Ergebnis heraus. */
+type Spalte = { art: "krippe" | "kindergarten" | null; auswaertig: boolean; titel: string };
+
+/** Interne Preisliste: Elternbeitrag je Monat und Buchungszeit — wahlweise getrennt nach Krippe/Kindergarten und nach Wohnsitz
+ * (am Standort / von außerhalb). Ohne Preisliste bleiben Elternbeiträge aus dem Ergebnis heraus. */
 export function BeitraegeEditor({
   einrichtungId,
   baender,
   preise,
   gueltigAb,
   versionen,
+  standortGemeinde,
+  nachArtVorbelegt,
+  nachWohnsitzVorbelegt,
   canEdit,
 }: {
   einrichtungId: string;
   baender: { id: string; label: string }[];
-  /** Beträge der angezeigten Fassung je Band. */
+  /** Beträge der angezeigten Fassung, Schlüssel siehe `preisSchluessel` (Band, Gruppenart, Wohnsitz). */
   preise: Record<string, number>;
   gueltigAb: string;
   /** Alle vorhandenen „gültig ab“-Daten (neueste zuerst). */
   versionen: string[];
+  standortGemeinde: string | null;
+  nachArtVorbelegt: boolean;
+  nachWohnsitzVorbelegt: boolean;
   canEdit: boolean;
 }) {
   const [datum, setDatum] = useState(gueltigAb);
-  const [werte, setWerte] = useState<Record<string, string>>(() =>
-    Object.fromEntries(baender.map((b) => [b.id, preise[b.id] !== undefined ? String(preise[b.id]) : ""]))
-  );
+  const [nachArt, setNachArt] = useState(nachArtVorbelegt);
+  const [nachWohnsitz, setNachWohnsitz] = useState(nachWohnsitzVorbelegt);
+  const [gemeinde, setGemeinde] = useState(standortGemeinde ?? "");
+  const [werte, setWerte] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(preise).map(([k, v]) => [k, String(v)])));
   const [istPending, starte] = useTransition();
   const hatPreise = Object.keys(preise).length > 0;
 
+  const arten: ("krippe" | "kindergarten" | null)[] = nachArt ? ["krippe", "kindergarten"] : [null];
+  const wohnsitze = nachWohnsitz ? [false, true] : [false];
+  const spalten: Spalte[] = arten.flatMap((art) =>
+    wohnsitze.map((auswaertig) => ({
+      art,
+      auswaertig,
+      titel: [art === "krippe" ? "Krippe" : art === "kindergarten" ? "Kindergarten" : null, nachWohnsitz ? (auswaertig ? "von außerhalb" : "am Standort") : null]
+        .filter(Boolean)
+        .join(" · ") || "Beitrag",
+    }))
+  );
+
   function speichern() {
+    if (nachWohnsitz && !gemeinde.trim()) {
+      meldeFehler("Bitte die Standort-Gemeinde angeben, damit Kinder von außerhalb erkannt werden.");
+      return;
+    }
+    const eintraege: BeitragEintrag[] = baender.flatMap((b) =>
+      spalten.map((sp) => {
+        const text = werte[preisSchluessel(b.id, sp.art, sp.auswaertig)];
+        return { bandId: b.id, gruppenart: sp.art, auswaertig: sp.auswaertig, betrag: text?.trim() ? Number(text.replace(",", ".")) : null };
+      })
+    );
     starte(async () => {
-      const r = await speichereBeitraege(
-        einrichtungId,
-        datum,
-        baender.map((b) => ({ bandId: b.id, betrag: werte[b.id]?.trim() ? Number(werte[b.id].replace(",", ".")) : null }))
-      );
+      const r = await speichereBeitraege(einrichtungId, datum, eintraege, nachWohnsitz ? gemeinde : undefined);
       if (r.ok) meldeErfolg("Preisliste gespeichert.");
       else meldeFehler(r.error);
     });
@@ -48,10 +78,29 @@ export function BeitraegeEditor({
       <div className="flex flex-col gap-0.5">
         <p className="text-sm font-medium">Elternbeiträge (eure Preisliste)</p>
         <p className="text-xs text-muted-foreground">
-          Monatlicher Beitrag je Buchungszeit. Sobald Preise eingetragen sind, fließen die Elternbeiträge ins Ergebnis ein. Leer lassen = kein Preis für dieses Band.
+          Monatlicher Beitrag je Buchungszeit. Sobald Preise eingetragen sind, fließen die Elternbeiträge ins Ergebnis ein. Verpflegung, Pflegemittel, Zuschüsse und Geschwisterermäßigung
+          werden nicht eingerechnet. Leer lassen = kein Preis.
           {hatPreise ? "" : " Aktuell ist keine Preisliste hinterlegt."}
         </p>
       </div>
+
+      <div className="flex flex-col gap-2 text-sm">
+        <label className="flex items-center gap-2">
+          <Switch checked={nachArt} onCheckedChange={setNachArt} disabled={!canEdit} aria-label="Krippe und Kindergarten haben unterschiedliche Preise" />
+          Krippe und Kindergarten haben unterschiedliche Preise
+        </label>
+        <label className="flex items-center gap-2">
+          <Switch checked={nachWohnsitz} onCheckedChange={setNachWohnsitz} disabled={!canEdit} aria-label="Kinder von außerhalb zahlen einen anderen Preis" />
+          Kinder von außerhalb zahlen einen anderen Preis
+        </label>
+        {nachWohnsitz ? (
+          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            Standort-Gemeinde (Wohnort der Kinder, die den Standardpreis zahlen)
+            <Input className="h-8 w-60" value={gemeinde} disabled={!canEdit} placeholder="z. B. München" onChange={(e) => setGemeinde(e.target.value)} />
+          </label>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-muted-foreground">
           Gültig ab
@@ -61,24 +110,46 @@ export function BeitraegeEditor({
           <p className="text-xs text-muted-foreground">Vorhandene Fassungen: {versionen.map((v) => new Date(`${v}T00:00:00Z`).toLocaleDateString("de-DE", { timeZone: "UTC" })).join(", ")}</p>
         ) : null}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {baender.map((b) => (
-          <label key={b.id} className="flex items-center justify-between gap-3 rounded-xl border bg-card px-3 py-2 text-sm">
-            <span>{b.label}</span>
-            <span className="flex items-center gap-1">
-              <Input
-                inputMode="decimal"
-                className="h-8 w-24 text-right tabular-nums"
-                value={werte[b.id] ?? ""}
-                disabled={!canEdit}
-                placeholder="–"
-                onChange={(e) => setWerte((alt) => ({ ...alt, [b.id]: e.target.value }))}
-                aria-label={`Beitrag ${b.label}`}
-              />
-              <span className="text-xs text-muted-foreground">€</span>
-            </span>
-          </label>
-        ))}
+
+      <div className="overflow-x-auto rounded-xl border bg-card">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-secondary/40 text-left">
+              <th className="p-2 font-medium">Buchungszeit</th>
+              {spalten.map((sp) => (
+                <th key={`${sp.art}-${sp.auswaertig}`} className="p-2 text-right font-medium whitespace-nowrap">
+                  {sp.titel}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {baender.map((b) => (
+              <tr key={b.id} className="border-b last:border-0">
+                <td className="p-2 whitespace-nowrap">{b.label}</td>
+                {spalten.map((sp) => {
+                  const key = preisSchluessel(b.id, sp.art, sp.auswaertig);
+                  return (
+                    <td key={key} className="p-1.5 text-right">
+                      <span className="inline-flex items-center gap-1">
+                        <Input
+                          inputMode="decimal"
+                          className="h-8 w-24 text-right tabular-nums"
+                          value={werte[key] ?? ""}
+                          disabled={!canEdit}
+                          placeholder="–"
+                          onChange={(e) => setWerte((alt) => ({ ...alt, [key]: e.target.value }))}
+                          aria-label={`Beitrag ${b.label} ${sp.titel}`}
+                        />
+                        <span className="text-xs text-muted-foreground">€</span>
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
       {canEdit ? (
         <Button className="self-start" size="sm" onClick={speichern} disabled={istPending}>

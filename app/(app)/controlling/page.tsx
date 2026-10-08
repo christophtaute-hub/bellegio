@@ -8,6 +8,7 @@ import { ForecastKompakt, ForecastTable } from "@/components/forecast/forecast-t
 import { RechtsstandHinweise } from "@/components/forecast/rechtsstand-hinweise";
 import { BeitraegeJeGruppeTabelle } from "@/components/forecast/beitraege-je-gruppe";
 import { beitraegeJeGruppe, berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { ladeKindKontext } from "@/lib/forecast/monthly-forecast";
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { ZeitraumAuswahl } from "@/components/forecast/zeitraum-auswahl";
 import { ExportButtons } from "@/components/forecast/export-buttons";
@@ -71,11 +72,12 @@ export default async function ControllingPage({
     const heuteIso = toIsoDateString(heute);
     const preise = preiseAmStichtag(await ladeBeitragszeilen(supabase, einrichtungId), heuteIso);
     if (preise.size > 0) {
-      const [rows, { data: gruppenListe }] = await Promise.all([
+      const [rows, { data: gruppenListe }, kontext] = await Promise.all([
         getKinderPresenceAtDate(supabase, einrichtungId, heuteIso),
         supabase.from("gruppen").select("id, name").eq("einrichtung_id", einrichtungId).is("archived_at", null),
+        ladeKindKontext(supabase, einrichtungId),
       ]);
-      beitraege = { zeilen: beitraegeJeGruppe(rows, preise, gruppenListe ?? []), ohnePreis: berechneElternbeitraege(rows, preise).kinderOhnePreis };
+      beitraege = { zeilen: beitraegeJeGruppe(rows, preise, gruppenListe ?? [], kontext), ohnePreis: berechneElternbeitraege(rows, preise, kontext).kinderOhnePreis };
     }
   }
 

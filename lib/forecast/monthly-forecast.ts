@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag, type BeitragZeile } from "@/lib/finanzen/elternbeitraege";
+import { baueKindKontext, berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag, type BeitragZeile, type KindKontext } from "@/lib/finanzen/elternbeitraege";
 import {
   getKinderPresenceAtDate,
   buildKpis,
@@ -85,7 +85,22 @@ export type FinanzenBasis = {
   teamVerguetungByTeamId: Map<string, { entgeltgruppe: string | null; stufe: number | null; monatsgehaltManuell: number | null }>;
   /** Interne Preisliste (Elternbeiträge) — leer, wenn keine hinterlegt ist. */
   beitraege: BeitragZeile[];
+  /** Gruppenart und Wohnsitz der Kinder, damit der passende Preis der Preisliste gewählt wird. */
+  kindKontext: KindKontext;
 };
+
+/** Gruppenart je Gruppe und „wohnt außerhalb der Standort-Gemeinde“ je Kind — nur für die Preiswahl der Elternbeiträge. */
+export async function ladeKindKontext(supabase: SupabaseClient<Database>, einrichtungId: string): Promise<KindKontext> {
+  const [{ data: gruppen }, { data: einrichtung }] = await Promise.all([
+    supabase.from("gruppen").select("id, gruppenart").eq("einrichtung_id", einrichtungId),
+    supabase.from("einrichtungen").select("standort_gemeinde").eq("id", einrichtungId).single(),
+  ]);
+  const standort = einrichtung?.standort_gemeinde ?? null;
+  const { data: kinder } = standort
+    ? await supabase.from("kinder").select("id, wohnort").eq("einrichtung_id", einrichtungId).not("wohnort", "is", null).limit(5000)
+    : { data: [] as { id: string; wohnort: string | null }[] };
+  return baueKindKontext(gruppen ?? [], kinder ?? [], standort);
+}
 
 async function ladeVerguetungFuerSummen(supabase: SupabaseClient<Database>, einrichtungId: string) {
   let client: SupabaseClient<Database> = supabase;
@@ -117,6 +132,7 @@ export async function ladeFinanzenBasis(
     tvoedVersionenByGroup,
     { data: verguetungRows },
     beitraege,
+    kindKontext,
   ] = await Promise.all([
     supabase.from("einrichtungen").select("foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
     getBayernBasiswertVersionen(supabase),
@@ -124,6 +140,7 @@ export async function ladeFinanzenBasis(
     getTVoedEntgeltVersionen(supabase),
     ladeVerguetungFuerSummen(supabase, einrichtungId),
     ladeBeitragszeilen(supabase, einrichtungId),
+    ladeKindKontext(supabase, einrichtungId),
   ]);
 
   const teamVerguetungByTeamId = new Map(
@@ -142,6 +159,7 @@ export async function ladeFinanzenBasis(
     tvoedVersionenByGroup,
     teamVerguetungByTeamId,
     beitraege,
+    kindKontext,
   };
 }
 
@@ -189,7 +207,7 @@ export function resolveFinanzenMonat(
   );
   const personalkosten = berechnePersonalkostenGesamt(personalkostenErgebnisse, basis.lohnnebenkostenProzent, basis.jahressonderzahlungProzent);
   const preise = preiseAmStichtag(basis.beitraege, stichtag);
-  const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise).summe : null;
+  const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise, basis.kindKontext).summe : null;
   return berechneErgebnis(foerdererloeseMonat, personalkosten, elternbeitraege);
 }
 

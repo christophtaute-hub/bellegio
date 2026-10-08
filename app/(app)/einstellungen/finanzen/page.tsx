@@ -21,7 +21,7 @@ export default async function FinanzenEinstellungenPage() {
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent")
+    .select("bundesland_code, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde")
     .eq("id", einrichtungId)
     .single();
 
@@ -36,8 +36,16 @@ export default async function FinanzenEinstellungenPage() {
           const versionen = [...new Set(zeilen.map((z) => z.gueltigAb))].sort().reverse();
           const heute = toIsoDateString(new Date());
           const angezeigt = versionen.find((v) => v <= heute) ?? versionen[0] ?? heute;
-          const preise = Object.fromEntries(preiseAmStichtag(zeilen.filter((z) => z.gueltigAb === angezeigt), angezeigt));
-          return { baender: (baender ?? []).map((b) => ({ id: b.id, label: b.label })), preise, angezeigt, versionen };
+          const angezeigteZeilen = zeilen.filter((z) => z.gueltigAb === angezeigt);
+          const preise = Object.fromEntries(preiseAmStichtag(angezeigteZeilen, angezeigt));
+          return {
+            baender: (baender ?? []).map((b) => ({ id: b.id, label: b.label })),
+            preise,
+            angezeigt,
+            versionen,
+            nachArt: angezeigteZeilen.some((z) => z.gruppenart),
+            nachWohnsitz: angezeigteZeilen.some((z) => z.auswaertig),
+          };
         })()
       : null;
 
@@ -78,6 +86,9 @@ export default async function FinanzenEinstellungenPage() {
               preise={beitragsDaten.preise}
               gueltigAb={beitragsDaten.angezeigt}
               versionen={beitragsDaten.versionen}
+              standortGemeinde={einrichtung.standort_gemeinde}
+              nachArtVorbelegt={beitragsDaten.nachArt}
+              nachWohnsitzVorbelegt={beitragsDaten.nachWohnsitz}
               canEdit={bearbeiteFinanzen}
             />
           ) : null}
