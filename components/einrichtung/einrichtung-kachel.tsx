@@ -3,6 +3,8 @@ import { Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { setActiveEinrichtung } from "@/lib/actions/einrichtung";
 import { ladeEinrichtungKennzahlen } from "@/lib/dashboard/einrichtung-kennzahlen";
+import { canViewFinanzen } from "@/lib/server/current-user-role";
+import { plusMinusStatus } from "@/lib/ui/status";
 import { AmpelBadge } from "@/components/team/ampel-badge";
 import { BundeslandBadge } from "@/components/layout/bundesland-badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string; stichtag: string }) {
   const supabase = await createClient();
-  const k = await ladeEinrichtungKennzahlen(supabase, einrichtungId, stichtag);
+  const zeigeFinanzen = await canViewFinanzen(supabase, einrichtungId);
+  const k = await ladeEinrichtungKennzahlen(supabase, einrichtungId, stichtag, { zeigeFinanzen });
+  const geld = k.ergebnisMonat !== null ? { ...plusMinusStatus(k.ergebnisMonat), betrag: k.ergebnisMonat } : null;
   const auslastung = k.sollplaetze > 0 ? Math.min(100, Math.round((k.kinderGesamt / k.sollplaetze) * 100)) : 0;
   const ueberbelegt = k.sollplaetze > 0 && k.kinderGesamt > k.sollplaetze;
 
@@ -44,6 +48,24 @@ async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string
         </div>
         <AmpelBadge ampel={k.ampel} />
       </div>
+      {geld ? (
+        <div className="flex items-center justify-between gap-2 border-t pt-3 text-sm">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-muted-foreground">Förderung minus Personal</span>
+            <span className="truncate font-medium tabular-nums">
+              {geld.betrag > 0 ? "+" : ""}
+              {geld.betrag.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })} im Monat
+            </span>
+          </div>
+          <span
+            className={`rounded-full px-3 py-1 text-sm font-medium ${
+              geld.ton === "plus" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : geld.ton === "minus" ? "bg-destructive/10 text-destructive" : "bg-secondary text-foreground"
+            }`}
+          >
+            {geld.wort}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
