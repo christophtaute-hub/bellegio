@@ -2,10 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database.types";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { canWriteBelegung, canWritePersonal } from "@/lib/server/current-user-role";
 import { toIsoDateString } from "@/lib/kita-datum";
 import type { RohZeile, RohWert } from "@/lib/import/hilfen";
+import type { ImportQuelle } from "@/lib/import/abgleich";
+import { ergaenzeKinderAbgleich, type KindBestand } from "@/lib/import/abgleich-kinder";
+import { ergaenzeTeamAbgleich, type TeamBestand } from "@/lib/import/abgleich-team";
+import { schreibeGruppenHistorie } from "@/lib/kinder/gruppen-historie";
 import {
   pruefeKinderImport,
   type KindImportErgebnis,
@@ -17,12 +22,20 @@ import {
   type TeamImportKontext,
 } from "@/lib/import/team";
 
+/** „neu“: nur neue Einträge anlegen, Vorhandene überspringen. „abgleich“: Vorhandene (über die Nummer der Quelle oder den Namen
+ * erkannt) werden aktualisiert — leere Zellen und fehlende Spalten ändern nichts, nichts wird gelöscht. */
+export type ImportOptionen = { modus: "neu" | "abgleich"; quelle: ImportQuelle };
+const QUELLEN: ImportQuelle[] = ["kigaroo", "rexx", "excel"];
+function normOptionen(o: ImportOptionen | undefined): ImportOptionen {
+  return { modus: o?.modus === "abgleich" ? "abgleich" : "neu", quelle: o && QUELLEN.includes(o.quelle) ? o.quelle : "excel" };
+}
+
 const MAX_ZEILEN = 1000;
 const CHUNK = 100;
 
 export type PruefungErgebnis<T> = { ok: true; ergebnis: T } | { ok: false; error: string };
 export type UebernahmeErgebnis =
-  | { ok: true; angelegt: number; uebersprungen: number; fehler: string[] }
+  | { ok: true; angelegt: number; aktualisiert: number; uebersprungen: number; fehler: string[] }
   | { ok: false; error: string };
 
 /** Nimmt vom Client nur einfache Tabellenwerte an und begrenzt Größe und Länge. */
@@ -43,7 +56,7 @@ function bereinige(rows: unknown): RohZeile[] | string {
   });
 }
 
-async function ladeKinderKontext(einrichtungId: string): Promise<KindImportKontext | null> {
+async function ladeKinderKontext(einrichtungId: string, abgleich: boolean): Promise<KindImportKontext | null> {
   const supabase = await createClient();
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
@@ -54,7 +67,7 @@ async function ladeKinderKontext(einrichtungId: string): Promise<KindImportKonte
   const bundesland = einrichtung.bundesland_code ?? "by";
 
   const [{ data: gruppen }, { data: baender }, { data: gewichtungen }, { data: kinder }] = await Promise.all([
-    supabase.from("gruppen").select("id, name").eq("einrichtung_id", einrichtungId).is("archived_at", null),
+    supabase.from("gruppen").select("id, name, gruppenart").eq("einrichtung_id", einrichtungId).is("archived_at", null),
     supabase.from("booking_time_bands").select("id, label").eq("bundesland_code", bundesland).order("sort_order"),
     supabase.from("weighting_factors").select("id, code, label").eq("bundesland_code", bundesland),
     supabase
@@ -72,10 +85,22 @@ async function ladeKinderKontext(einrichtungId: string): Promise<KindImportKonte
     gewichtungen: gewichtungen ?? [],
     vorhandene: kinder ?? [],
     heute: toIsoDateString(new Date()),
+    abgleich,
   };
 }
 
-async function ladeTeamKontext(einrichtungId: string): Promise<TeamImportKontext> {
+async function ladeKinderBestand(einrichtungId: string): Promise<KindBestand[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("kinder")
+    .select("id, vorname, nachname, geburtsdatum, externe_id, datenquelle, gruppe_id, status, eintritt, austritt, vertrag_gueltig_bis, buchungszeit_band_id, wohnort, hat_behinderung")
+    .eq("einrichtung_id", einrichtungId)
+    .is("archived_at", null)
+    .limit(5000);
+  return data ?? [];
+}
+
+async function ladeTeamKontext(einrichtungId: string, abgleich: boolean): Promise<TeamImportKontext> {
   const supabase = await createClient();
   const [{ data: gruppen }, { data: team }] = await Promise.all([
     supabase.from("gruppen").select("id, name").eq("einrichtung_id", einrichtungId).is("archived_at", null),
@@ -84,11 +109,24 @@ async function ladeTeamKontext(einrichtungId: string): Promise<TeamImportKontext
   return {
     gruppen: gruppen ?? [],
     vorhandene: (team ?? []).map((m) => ({ vorname: m.vorname ?? "", nachname: m.nachname ?? "" })),
+    abgleich,
   };
 }
 
+async function ladeTeamBestand(einrichtungId: string): Promise<TeamBestand[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("team")
+    .select("id, vorname, nachname, externe_id, datenquelle, rolle, role_category, wochenstunden, gruppe_id, status, eintritt, austritt")
+    .eq("einrichtung_id", einrichtungId)
+    .is("archived_at", null)
+    .limit(2000);
+  return (data ?? []).map((m) => ({ ...m, wochenstunden: m.wochenstunden === null ? null : Number(m.wochenstunden) }));
+}
+
 async function kinderVorbereiten(
-  rowsRoh: unknown
+  rowsRoh: unknown,
+  optionen: ImportOptionen
 ): Promise<{ ok: true; einrichtungId: string; ergebnis: KindImportErgebnis } | { ok: false; error: string }> {
   const einrichtungId = await getActiveEinrichtungId();
   if (!einrichtungId) return { ok: false, error: "Keine aktive Einrichtung ausgewählt." };
@@ -98,27 +136,37 @@ async function kinderVorbereiten(
   }
   const rows = bereinige(rowsRoh);
   if (typeof rows === "string") return { ok: false, error: rows };
-  const kontext = await ladeKinderKontext(einrichtungId);
+  const abgleich = optionen.modus === "abgleich";
+  const kontext = await ladeKinderKontext(einrichtungId, abgleich);
   if (!kontext) return { ok: false, error: "Einrichtung nicht gefunden." };
-  return { ok: true, einrichtungId, ergebnis: pruefeKinderImport(rows, kontext) };
+  let ergebnis = pruefeKinderImport(rows, kontext);
+  if (abgleich && ergebnis.fehlendeSpalten.length === 0) {
+    ergebnis = ergaenzeKinderAbgleich(ergebnis, await ladeKinderBestand(einrichtungId), optionen.quelle, kontext);
+  }
+  return { ok: true, einrichtungId, ergebnis };
 }
 
-export async function pruefeKinderDatei(rows: unknown): Promise<PruefungErgebnis<KindImportErgebnis>> {
-  const v = await kinderVorbereiten(rows);
+export async function pruefeKinderDatei(rows: unknown, optionen?: ImportOptionen): Promise<PruefungErgebnis<KindImportErgebnis>> {
+  const v = await kinderVorbereiten(rows, normOptionen(optionen));
   return v.ok ? { ok: true, ergebnis: v.ergebnis } : v;
 }
 
-export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeErgebnis> {
-  const v = await kinderVorbereiten(rows);
+export async function uebernehmeKinderDatei(rows: unknown, optionen?: ImportOptionen): Promise<UebernahmeErgebnis> {
+  const opt = normOptionen(optionen);
+  const v = await kinderVorbereiten(rows, opt);
   if (!v.ok) return v;
   if (v.ergebnis.fehlendeSpalten.length > 0) {
     return { ok: false, error: `Pflichtspalten fehlen: ${v.ergebnis.fehlendeSpalten.join(", ")}.` };
   }
 
   const supabase = await createClient();
-  const kinder = v.ergebnis.zeilen.flatMap((z) => (z.kind ? [z.kind] : []));
+  const alle = v.ergebnis.zeilen.flatMap((z) => (z.kind ? [z] : []));
+  // Im Abgleich nur die wirklich neuen anlegen, die erkannten werden unten aktualisiert
+  const kinder = alle.filter((z) => !z.abgleich || z.abgleich.aktion === "neu").flatMap((z) => (z.kind ? [z.kind] : []));
+  const zuAktualisieren = alle.filter((z) => z.abgleich?.aktion === "aktualisieren");
   const fehler: string[] = [];
   let angelegt = 0;
+  let aktualisiert = 0;
 
   for (let i = 0; i < kinder.length; i += CHUNK) {
     const teil = kinder.slice(i, i + CHUNK);
@@ -139,6 +187,8 @@ export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeEr
           buchungszeit_band_id: k.buchungszeit_band_id,
           wohnort: k.wohnort,
           hat_behinderung: k.hat_behinderung,
+          externe_id: k.externe_id,
+          datenquelle: k.externe_id ? opt.quelle : null,
         }))
       )
       .select("id, vorname, nachname, geburtsdatum");
@@ -179,12 +229,58 @@ export async function uebernehmeKinderDatei(rows: unknown): Promise<UebernahmeEr
     }
   }
 
+  // Abgleich: nur die Felder ändern, die sich laut Prüfung unterscheiden
+  if (zuAktualisieren.length > 0) {
+    const heute = toIsoDateString(new Date());
+    const ids = zuAktualisieren.map((z) => z.abgleich!.id as string);
+    const { data: bisher } = await supabase.from("kinder").select("id, gruppe_id, buchungszeit_band_id, eintritt").in("id", ids);
+    const bisherNachId = new Map((bisher ?? []).map((b) => [b.id, b]));
+    for (const z of zuAktualisieren) {
+      const k = z.kind!;
+      const kindId = z.abgleich!.id as string;
+      const felder = new Set(z.abgleich!.aenderungen.map((a) => a.feld));
+      const update: Database["public"]["Tables"]["kinder"]["Update"] = {};
+      if (felder.has("vorname")) update.vorname = k.vorname;
+      if (felder.has("nachname")) update.nachname = k.nachname;
+      if (felder.has("geburtsdatum")) update.geburtsdatum = k.geburtsdatum;
+      if (felder.has("gruppe")) update.gruppe_id = k.gruppe_id;
+      if (felder.has("status")) update.status = k.status;
+      if (felder.has("eintritt")) update.eintritt = k.eintritt;
+      if (felder.has("austritt")) update.austritt = k.austritt;
+      if (felder.has("vertrag_bis")) update.vertrag_gueltig_bis = k.vertrag_gueltig_bis;
+      if (felder.has("buchungszeit")) update.buchungszeit_band_id = k.buchungszeit_band_id;
+      if (felder.has("wohnort")) update.wohnort = k.wohnort;
+      if (felder.has("istatus")) update.hat_behinderung = k.hat_behinderung;
+      if (felder.has("externe_id")) {
+        update.externe_id = k.externe_id;
+        update.datenquelle = opt.quelle;
+      }
+      const { error } = await supabase.from("kinder").update(update).eq("id", kindId);
+      if (error) {
+        fehler.push(`${z.anzeige}: konnte nicht aktualisiert werden.`);
+        continue;
+      }
+      aktualisiert += 1;
+      const alt = bisherNachId.get(kindId);
+      if (felder.has("buchungszeit") && alt?.buchungszeit_band_id !== k.buchungszeit_band_id) {
+        // Wie in der Kind-Bearbeitung: ein neuer Historie-Eintrag ab heute, damit vergangene Stichtage die damalige Buchungszeit behalten.
+        await supabase
+          .from("kind_buchungszeit_historie")
+          .upsert({ kind_id: kindId, buchungszeit_band_id: k.buchungszeit_band_id, gueltig_ab: heute }, { onConflict: "kind_id,gueltig_ab" });
+      }
+      if (felder.has("gruppe")) {
+        await schreibeGruppenHistorie(supabase, kindId, alt?.gruppe_id ?? null, k.gruppe_id, { eintritt: alt?.eintritt ?? k.eintritt, heute });
+      }
+    }
+  }
+
   for (const pfad of ["/kinder", "/gruppen", "/dashboard", "/controlling", "/team"]) revalidatePath(pfad);
-  return { ok: true, angelegt, uebersprungen: v.ergebnis.zeilen.length - kinder.length, fehler };
+  return { ok: true, angelegt, aktualisiert, uebersprungen: v.ergebnis.zeilen.length - alle.length, fehler };
 }
 
 async function teamVorbereiten(
-  rowsRoh: unknown
+  rowsRoh: unknown,
+  optionen: ImportOptionen
 ): Promise<{ ok: true; einrichtungId: string; ergebnis: TeamImportErgebnis } | { ok: false; error: string }> {
   const einrichtungId = await getActiveEinrichtungId();
   if (!einrichtungId) return { ok: false, error: "Keine aktive Einrichtung ausgewählt." };
@@ -194,25 +290,35 @@ async function teamVorbereiten(
   }
   const rows = bereinige(rowsRoh);
   if (typeof rows === "string") return { ok: false, error: rows };
-  return { ok: true, einrichtungId, ergebnis: pruefeTeamImport(rows, await ladeTeamKontext(einrichtungId)) };
+  const abgleich = optionen.modus === "abgleich";
+  const kontext = await ladeTeamKontext(einrichtungId, abgleich);
+  let ergebnis = pruefeTeamImport(rows, kontext);
+  if (abgleich && ergebnis.fehlendeSpalten.length === 0) {
+    ergebnis = ergaenzeTeamAbgleich(ergebnis, await ladeTeamBestand(einrichtungId), optionen.quelle, kontext);
+  }
+  return { ok: true, einrichtungId, ergebnis };
 }
 
-export async function pruefeTeamDatei(rows: unknown): Promise<PruefungErgebnis<TeamImportErgebnis>> {
-  const v = await teamVorbereiten(rows);
+export async function pruefeTeamDatei(rows: unknown, optionen?: ImportOptionen): Promise<PruefungErgebnis<TeamImportErgebnis>> {
+  const v = await teamVorbereiten(rows, normOptionen(optionen));
   return v.ok ? { ok: true, ergebnis: v.ergebnis } : v;
 }
 
-export async function uebernehmeTeamDatei(rows: unknown): Promise<UebernahmeErgebnis> {
-  const v = await teamVorbereiten(rows);
+export async function uebernehmeTeamDatei(rows: unknown, optionen?: ImportOptionen): Promise<UebernahmeErgebnis> {
+  const opt = normOptionen(optionen);
+  const v = await teamVorbereiten(rows, opt);
   if (!v.ok) return v;
   if (v.ergebnis.fehlendeSpalten.length > 0) {
     return { ok: false, error: `Pflichtspalten fehlen: ${v.ergebnis.fehlendeSpalten.join(", ")}.` };
   }
 
   const supabase = await createClient();
-  const mitglieder = v.ergebnis.zeilen.flatMap((z) => (z.mitglied ? [z.mitglied] : []));
+  const alle = v.ergebnis.zeilen.flatMap((z) => (z.mitglied ? [z] : []));
+  const mitglieder = alle.filter((z) => !z.abgleich || z.abgleich.aktion === "neu").flatMap((z) => (z.mitglied ? [z.mitglied] : []));
+  const zuAktualisieren = alle.filter((z) => z.abgleich?.aktion === "aktualisieren");
   const fehler: string[] = [];
   let angelegt = 0;
+  let aktualisiert = 0;
 
   for (let i = 0; i < mitglieder.length; i += CHUNK) {
     const teil = mitglieder.slice(i, i + CHUNK);
@@ -231,6 +337,8 @@ export async function uebernehmeTeamDatei(rows: unknown): Promise<UebernahmeErge
           status: m.status,
           eintritt: m.eintritt,
           austritt: m.austritt,
+          externe_id: m.externe_id,
+          datenquelle: m.externe_id ? opt.quelle : null,
         }))
       )
       .select("id");
@@ -238,6 +346,31 @@ export async function uebernehmeTeamDatei(rows: unknown): Promise<UebernahmeErge
     else angelegt += data.length;
   }
 
+  for (const z of zuAktualisieren) {
+    const m = z.mitglied!;
+    const felder = new Set(z.abgleich!.aenderungen.map((a) => a.feld));
+    const update: Database["public"]["Tables"]["team"]["Update"] = {};
+    if (felder.has("vorname")) update.vorname = m.vorname;
+    if (felder.has("nachname")) update.nachname = m.nachname;
+    if (felder.has("rolle")) {
+      update.rolle = m.rolle;
+      update.role_category = m.role_category;
+      update.fachkraft = m.role_category === "fk";
+    }
+    if (felder.has("wochenstunden")) update.wochenstunden = m.wochenstunden;
+    if (felder.has("gruppe")) update.gruppe_id = m.gruppe_id;
+    if (felder.has("status")) update.status = m.status;
+    if (felder.has("eintritt")) update.eintritt = m.eintritt;
+    if (felder.has("austritt")) update.austritt = m.austritt;
+    if (felder.has("externe_id")) {
+      update.externe_id = m.externe_id;
+      update.datenquelle = opt.quelle;
+    }
+    const { error } = await supabase.from("team").update(update).eq("id", z.abgleich!.id as string);
+    if (error) fehler.push(`${z.anzeige}: konnte nicht aktualisiert werden.`);
+    else aktualisiert += 1;
+  }
+
   for (const pfad of ["/team", "/controlling", "/dashboard", "/szenario"]) revalidatePath(pfad);
-  return { ok: true, angelegt, uebersprungen: v.ergebnis.zeilen.length - mitglieder.length, fehler };
+  return { ok: true, angelegt, aktualisiert, uebersprungen: v.ergebnis.zeilen.length - alle.length, fehler };
 }

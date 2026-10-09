@@ -1,3 +1,5 @@
+import type { Abgleich } from "@/lib/import/abgleich";
+import { parseIsoDate, vorgeschlagenerAustritt } from "@/lib/kita-datum";
 import {
   alterInJahren,
   findeSpalten,
@@ -25,7 +27,8 @@ export type KindFeld =
   | "notizen"
   | "gewichtung"
   | "platznummer"
-  | "vertrag_bis";
+  | "vertrag_bis"
+  | "externe_id";
 
 export const KIND_SPALTEN: SpaltenSynonyme<KindFeld> = {
   vorname: ["Vorname", "Rufname"],
@@ -43,17 +46,20 @@ export const KIND_SPALTEN: SpaltenSynonyme<KindFeld> = {
   gewichtung: ["Gewichtung", "Gewichtungsfaktor", "Faktor"],
   platznummer: ["Platznummer", "Platz-Nr.", "Platz Nr", "Platz"],
   vertrag_bis: ["Vertrag gültig bis", "Vertragsende", "Vertrag bis"],
+  externe_id: ["Externe ID", "Kinder-Nr.", "Kindernummer", "Kind-Nr.", "Kundennummer", "Kunden-Nr.", "Nummer", "ID"],
 };
 
 export const KIND_PFLICHTSPALTEN: KindFeld[] = ["vorname", "nachname", "geburtsdatum", "geschlecht"];
 
 export type KindImportKontext = {
   bundeslandCode: string;
-  gruppen: { id: string; name: string }[];
+  gruppen: { id: string; name: string; gruppenart?: string | null }[];
   baender: { id: string; label: string }[];
   gewichtungen: { id: string; code: string; label: string }[];
   vorhandene: { vorname: string; nachname: string; geburtsdatum: string }[];
   heute: string;
+  /** Abgleichmodus: Kinder, die es schon gibt, sind keine Dubletten, sondern werden mit dem Bestand verglichen (siehe lib/import/abgleich.ts). */
+  abgleich?: boolean;
 };
 
 export type KindImportDaten = {
@@ -72,6 +78,9 @@ export type KindImportDaten = {
   notizen: string | null;
   hat_behinderung: boolean;
   weighting_factor_ids: string[];
+  externe_id: string | null;
+  /** Der Austritt stand nicht in der Datei und wurde wie im Formular vorgeschlagen (3. bzw. 6. Geburtstag, nächster 1. September). */
+  austritt_vorgeschlagen?: boolean;
 };
 
 export type ImportZeilenStatus = "ok" | "warnung" | "fehler" | "duplikat";
@@ -83,6 +92,7 @@ export type KindImportZeile = {
   meldungen: string[];
   anzeige: string;
   kind?: KindImportDaten;
+  abgleich?: Abgleich;
 };
 
 export type KindImportErgebnis = {
@@ -93,6 +103,8 @@ export type KindImportErgebnis = {
   mitWarnung: number;
   fehler: number;
   duplikate: number;
+  /** Nur im Abgleichmodus. */
+  abgleich?: { neu: number; aktualisieren: number; unveraendert: number; nichtMehrInDatei: string[] };
 };
 
 const SPALTENNAME: Record<KindFeld, string> = {
@@ -111,6 +123,7 @@ const SPALTENNAME: Record<KindFeld, string> = {
   gewichtung: "Gewichtung",
   platznummer: "Platznummer",
   vertrag_bis: "Vertrag gültig bis",
+  externe_id: "Externe ID",
 };
 
 export function parseGeschlecht(wert: unknown): KindImportDaten["geschlecht"] | null {
@@ -261,6 +274,18 @@ export function pruefeKinderImport(rows: RohZeile[], kontext: KindImportKontext)
       meldungen.push("Der Austritt liegt bereits in der Vergangenheit.");
     }
 
+    // Aktive Kinder und Nachrücker brauchen ein Austrittsdatum (Datenbankregel). Fehlt es in der Datei, wird es wie im Kind-Formular
+    // vorgeschlagen: Krippe 3. Geburtstag, Kindergarten 6. Geburtstag, jeweils nächster 1. September.
+    let austrittIso = austritt.iso;
+    let austrittVorgeschlagen = false;
+    if ((status === "aktiv" || status === "nachruecker") && !austrittIso && geburt.iso && fehler.length === 0) {
+      const art = kontext.gruppen.find((g) => g.id === gruppeId)?.gruppenart;
+      const istKrippe = art ? art === "krippe" : alterInJahren(geburt.iso, eintritt.iso ?? kontext.heute) < 3;
+      austrittIso = vorgeschlagenerAustritt(geburt.iso, istKrippe, parseIsoDate(kontext.heute));
+      austrittVorgeschlagen = true;
+      meldungen.push(`Kein Austritt angegeben — vorgeschlagen: ${austrittIso.split("-").reverse().join(".")} (${istKrippe ? "Krippe: 3. Geburtstag" : "Kindergarten: Einschulung"}).`);
+    }
+
     // Buchungszeit
     const bandRoh = textWert(wert(roh, "buchungszeit"));
     let bandId: string | null = null;
@@ -311,7 +336,7 @@ export function pruefeKinderImport(rows: RohZeile[], kontext: KindImportKontext)
     let duplikat = false;
     if (fehler.length === 0 && geburt.iso) {
       const key = schluessel(vorname, nachname, geburt.iso);
-      if (vorhanden.has(key)) {
+      if (vorhanden.has(key) && !kontext.abgleich) {
         duplikat = true;
         meldungen.unshift("Dieses Kind ist in der Einrichtung bereits vorhanden — wird übersprungen.");
       } else if (imImport.has(key)) {
@@ -337,13 +362,15 @@ export function pruefeKinderImport(rows: RohZeile[], kontext: KindImportKontext)
       gruppe_id: gruppeId,
       platznummer: textWert(wert(roh, "platznummer")) || null,
       eintritt: eintritt.iso,
-      austritt: austritt.iso,
+      austritt: austrittIso,
+      austritt_vorgeschlagen: austrittVorgeschlagen,
       vertrag_gueltig_bis: vertragBis.iso,
       buchungszeit_band_id: bandId,
       wohnort: textWert(wert(roh, "wohnort")) || null,
       notizen: textWert(wert(roh, "notizen")) || null,
       hat_behinderung: istatus === true,
       weighting_factor_ids: gewichtungIds,
+      externe_id: textWert(wert(roh, "externe_id")) || null,
     };
     return {
       zeile: zeilennummer,

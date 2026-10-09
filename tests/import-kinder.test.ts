@@ -137,7 +137,18 @@ describe("Kinder-Import", () => {
   it("nutzt in Baden-Württemberg keine Gewichtung", () => {
     const erg = pruefeKinderImport([basis], { ...kontext, bundeslandCode: "bw" });
     expect(erg.zeilen[0].kind?.weighting_factor_ids).toEqual([]);
-    expect(erg.zeilen[0].status).toBe("ok");
+    // einziger Hinweis: der fehlende Austritt wird vorgeschlagen (siehe nächster Test)
+    expect(erg.zeilen[0].meldungen).toHaveLength(1);
+    expect(erg.zeilen[0].meldungen[0]).toContain("Austritt");
+  });
+
+  it("schlägt für aktive Kinder ohne Austritt einen vor (Datenbankregel), ohne einen angegebenen zu überschreiben", () => {
+    const ohne = pruefeKinderImport([basis], kontext).zeilen[0].kind;
+    expect(ohne?.austritt).toMatch(/^\d{4}-09-01$/);
+    expect(ohne?.austritt_vorgeschlagen).toBe(true);
+    const mit = pruefeKinderImport([{ ...basis, Austritt: "31.08.2030" }], kontext).zeilen[0].kind;
+    expect(mit?.austritt).toBe("2030-08-31");
+    expect(mit?.austritt_vorgeschlagen).toBe(false);
   });
 
   it("liest Excel-Datumswerte als Seriennummern", () => {

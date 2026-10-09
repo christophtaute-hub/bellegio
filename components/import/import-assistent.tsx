@@ -13,8 +13,10 @@ import {
   pruefeTeamDatei,
   uebernehmeKinderDatei,
   uebernehmeTeamDatei,
+  type ImportOptionen,
   type UebernahmeErgebnis,
 } from "@/lib/actions/import";
+import { QUELLEN_LABEL, type ImportQuelle } from "@/lib/import/abgleich";
 import { normalisiere, zeilenAusMatrix, type RohWert, type RohZeile } from "@/lib/import/hilfen";
 import { KIND_SPALTEN } from "@/lib/import/kinder";
 import { TEAM_SPALTEN } from "@/lib/import/team";
@@ -27,9 +29,11 @@ type Zeile = {
   status: "ok" | "warnung" | "fehler" | "duplikat";
   meldungen: string[];
   anzeige: string;
+  abgleich?: { aktion: "neu" | "aktualisieren" | "unveraendert"; aenderungen: { label: string; alt: string | null; neu: string | null }[] };
 };
 
 type Ansicht = {
+  abgleich?: { neu: number; aktualisieren: number; unveraendert: number; nichtMehrInDatei: string[] };
   fehlendeSpalten: string[];
   erkannteSpalten: { feld: string; quelle: string }[];
   zeilen: Zeile[];
@@ -50,6 +54,15 @@ const STATUS_BADGE: Record<Zeile["status"], { label: string; variant: "secondary
   fehler: { label: "Fehler", variant: "destructive" },
   duplikat: { label: "Vorhanden", variant: "outline" },
 };
+
+const AKTION_BADGE = {
+  neu: { label: "Neu", variant: "secondary" },
+  aktualisieren: { label: "Ändert sich", variant: "default" },
+  unveraendert: { label: "Unverändert", variant: "outline" },
+} as const;
+
+/** Welche Quellen es je Bereich gibt: Kinder kommen aus KigaRoo, Personal aus rexx. */
+const QUELLEN: Record<Art, ImportQuelle[]> = { kinder: ["excel", "kigaroo"], team: ["excel", "rexx"] };
 
 /** Liest .xlsx/.xls/.csv im Browser — die Datei verlässt den Rechner nur als geprüfte Tabellenzeilen. */
 async function leseDatei(datei: File, art: Art): Promise<RohZeile[]> {
@@ -87,6 +100,9 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [nurProbleme, setNurProbleme] = useState(true);
+  const [abgleichModus, setAbgleichModus] = useState(false);
+  const [quelle, setQuelle] = useState<ImportQuelle>("excel");
+  const optionen: ImportOptionen = { modus: abgleichModus ? "abgleich" : "neu", quelle };
 
   function vorlageHerunterladen() {
     const mappe = XLSX.utils.book_new();
@@ -96,6 +112,25 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
       XLSX.utils.book_append_sheet(mappe, sheet, blatt.name);
     }
     XLSX.writeFile(mappe, t.dateiname);
+  }
+
+  function pruefe(zeilen: RohZeile[], opt: ImportOptionen) {
+    return art === "kinder" ? pruefeKinderDatei(zeilen, opt) : pruefeTeamDatei(zeilen, opt);
+  }
+
+  /** Wechselt der Modus oder die Quelle, wird eine schon geladene Datei sofort neu geprüft. */
+  async function neuPruefen(opt: ImportOptionen) {
+    if (!rows) return;
+    setPending(true);
+    setError(null);
+    const antwort = await pruefe(rows, opt);
+    setPending(false);
+    if (!antwort.ok) {
+      setError(antwort.error);
+      return;
+    }
+    setAnsicht(antwort.ergebnis as Ansicht);
+    setNurProbleme(opt.modus === "abgleich" ? true : antwort.ergebnis.fehler > 0 || antwort.ergebnis.mitWarnung > 0);
   }
 
   async function dateiGewaehlt(datei: File) {
@@ -109,7 +144,7 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
         setError("In der Datei wurden keine Zeilen gefunden. Prüfe, ob die Kopfzeile (Vorname, Nachname …) vorhanden ist.");
         return;
       }
-      const antwort = art === "kinder" ? await pruefeKinderDatei(zeilen) : await pruefeTeamDatei(zeilen);
+      const antwort = await pruefe(zeilen, optionen);
       if (!antwort.ok) {
         setError(antwort.error);
         return;
@@ -117,7 +152,7 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
       setRows(zeilen);
       setDateiname(datei.name);
       setAnsicht(antwort.ergebnis as Ansicht);
-      setNurProbleme(antwort.ergebnis.fehler > 0 || antwort.ergebnis.mitWarnung > 0);
+      setNurProbleme(optionen.modus === "abgleich" ? true : antwort.ergebnis.fehler > 0 || antwort.ergebnis.mitWarnung > 0);
     } catch {
       setError("Die Datei konnte nicht gelesen werden. Bitte nutze eine .xlsx- oder .csv-Datei.");
     } finally {
@@ -130,7 +165,7 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
     if (!rows) return;
     setPending(true);
     setError(null);
-    const antwort = art === "kinder" ? await uebernehmeKinderDatei(rows) : await uebernehmeTeamDatei(rows);
+    const antwort = art === "kinder" ? await uebernehmeKinderDatei(rows, optionen) : await uebernehmeTeamDatei(rows, optionen);
     setPending(false);
     if (!antwort.ok) {
       setError(antwort.error);
@@ -145,11 +180,12 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
     return (
       <div className="flex max-w-2xl flex-col gap-4 rounded-2xl border bg-secondary/30 p-6">
         <h2 className="font-heading text-xl text-primary">
-          {ergebnis.angelegt} {ergebnis.angelegt === 1 ? t.einzahl : t.mehrzahl} übernommen
+          {ergebnis.angelegt} {ergebnis.angelegt === 1 ? t.einzahl : t.mehrzahl} neu angelegt
+          {ergebnis.aktualisiert > 0 ? `, ${ergebnis.aktualisiert} aktualisiert` : ""}
         </h2>
         {ergebnis.uebersprungen > 0 ? (
           <p className="text-sm text-muted-foreground">
-            {ergebnis.uebersprungen} Zeilen wurden nicht übernommen (Fehler oder bereits vorhanden).
+            {ergebnis.uebersprungen} Zeilen wurden nicht übernommen (Fehler).
           </p>
         ) : null}
         {ergebnis.fehler.map((f) => (
@@ -169,7 +205,13 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
     );
   }
 
-  const sichtbar = ansicht ? ansicht.zeilen.filter((z) => !nurProbleme || z.status !== "ok") : [];
+  const imAbgleich = ansicht?.abgleich !== undefined;
+  const sichtbar = ansicht
+    ? ansicht.zeilen.filter((z) =>
+        !nurProbleme ? true : imAbgleich ? z.status === "fehler" || (z.abgleich !== undefined && z.abgleich.aktion !== "unveraendert") : z.status !== "ok"
+      )
+    : [];
+  const zuUebernehmen = ansicht ? (imAbgleich ? ansicht.abgleich!.neu + ansicht.abgleich!.aktualisieren : ansicht.uebernehmbar) : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -190,6 +232,47 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
           <p className="text-sm text-muted-foreground">
             Es wird noch nichts gespeichert — du siehst zuerst, was übernommen wird und was noch korrigiert werden muss.
           </p>
+          <div className="flex flex-col gap-2 rounded-xl border bg-card p-3 text-sm">
+            <label className="flex items-center gap-2">
+              <Switch
+                checked={abgleichModus}
+                disabled={pending}
+                onCheckedChange={(an) => {
+                  setAbgleichModus(an);
+                  void neuPruefen({ modus: an ? "abgleich" : "neu", quelle });
+                }}
+                aria-label="Mit bestehenden Einträgen abgleichen"
+              />
+              Mit bestehenden Einträgen abgleichen (aktualisieren statt überspringen)
+            </label>
+            {abgleichModus ? (
+              <>
+                <label className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  Die Liste stammt aus
+                  <select
+                    className="h-8 rounded-lg border bg-background px-2 text-sm text-foreground"
+                    value={quelle}
+                    disabled={pending}
+                    onChange={(e) => {
+                      const q = e.target.value as ImportQuelle;
+                      setQuelle(q);
+                      void neuPruefen({ modus: "abgleich", quelle: q });
+                    }}
+                  >
+                    {QUELLEN[art].map((q) => (
+                      <option key={q} value={q}>
+                        {QUELLEN_LABEL[q]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Erkannt werden Einträge über die Nummer aus {QUELLEN_LABEL[quelle]} (Spalte „Externe ID“, „{art === "kinder" ? "Kinder-Nr." : "Personalnummer"}“ …) oder,
+                  wenn es noch keine Nummer gibt, über Name{art === "kinder" ? " und Geburtsdatum" : ""}. Leere Zellen und fehlende Spalten ändern nichts, und es wird nie etwas gelöscht.
+                </p>
+              </>
+            ) : null}
+          </div>
           <input
             ref={eingabe}
             type="file"
@@ -230,10 +313,18 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
         <section className="flex flex-col gap-4">
           <h2 className="font-heading text-lg text-primary">3. Ergebnis der Prüfung</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{ansicht.uebernehmbar} übernehmbar</Badge>
-            {ansicht.mitWarnung > 0 ? <Badge variant="outline">{ansicht.mitWarnung} mit Hinweis</Badge> : null}
+            {imAbgleich ? (
+              <>
+                <Badge variant="secondary">{ansicht.abgleich!.neu} neu</Badge>
+                <Badge variant="default">{ansicht.abgleich!.aktualisieren} ändern sich</Badge>
+                <Badge variant="outline">{ansicht.abgleich!.unveraendert} unverändert</Badge>
+              </>
+            ) : (
+              <Badge variant="secondary">{ansicht.uebernehmbar} übernehmbar</Badge>
+            )}
+            {ansicht.mitWarnung > 0 && !imAbgleich ? <Badge variant="outline">{ansicht.mitWarnung} mit Hinweis</Badge> : null}
             {ansicht.fehler > 0 ? <Badge variant="destructive">{ansicht.fehler} mit Fehler</Badge> : null}
-            {ansicht.duplikate > 0 ? <Badge variant="outline">{ansicht.duplikate} bereits vorhanden</Badge> : null}
+            {ansicht.duplikate > 0 && !imAbgleich ? <Badge variant="outline">{ansicht.duplikate} bereits vorhanden</Badge> : null}
           </div>
           {ansicht.fehler > 0 ? (
             <p className="max-w-3xl text-sm text-muted-foreground">
@@ -244,8 +335,14 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
 
           <label className="flex items-center gap-2 text-sm">
             <Switch checked={nurProbleme} onCheckedChange={setNurProbleme} />
-            Nur Zeilen mit Hinweis, Fehler oder Dublette zeigen
+            {imAbgleich ? "Nur neue, geänderte und fehlerhafte Zeilen zeigen" : "Nur Zeilen mit Hinweis, Fehler oder Dublette zeigen"}
           </label>
+          {imAbgleich && ansicht.abgleich!.nichtMehrInDatei.length > 0 ? (
+            <p className="max-w-3xl text-sm text-muted-foreground">
+              {ansicht.abgleich!.nichtMehrInDatei.length} Einträge aus {QUELLEN_LABEL[quelle]} stehen nicht mehr in der Datei (z. B. {ansicht.abgleich!.nichtMehrInDatei.slice(0, 3).join(", ")}). Sie bleiben
+              unverändert — ein Austritt muss in der Datei stehen oder im Eintrag selbst gesetzt werden.
+            </p>
+          ) : null}
 
           {sichtbar.length > 0 ? (
             <div className="max-h-[28rem] overflow-auto rounded-lg border">
@@ -264,10 +361,16 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
                       <TableCell className="tabular-nums">{z.zeile}</TableCell>
                       <TableCell>{z.anzeige}</TableCell>
                       <TableCell>
-                        <Badge variant={STATUS_BADGE[z.status].variant}>{STATUS_BADGE[z.status].label}</Badge>
+                        {z.status !== "fehler" && z.abgleich ? (
+                          <Badge variant={AKTION_BADGE[z.abgleich.aktion].variant}>{AKTION_BADGE[z.abgleich.aktion].label}</Badge>
+                        ) : (
+                          <Badge variant={STATUS_BADGE[z.status].variant}>{STATUS_BADGE[z.status].label}</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="whitespace-normal text-sm text-muted-foreground">
-                        {z.meldungen.join(" ") || "—"}
+                        {z.status !== "fehler" && z.abgleich?.aktion === "aktualisieren"
+                          ? z.abgleich.aenderungen.map((a) => `${a.label}: ${a.alt ?? "–"} → ${a.neu ?? "–"}`).join(" · ")
+                          : z.meldungen.join(" ") || "—"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -282,10 +385,12 @@ export function ImportAssistent({ art, vorlage }: { art: Art; vorlage: VorlagenB
           ) : null}
 
           <div className="flex items-center gap-3">
-            <Button disabled={pending || ansicht.uebernehmbar === 0} onClick={uebernehmen}>
+            <Button disabled={pending || zuUebernehmen === 0} onClick={uebernehmen}>
               {pending
                 ? "Wird übernommen…"
-                : `${ansicht.uebernehmbar} ${ansicht.uebernehmbar === 1 ? t.einzahl : t.mehrzahl} übernehmen`}
+                : imAbgleich
+                  ? `${ansicht.abgleich!.neu} anlegen, ${ansicht.abgleich!.aktualisieren} aktualisieren`
+                  : `${zuUebernehmen} ${zuUebernehmen === 1 ? t.einzahl : t.mehrzahl} übernehmen`}
             </Button>
             <Button variant="ghost" onClick={() => setAnsicht(null)} disabled={pending}>
               Verwerfen

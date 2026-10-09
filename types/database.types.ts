@@ -938,6 +938,8 @@ export type Database = {
       }
       kinder: {
         Row: {
+          datenquelle: string | null
+          externe_id: string | null
           kooperation: boolean
           geschwister_nummer: number
           i_status_von: string | null
@@ -966,6 +968,8 @@ export type Database = {
           wohnort: string | null
         }
         Insert: {
+          datenquelle?: string | null
+          externe_id?: string | null
           kooperation?: boolean
           geschwister_nummer?: number
           i_status_von?: string | null
@@ -994,6 +998,8 @@ export type Database = {
           wohnort?: string | null
         }
         Update: {
+          datenquelle?: string | null
+          externe_id?: string | null
           kooperation?: boolean
           geschwister_nummer?: number
           i_status_von?: string | null
@@ -1705,6 +1711,8 @@ export type Database = {
       }
       team: {
         Row: {
+          datenquelle: string | null
+          externe_id: string | null
           archived_at: string | null
           austritt: string | null
           created_at: string
@@ -1722,6 +1730,8 @@ export type Database = {
           wochenstunden: number | null
         }
         Insert: {
+          datenquelle?: string | null
+          externe_id?: string | null
           archived_at?: string | null
           austritt?: string | null
           created_at?: string
@@ -1739,6 +1749,8 @@ export type Database = {
           wochenstunden?: number | null
         }
         Update: {
+          datenquelle?: string | null
+          externe_id?: string | null
           archived_at?: string | null
           austritt?: string | null
           created_at?: string

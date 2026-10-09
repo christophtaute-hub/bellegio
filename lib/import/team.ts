@@ -9,6 +9,7 @@ import {
 } from "@/lib/import/hilfen";
 import { TEAM_ROLLE_OPTIONS } from "@/lib/constants";
 import type { ImportZeilenStatus } from "@/lib/import/kinder";
+import type { Abgleich } from "@/lib/import/abgleich";
 
 export type TeamFeld =
   | "vorname"
@@ -19,7 +20,8 @@ export type TeamFeld =
   | "gruppe"
   | "status"
   | "eintritt"
-  | "austritt";
+  | "austritt"
+  | "externe_id";
 
 export const TEAM_SPALTEN: SpaltenSynonyme<TeamFeld> = {
   vorname: ["Vorname", "Rufname"],
@@ -31,6 +33,7 @@ export const TEAM_SPALTEN: SpaltenSynonyme<TeamFeld> = {
   status: ["Status"],
   eintritt: ["Eintritt", "Eintrittsdatum", "Beginn"],
   austritt: ["Austritt", "Austrittsdatum", "Ende"],
+  externe_id: ["Externe ID", "Personalnummer", "Personal-Nr.", "Mitarbeiter-Nr.", "Mitarbeiternummer", "Pers.-Nr.", "PNR", "ID"],
 };
 
 export const TEAM_PFLICHTSPALTEN: TeamFeld[] = ["vorname", "nachname", "wochenstunden"];
@@ -45,6 +48,7 @@ const SPALTENNAME: Record<TeamFeld, string> = {
   status: "Status",
   eintritt: "Eintritt",
   austritt: "Austritt",
+  externe_id: "Externe ID",
 };
 
 export type TeamRoleCategory = "fk" | "ek" | "ak" | "nicht_paed" | "sprachfoerderung" | "hausmeister" | "hauswirtschaft";
@@ -52,6 +56,8 @@ export type TeamRoleCategory = "fk" | "ek" | "ak" | "nicht_paed" | "sprachfoerde
 export type TeamImportKontext = {
   gruppen: { id: string; name: string }[];
   vorhandene: { vorname: string; nachname: string }[];
+  /** Abgleichmodus: Personen, die es schon gibt, sind keine Dubletten, sondern werden mit dem Bestand verglichen. */
+  abgleich?: boolean;
 };
 
 export type TeamImportDaten = {
@@ -64,6 +70,7 @@ export type TeamImportDaten = {
   status: "aktiv" | "inaktiv" | "geplant";
   eintritt: string | null;
   austritt: string | null;
+  externe_id: string | null;
 };
 
 export type TeamImportZeile = {
@@ -72,6 +79,7 @@ export type TeamImportZeile = {
   meldungen: string[];
   anzeige: string;
   mitglied?: TeamImportDaten;
+  abgleich?: Abgleich;
 };
 
 export type TeamImportErgebnis = {
@@ -82,6 +90,8 @@ export type TeamImportErgebnis = {
   mitWarnung: number;
   fehler: number;
   duplikate: number;
+  /** Nur im Abgleichmodus. */
+  abgleich?: { neu: number; aktualisieren: number; unveraendert: number; nichtMehrInDatei: string[] };
 };
 
 const STANDARD_ROLLE: Record<TeamRoleCategory, string> = {
@@ -219,7 +229,7 @@ export function pruefeTeamImport(rows: RohZeile[], kontext: TeamImportKontext): 
     let duplikat = false;
     if (fehler.length === 0) {
       const key = schluessel(vorname, nachname);
-      if (vorhanden.has(key)) {
+      if (vorhanden.has(key) && !kontext.abgleich) {
         duplikat = true;
         meldungen.unshift("Diese Person ist in der Einrichtung bereits vorhanden — wird übersprungen.");
       } else if (imImport.has(key)) {
@@ -249,6 +259,7 @@ export function pruefeTeamImport(rows: RohZeile[], kontext: TeamImportKontext): 
         status,
         eintritt: eintritt.iso,
         austritt: austritt.iso,
+        externe_id: textWert(wert(roh, "externe_id")) || null,
       },
     };
   });
