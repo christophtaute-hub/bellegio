@@ -110,6 +110,17 @@ export function calculateAgeDecimal(
   });
 }
 
+/** Letzter Tag des Monats, in dem `iso` liegt („2026-08-17“ → „2026-08-31“). */
+export function letzterTagDesMonats(iso: string): string {
+  const d = parseIsoDate(iso);
+  return toIsoDateString(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)));
+}
+
+/** Ist `iso` der letzte Tag eines Monats? Austritte von Kindern enden immer zum Monatsende. */
+export function istMonatsende(iso: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso) && letzterTagDesMonats(iso) === iso;
+}
+
 /** Nächster 1. September auf oder nach dem übergebenen Datum. */
 function naechsterSeptember(date: Date): Date {
   const jahr = date.getUTCFullYear();
@@ -120,8 +131,8 @@ function naechsterSeptember(date: Date): Date {
 
 /**
  * Vorschlag für ein Austrittsdatum, wenn ein Kind aktiv wird und noch keins gesetzt ist: Krippenkinder
- * verlassen die Krippe mit 3 Jahren, Kindergarten-Kinder werden mit 6 Jahren eingeschult — jeweils auf
- * den nächsten 1. September gerundet (Kitajahr-Wechsel). Liegt das rechnerische Datum bereits in der
+ * verlassen die Krippe mit 3 Jahren, Kindergarten-Kinder werden mit 6 Jahren eingeschult — jeweils zum Ende des
+ * Kitajahres (31. August vor dem nächsten 1. September; Austritte enden immer zum Monatsende). Liegt das rechnerische Datum bereits in der
  * Vergangenheit (z.B. weil das Kind altersmäßig die Übergangsstufe schon überschritten hat), wird
  * schrittweise auf den nächsten künftigen Übergangszyklus (+1 Kitajahr) weitergerückt. Gleiche
  * Heuristik wie der einmalige Backfill bestehender Demo-Kinder (Milestone 10/30).
@@ -133,14 +144,15 @@ export function vorgeschlagenerAustritt(
 ): string {
   let jahre = istKrippe ? 3 : 6;
   let uebergang: Date;
-  let vorschlag: Date;
+  let ende: Date;
   do {
     uebergang = parseIsoDate(geburtsdatum);
     uebergang.setUTCFullYear(uebergang.getUTCFullYear() + jahre);
-    vorschlag = naechsterSeptember(uebergang);
+    const naechsterStart = naechsterSeptember(uebergang);
+    ende = new Date(naechsterStart.getTime() - 24 * 60 * 60 * 1000);
     jahre += 1;
-  } while (vorschlag <= today);
-  return toIsoDateString(vorschlag);
+  } while (ende <= today);
+  return toIsoDateString(ende);
 }
 
 export function addMonthsUtc(date: Date, months: number): Date {

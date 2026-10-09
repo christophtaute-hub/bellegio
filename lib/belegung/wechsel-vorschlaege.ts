@@ -29,6 +29,11 @@ export type WechselOhnePlatz = {
 
 const KINDERGARTEN_ARTEN = ["kindergarten", "altersgemischt"];
 
+/** Der Tag nach `iso` — Austritte enden zum Monatsende, das Kind wechselt zum Ersten des Folgemonats. */
+function tagNach(iso: string): string {
+  return toIsoDateString(new Date(parseIsoDate(iso).getTime() + 24 * 60 * 60 * 1000));
+}
+
 function monatsErster(iso: string): string {
   return `${iso.slice(0, 7)}-01`;
 }
@@ -83,7 +88,8 @@ export function berechneWechselVorschlaege(eingabe: {
 
   for (const kind of kandidaten) {
     const frueh = fruehesterWechselTermin(kind.geburtsdatum);
-    const austrittMonat = kind.austritt ? monatsErster(kind.austritt) : null;
+    // Erster Monat ohne das Kind in der Krippe: der Monat nach dem Austrittstag (Austritt 31.08. → September)
+    const austrittMonat = kind.austritt ? monatsErster(tagNach(kind.austritt)) : null;
     const fenster = monate.filter((m) => m >= frueh && (austrittMonat === null || m <= austrittMonat));
 
     let gefunden: WechselVorschlag | null = null;

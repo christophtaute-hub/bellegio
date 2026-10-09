@@ -17,12 +17,12 @@ export const GESETZ_STATUS: Record<Ampel, string> = {
   rot: "Nein, das Personal reicht nicht",
 };
 
-export type PlusMinus = { wort: "Im Plus" | "Im Minus" | "Ausgeglichen"; ton: "plus" | "minus" | "null" };
+export type PlusMinus = { ton: "plus" | "minus" | "null" };
 
 /** Deckt die Förderung (plus Elternbeiträge) das Personal? Unter einem Euro Unterschied gilt als ausgeglichen. */
 export function plusMinusStatus(ergebnis: number): PlusMinus {
-  if (Math.abs(ergebnis) < 1) return { wort: "Ausgeglichen", ton: "null" };
-  return ergebnis > 0 ? { wort: "Im Plus", ton: "plus" } : { wort: "Im Minus", ton: "minus" };
+  if (Math.abs(ergebnis) < 1) return { ton: "null" };
+  return { ton: ergebnis > 0 ? "plus" : "minus" };
 }
 
 /** Allgemeine Ampel-Wörter (wenn es nicht speziell um Personal geht). */

@@ -92,8 +92,7 @@ function GeldKarteAnsicht({ geld }: { geld: GeldKarte }) {
     >
       <div className="flex flex-col gap-0.5">
         <span className="text-sm text-muted-foreground">Deckt die Förderung das Personal?</span>
-        <span className={cn("text-2xl font-semibold leading-tight", klasse)}>{geld.wort}</span>
-        <span className={cn("text-xl font-semibold tabular-nums", klasse)}>
+        <span className={cn("text-3xl font-semibold tabular-nums leading-tight", klasse)}>
           {vorzeichen}
           {euroGanz(geld.ergebnis)} <span className="text-sm font-normal text-muted-foreground">im Monat</span>
         </span>

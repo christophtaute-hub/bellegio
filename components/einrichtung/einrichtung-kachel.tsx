@@ -52,18 +52,15 @@ async function KachelInhalt({ einrichtungId, stichtag }: { einrichtungId: string
         <div className="flex items-center justify-between gap-2 border-t pt-3 text-sm">
           <div className="flex min-w-0 flex-col">
             <span className="text-muted-foreground">Förderung minus Personal</span>
-            <span className="truncate font-medium tabular-nums">
+            <span className={`truncate font-medium tabular-nums ${geld.ton === "plus" ? "text-emerald-700 dark:text-emerald-400" : geld.ton === "minus" ? "text-destructive" : ""}`}>
               {geld.betrag > 0 ? "+" : ""}
               {geld.betrag.toLocaleString("de-DE", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })} im Monat
             </span>
           </div>
           <span
-            className={`rounded-full px-3 py-1 text-sm font-medium ${
-              geld.ton === "plus" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400" : geld.ton === "minus" ? "bg-destructive/10 text-destructive" : "bg-secondary text-foreground"
-            }`}
-          >
-            {geld.wort}
-          </span>
+            className={`size-3 shrink-0 rounded-full ${geld.ton === "plus" ? "bg-emerald-500" : geld.ton === "minus" ? "bg-destructive" : "bg-muted-foreground/40"}`}
+            aria-hidden
+          />
         </div>
       ) : null}
     </div>

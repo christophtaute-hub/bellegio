@@ -15,7 +15,7 @@ import { GESCHLECHT_LABEL } from "@/lib/constants";
 import { GruppenPassungHinweis } from "@/components/kinder/gruppen-passung-hinweis";
 import { AuswaertigenHinweis } from "@/components/kinder/auswaertigen-hinweis";
 import type { GruppeFuerPassung } from "@/lib/kinder/gruppen-passung";
-import { toIsoDateString, vorgeschlagenerAustritt } from "@/lib/kita-datum";
+import { istMonatsende, letzterTagDesMonats, toIsoDateString, vorgeschlagenerAustritt } from "@/lib/kita-datum";
 
 const SELECT_CLASS =
   "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm dark:bg-input/30";
@@ -61,6 +61,10 @@ const kindFormSchema = z
   .refine((data) => data.status !== "nachruecker" || data.eintritt !== "", {
     message: "Nachrücker brauchen ein geplantes Eintrittsdatum.",
     path: ["eintritt"],
+  })
+  .refine((data) => data.austritt === "" || istMonatsende(data.austritt), {
+    message: "Der Austritt muss der letzte Tag eines Monats sein (z. B. 31.08.).",
+    path: ["austritt"],
   })
   .refine((data) => data.status !== "aktiv" || data.austritt !== "", {
     message: "Aktive Kinder brauchen ein Austrittsdatum.",
@@ -281,10 +285,20 @@ export function KindForm({
           <Input id="eintritt" type="date" {...register("eintritt")} />
         </Field>
         <Field id="austritt" label="Austritt" error={errors.austritt?.message}>
-          <Input id="austritt" type="date" {...register("austritt")} />
+          <Input
+            id="austritt"
+            type="date"
+            {...register("austritt", {
+              // Ein Austritt endet immer zum Monatsende: jedes gewählte Datum springt auf den letzten Tag seines Monats.
+              onChange: (e) => {
+                const wert = e.target.value as string;
+                if (/^\d{4}-\d{2}-\d{2}$/.test(wert) && !istMonatsende(wert)) setValue("austritt", letzterTagDesMonats(wert), { shouldValidate: true });
+              },
+            })}
+          />
           {watchedStatus === "aktiv" || watchedStatus === "nachruecker" ? (
             <p className="text-xs text-muted-foreground">
-              Vorschlag automatisch berechnet (3./6. Geburtstag, 1. September) — bei Bedarf anpassen.
+              Vorschlag automatisch berechnet (3./6. Geburtstag, Ende des Kitajahres). Ein Austritt endet immer zum Monatsende.
             </p>
           ) : null}
         </Field>

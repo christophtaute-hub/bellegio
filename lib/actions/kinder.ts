@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { toIsoDateString } from "@/lib/kita-datum";
+import { istMonatsende, toIsoDateString } from "@/lib/kita-datum";
 import { sollHistorieGeschriebenWerden } from "@/lib/kinder/buchungszeit-historie";
 import { schreibeGruppenHistorie, FRUEHESTES_DATUM } from "@/lib/kinder/gruppen-historie";
 
@@ -39,6 +39,9 @@ const GESCHLECHT_WERTE = ["maennlich", "weiblich", "divers", "keine_angabe"];
 
 // Gleiche Regeln wie im Formular — gelten auch, wenn die Action ohne Browser aufgerufen wird.
 function validateKindInput(input: KindInput) {
+  if (input.austritt && !istMonatsende(input.austritt)) {
+    throw new Error("Der Austritt muss der letzte Tag eines Monats sein (z. B. 31.08.).");
+  }
   if (!Number.isInteger(input.geschwister_nummer) || input.geschwister_nummer < 1 || input.geschwister_nummer > 10) {
     throw new Error("Bitte einen gültigen Platz in der Geschwisterreihe wählen.");
   }
@@ -332,7 +335,7 @@ export async function planeGruppenwechsel(
   neuerAustritt: string | null
 ): Promise<WechselErgebnis> {
   if (!/^\d{4}-\d{2}-01$/.test(abDatum)) return { ok: false, error: "Der Wechsel gilt ab einem Monatsersten." };
-  if (neuerAustritt && (!/^\d{4}-\d{2}-\d{2}$/.test(neuerAustritt) || neuerAustritt <= abDatum)) {
+  if (neuerAustritt && (!istMonatsende(neuerAustritt) || neuerAustritt <= abDatum)) {
     return { ok: false, error: "Das neue Austrittsdatum muss nach dem Wechsel liegen." };
   }
   const supabase = await createClient();

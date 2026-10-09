@@ -1,5 +1,5 @@
 import type { Abgleich } from "@/lib/import/abgleich";
-import { parseIsoDate, vorgeschlagenerAustritt } from "@/lib/kita-datum";
+import { istMonatsende, letzterTagDesMonats, parseIsoDate, vorgeschlagenerAustritt } from "@/lib/kita-datum";
 import {
   alterInJahren,
   findeSpalten,
@@ -278,12 +278,18 @@ export function pruefeKinderImport(rows: RohZeile[], kontext: KindImportKontext)
     // vorgeschlagen: Krippe 3. Geburtstag, Kindergarten 6. Geburtstag, jeweils nächster 1. September.
     let austrittIso = austritt.iso;
     let austrittVorgeschlagen = false;
+    // Austritte enden immer zum Monatsende: ein anderes Datum aus der Datei wird auf den letzten Tag seines Monats gesetzt.
+    if (austrittIso && !istMonatsende(austrittIso)) {
+      const korrigiert = letzterTagDesMonats(austrittIso);
+      meldungen.push(`Austritt ${austrittIso.split("-").reverse().join(".")} auf das Monatsende ${korrigiert.split("-").reverse().join(".")} gesetzt.`);
+      austrittIso = korrigiert;
+    }
     if ((status === "aktiv" || status === "nachruecker") && !austrittIso && geburt.iso && fehler.length === 0) {
       const art = kontext.gruppen.find((g) => g.id === gruppeId)?.gruppenart;
       const istKrippe = art ? art === "krippe" : alterInJahren(geburt.iso, eintritt.iso ?? kontext.heute) < 3;
       austrittIso = vorgeschlagenerAustritt(geburt.iso, istKrippe, parseIsoDate(kontext.heute));
       austrittVorgeschlagen = true;
-      meldungen.push(`Kein Austritt angegeben — vorgeschlagen: ${austrittIso.split("-").reverse().join(".")} (${istKrippe ? "Krippe: 3. Geburtstag" : "Kindergarten: Einschulung"}).`);
+      meldungen.push(`Kein Austritt angegeben — vorgeschlagen: ${austrittIso.split("-").reverse().join(".")} (${istKrippe ? "Krippe: 3. Geburtstag" : "Kindergarten: Einschulung"}, Ende des Kitajahres).`);
     }
 
     // Buchungszeit

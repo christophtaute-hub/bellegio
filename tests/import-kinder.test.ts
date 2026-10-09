@@ -144,7 +144,7 @@ describe("Kinder-Import", () => {
 
   it("schlägt für aktive Kinder ohne Austritt einen vor (Datenbankregel), ohne einen angegebenen zu überschreiben", () => {
     const ohne = pruefeKinderImport([basis], kontext).zeilen[0].kind;
-    expect(ohne?.austritt).toMatch(/^\d{4}-09-01$/);
+    expect(ohne?.austritt).toMatch(/^\d{4}-08-31$/);
     expect(ohne?.austritt_vorgeschlagen).toBe(true);
     const mit = pruefeKinderImport([{ ...basis, Austritt: "31.08.2030" }], kontext).zeilen[0].kind;
     expect(mit?.austritt).toBe("2030-08-31");

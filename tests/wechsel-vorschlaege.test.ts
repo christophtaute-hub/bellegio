@@ -40,22 +40,22 @@ describe("berechneWechselVorschlaege", () => {
   it("schlägt den Wechsel zum frühesten Termin mit freiem Kindergartenplatz vor", () => {
     // Kind wird am 15.05.2027 drei; im Kindergarten ist ein Platz frei, weil ein Kind zum 01.07.2027 geht
     const kinder = [
-      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-09-01" }),
+      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-08-31" }),
       kind({ id: "k1", gruppeId: "kg", geburtsdatum: "2021-03-01", austritt: "2027-07-01" }),
-      kind({ id: "k2", gruppeId: "kg", geburtsdatum: "2021-02-01", austritt: "2027-09-01" }),
+      kind({ id: "k2", gruppeId: "kg", geburtsdatum: "2021-02-01", austritt: "2027-08-31" }),
     ];
     const { vorschlaege, ohnePlatz } = lauf(kinder);
     expect(ohnePlatz).toEqual([]);
     expect(vorschlaege).toHaveLength(1);
     expect(vorschlaege[0]).toMatchObject({ kindId: "a", nachGruppeId: "kg", abDatum: "2027-07-01" });
     expect(vorschlaege[0].ersetztKind).toMatchObject({ kindId: "k1" });
-    expect(vorschlaege[0].neuerAustritt).toBe("2030-09-01");
+    expect(vorschlaege[0].neuerAustritt).toBe("2030-08-31");
   });
 
   it("zwei Kinder, ein Platz: das ältere bekommt den Platz, das jüngere wartet auf den nächsten", () => {
     const kinder = [
-      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-09-01" }),
-      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-09-01" }),
+      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-08-31" }),
+      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-08-31" }),
       kind({ id: "k1", gruppeId: "kg", geburtsdatum: "2021-03-01", austritt: "2027-07-01" }),
       kind({ id: "k2", gruppeId: "kg", geburtsdatum: "2021-02-01" }),
     ];
@@ -66,8 +66,8 @@ describe("berechneWechselVorschlaege", () => {
 
   it("derselbe Abgang wird nicht für zwei Wechsel als „ersetzt“ genannt", () => {
     const kinder = [
-      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-09-01" }),
-      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-09-01" }),
+      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-08-31" }),
+      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-08-31" }),
       kind({ id: "k1", gruppeId: "kg", austritt: "2027-07-01" }),
       kind({ id: "k2", gruppeId: "kg", austritt: "2027-07-01" }),
     ];
@@ -78,19 +78,19 @@ describe("berechneWechselVorschlaege", () => {
 
   it("kein freier Platz bis zum Krippen-Austritt → Kind steht in 'ohne Platz'", () => {
     const kinder = [
-      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-09-01" }),
+      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-08-31" }),
       kind({ id: "k1", gruppeId: "kg" }),
       kind({ id: "k2", gruppeId: "kg" }),
     ];
     const { vorschlaege, ohnePlatz } = lauf(kinder);
     expect(vorschlaege).toEqual([]);
-    expect(ohnePlatz[0]).toMatchObject({ kindId: "a", fruehesterTermin: "2027-06-01", austritt: "2027-09-01" });
+    expect(ohnePlatz[0]).toMatchObject({ kindId: "a", fruehesterTermin: "2027-06-01", austritt: "2027-08-31" });
   });
 
   it("ein bereits geplanter Wechsel belegt den Zielplatz und bekommt keinen weiteren Vorschlag", () => {
     const kinder = [
-      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-09-01" }),
-      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-09-01" }),
+      kind({ id: "a", geburtsdatum: "2024-05-15", austritt: "2027-08-31" }),
+      kind({ id: "b", geburtsdatum: "2024-06-15", austritt: "2027-08-31" }),
       kind({ id: "k1", gruppeId: "kg", geburtsdatum: "2021-03-01", austritt: "2027-07-01" }),
       kind({ id: "k2", gruppeId: "kg", geburtsdatum: "2021-02-01" }),
     ];

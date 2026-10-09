@@ -29,10 +29,10 @@ describe("Gesetzlicher Maßstab", () => {
 });
 
 describe("Plus oder Minus", () => {
-  it("benennt Plus, Minus und ausgeglichen", () => {
-    expect(plusMinusStatus(4200)).toEqual({ wort: "Im Plus", ton: "plus" });
-    expect(plusMinusStatus(-9189)).toEqual({ wort: "Im Minus", ton: "minus" });
-    expect(plusMinusStatus(0.4)).toEqual({ wort: "Ausgeglichen", ton: "null" });
+  it("unterscheidet Plus, Minus und ausgeglichen", () => {
+    expect(plusMinusStatus(4200)).toEqual({ ton: "plus" });
+    expect(plusMinusStatus(-9189)).toEqual({ ton: "minus" });
+    expect(plusMinusStatus(0.4)).toEqual({ ton: "null" });
   });
   it("Gesetz-Antwort je Ampel", () => {
     expect(GESETZ_STATUS.gruen).toBe("Ja, gesetzlich in Ordnung");
