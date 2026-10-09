@@ -132,7 +132,7 @@ export default async function DokumentationPage() {
           des Personals. Baden-Württemberg gibt stattdessen einen festen
           VZÄ-Sollwert je Gruppentyp vor — die Kinderzahl selbst geht in die
           Formel gar nicht ein. NRW wiederum legt feste Personal-Wochenstunden
-          je Gruppenform und Buchungszeit-Band fest. Wer zwischen Bundesländern
+          je Gruppenform und Buchungszeit fest. Wer zwischen Bundesländern
           vergleicht, sollte diesen Unterschied im Blick behalten.
         </p>
       </section>
@@ -558,7 +558,7 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Ebenfalls keine Gewichtung pro Kind. Die Anlage zu § 33 Abs. 1
             KiBiz legt feste Personal-Wochenstunden je Gruppenform (I/II/III)
-            und Buchungszeit-Band fest; das Alter der Kinder wird
+            und Buchungszeit fest; das Alter der Kinder wird
             ausschließlich über die Gruppenform abgebildet (GF II = reine
             Krippe, GF I = altersgemischt, GF III = reine Ü3) — nicht über
             einen Faktor pro Kind.
@@ -599,7 +599,7 @@ export default async function DokumentationPage() {
           </div>
           <p className="text-sm text-muted-foreground">
             Zusätzlich Leitungsfreistellung je Gruppe: +5 / +7 / +9 Std. je
-            Buchungszeit-Band (§29 Abs. 2 KiBiz).
+            Buchungszeit (§29 Abs. 2 KiBiz).
           </p>
           <p className="text-sm text-muted-foreground">
             Bellegio erfasst zusätzlich pro Kind eine Buchungszeit (z.B. für
@@ -686,7 +686,7 @@ export default async function DokumentationPage() {
           </p>
           <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground">
             <li>
-              Die Buchungszeit-Bänder werden von drei (25/35/45 Std./Woche)
+              Die Buchungszeiten werden von drei (25/35/45 Std./Woche)
               auf fünf erweitert: 25, 30, 35, 40, 45 Std./Woche in
               Fünf-Stunden-Schritten.
             </li>
@@ -711,10 +711,10 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Noch nicht verfügbar:</strong>{" "}
             die konkrete neue Personalstunden-Tabelle für die beiden neuen
-            Bänder (30/40 Std.) je Gruppenform ist Stand September 2026 noch
+            Stufen (30/40 Std.) je Gruppenform ist Stand September 2026 noch
             nirgends veröffentlicht — auch der offizielle
             KiBiz-Personalstundenrechner von LVR/LWL zeigt weiterhin nur die
-            aktuelle 3-Bänder-Tabelle. Bellegio wird die Tabelle aktualisieren,
+            aktuelle Tabelle mit drei Stufen. Bellegio wird die Tabelle aktualisieren,
             sobald sie offiziell vorliegt.
           </p>
         </div>
@@ -774,25 +774,25 @@ export default async function DokumentationPage() {
         </h2>
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
-          <h3 className="font-heading text-lg text-primary">Bänder</h3>
+          <h3 className="font-heading text-lg text-primary">Buchungszeit-Kategorien</h3>
           <p className="text-sm text-muted-foreground">
             Controlling ordnet für jeden Monat des gewählten Kalenderjahres
             (Stichtag jeweils der Erste des Monats; der 1. März entspricht dem
             amtlichen Erhebungsstichtag der Kinder- und
             Jugendhilfestatistik) jedes aktive Kind nach vertraglich
-            vereinbarter wöchentlicher Betreuungszeit einem Band zu: 10 bis
+            vereinbarter wöchentlicher Betreuungszeit einer Kategorie zu: 10 bis
             unter 15 · 15 bis unter 20 · 20 bis unter 25 · 25 bis unter 30 ·
             30 bis unter 35 · 35 bis unter 40 · 40 bis unter 45 · 45 bis
             unter 50 · 50 bis unter 55 · 55 Std. und mehr, jeweils mit einer
             Zeile für Kinder mit I-Status. Die Übersicht ist in allen drei
-            Bundesländern identisch aufgebaut. Bänder ohne Kinder im
-            gewählten Jahr werden ausgeblendet; die I-Status-Zeile eines
-            Bandes erscheint, sobald dort im Jahr ein Kind mit I-Status
+            Bundesländern identisch aufgebaut. Kategorien ohne Kinder im
+            gewählten Jahr werden ausgeblendet; die I-Status-Zeile einer
+            Kategorie erscheint, sobald dort im Jahr ein Kind mit I-Status
             war.
           </p>
           <p className="text-sm text-muted-foreground">
             In Bayern wird die wöchentliche Stundenzahl aus der täglichen
-            Buchungszeit-Band-Spanne abgeleitet (Mittelwert × 5
+            Buchungszeit-Spanne abgeleitet (Mittelwert × 5
             Betreuungstage) — eine Näherung, da nur die tägliche Buchungszeit
             erfasst wird. In Baden-Württemberg und NRW wird die Buchungszeit
             ebenfalls pro Kind erfasst (bestätigt durch reale
@@ -801,10 +801,10 @@ export default async function DokumentationPage() {
             einem Kind eine eigene Buchungszeit hinterlegt, wird diese
             verwendet; nur wenn sie fehlt, wird ersatzweise die Öffnungszeit
             bzw. Buchungszeit-Stunden der zugeordneten Gruppe herangezogen.
-            Randfälle: Bayerns Band &bdquo;1-2h&ldquo; (5 bis 10 Std./Woche) wird dem
-            untersten Band &bdquo;10 bis unter 15&ldquo; zugeschlagen; NRWs Bänder 25/35/45
+            Randfälle: Bayerns Buchungszeit &bdquo;1-2h&ldquo; (5 bis 10 Std./Woche) wird der
+            untersten Kategorie &bdquo;10 bis unter 15&ldquo; zugeschlagen; NRWs Buchungszeiten 25/35/45
             gelten als exakte Wochenstunden (25 bis unter 30, 35 bis unter 40,
-            45 bis unter 50). Die Bänder 50 bis unter 55 und 55+ füllen sich
+            45 bis unter 50). Die Kategorien 50 bis unter 55 und 55+ füllen sich
             mit den aktuell angebotenen Buchungszeiten nicht.
           </p>
         </div>
@@ -818,11 +818,11 @@ export default async function DokumentationPage() {
             Meldung — Meldebögen unterscheiden sich je Bundesland und
             teils je Kommune (Hamburg nutzt z.B. bis 10 / 11–20 / 21–25 /
             26–30 / 31–40 / 41+ Std., andere Grenzen als hier). Die oben
-            genannten Bänder in 5-Std.-Schritten sind daher als Vorgabe
+            genannten Kategorien in 5-Std.-Schritten sind daher als Vorgabe
             übernommen und nicht durch eine bundesweit gültige Primärquelle
             bestätigt — vor der ersten echten Meldung unbedingt mit dem
             eigenen Jugendamt bzw. Statistischen Landesamt abgleichen, ob
-            diese Bänder dem tatsächlich verwendeten Meldebogen entsprechen.
+            diese Kategorien dem tatsächlich verwendeten Meldebogen entsprechen.
           </p>
         </div>
       </section>

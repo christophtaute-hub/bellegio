@@ -51,7 +51,7 @@ export function PersonalplanungNRW({
 
       <p className="text-xs text-muted-foreground">
         NRW kennt keinen Anstellungsschlüssel — feste Personalstunden je
-        Gruppenform (I/II/III) und Buchungszeit-Band (Anlage zu §33 KiBiz),
+        Gruppenform (I/II/III) und Buchungszeit (Anlage zu §33 KiBiz),
         inkl. Leitungsfreistellung. Details siehe Dokumentation.
       </p>
 

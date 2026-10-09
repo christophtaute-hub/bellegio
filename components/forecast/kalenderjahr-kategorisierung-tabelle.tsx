@@ -13,8 +13,8 @@ function Zahl({ wert }: { wert: number }) {
   return <>{wert === 0 ? <span className="text-muted-foreground/50">–</span> : wert}</>;
 }
 
-/** Bänder × Monate. Leere Bänder werden ausgeblendet, die I-Status-Zeile eines
- * Bandes erscheint nur, wenn dort im Jahr mindestens ein Kind mit I-Status
+/** Buchungszeiten × Monate. Leere Zeilen werden ausgeblendet, die I-Status-Zeile einer
+ * Buchungszeit erscheint nur, wenn dort im Jahr mindestens ein Kind mit I-Status
  * war — die Summenzeilen zeigen den I-Status dagegen immer. */
 export function KalenderjahrKategorisierungTabelle({
   monate,
@@ -86,13 +86,13 @@ export function KalenderjahrKategorisierungTabelle({
       {nichtZugeordnetGesamt > 0 ? (
         <p className="text-xs text-muted-foreground">
           Bis zu {nichtZugeordnetGesamt} Kinder je Monat konnten mangels
-          hinterlegter Buchungszeit/Gruppen-Konfiguration keinem Band zugeordnet
+          hinterlegter Buchungszeit/Gruppen-Konfiguration keiner Buchungszeit zugeordnet
           werden und sind oben nicht enthalten.
         </p>
       ) : null}
       {ausgeblendet > 0 ? (
         <p className="text-xs text-muted-foreground">
-          {ausgeblendet} Bänder ohne Kinder im gewählten Zeitraum sind ausgeblendet.
+          {ausgeblendet === 1 ? "1 Buchungszeit ohne Kinder ist" : `${ausgeblendet} Buchungszeiten ohne Kinder sind`} im gewählten Zeitraum ausgeblendet.
         </p>
       ) : null}
     </div>

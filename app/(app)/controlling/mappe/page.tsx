@@ -162,7 +162,7 @@ export default async function PruefungsmappePage({
       <section className="flex flex-col gap-3 print:break-after-page">
         <h2 className="font-heading text-xl text-primary">2. Kategorisierung nach Wochenstunden ({zeitraumWahl.label})</h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Kinder je Wochenstunden-Band, Stichtag jeweils der Erste des Monats; der 1. März ist der amtliche
+          Kinder je Buchungszeit (Wochenstunden), Stichtag jeweils der Erste des Monats; der 1. März ist der amtliche
           Erhebungsstichtag der Kinder- und Jugendhilfestatistik.
         </p>
         <KalenderjahrKategorisierungTabelle monate={kategorisierung} />

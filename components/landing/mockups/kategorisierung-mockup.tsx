@@ -9,7 +9,7 @@ export function KategorisierungMockup() {
     <BrowserFrame>
       <Image
         src={kategorisierung}
-        alt="Kategorisierung nach Wochenstunden in der Bellegio-Prüfungsmappe: Kinder je Wochenstunden-Band und Monat, inkl. I-Status"
+        alt="Kategorisierung nach Wochenstunden in der Bellegio-Prüfungsmappe: Kinder je Buchungszeit und Monat, inkl. I-Status"
         className="h-auto w-full"
       />
     </BrowserFrame>
