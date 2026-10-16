@@ -68,7 +68,55 @@ export function GruppenAmpel({
         </p>
       ) : null}
 
-      <div className="overflow-x-auto">
+      {/* Handy: je Gruppe eine Karte statt einer breiten Tabelle */}
+      <ul className="flex flex-col gap-3 md:hidden">
+        {gruppen.map((g) => {
+          const ueber = g.belegt > g.sollplaetze;
+          return (
+            <li key={g.gruppeId} className="flex flex-col gap-2 rounded-xl border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Link href={`/gruppen/${g.gruppeId}`} className="font-medium text-primary hover:underline">
+                    {g.name}
+                  </Link>
+                  <span className="block text-xs text-muted-foreground">{GRUPPENART_LABEL[g.gruppenart] ?? g.gruppenart}</span>
+                </div>
+                <span className={cn("text-right text-sm tabular-nums", ueber && "font-medium text-destructive")}>
+                  {g.belegt} / {g.sollplaetze}
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {ueber ? `${g.belegt - g.sollplaetze} zu viel` : g.sollplaetze - g.belegt > 0 ? `${g.sollplaetze - g.belegt} frei` : "voll"}
+                  </span>
+                </span>
+              </div>
+              {zuordnung.belastbar ? (
+                <div className="flex flex-col items-start gap-1">
+                  <AmpelBadge ampel={g.personal.ampel} />
+                  {g.kritisch ? (
+                    <span className={cn("text-xs font-medium", g.kritisch.ampel === "rot" ? "text-destructive" : "text-amber-700 dark:text-amber-400")}>
+                      {g.kritisch.monat <= stichtagMonat ? "Jetzt" : `Ab ${monatKurz(g.kritisch.monat)}`}
+                      {g.kritisch.ampel === "rot" ? " zu wenig Personal" : " knapp"}
+                    </span>
+                  ) : null}
+                  <span className="text-xs tabular-nums text-muted-foreground">{personalText(g, modell)}</span>
+                </div>
+              ) : null}
+              <p
+                className={cn(
+                  "text-xs font-medium",
+                  g.zusage.art === "ja" && "text-emerald-700 dark:text-emerald-400",
+                  g.zusage.art === "personal" && "text-destructive",
+                  g.zusage.art === "spaeter" && "text-amber-700 dark:text-amber-400",
+                  g.zusage.art === "nein" && "text-muted-foreground"
+                )}
+              >
+                Neues Kind aufnehmen? {g.zusage.text}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[34rem] text-sm">
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">

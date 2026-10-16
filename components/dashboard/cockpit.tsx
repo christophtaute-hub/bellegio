@@ -251,7 +251,7 @@ export function Cockpit({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Link href="/gruppen" className="flex items-center gap-5 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70">
+        <Link href="/gruppen" className="flex min-w-0 flex-col items-start gap-4 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70 sm:flex-row sm:items-center sm:gap-5">
           <Ring anteil={jetzt.plaetze > 0 ? jetzt.kinder / jetzt.plaetze : 0} farbe={belegungFarbe} beschreibung={`${jetzt.kinder} von ${jetzt.plaetze} Plätzen belegt`}>
             <span className="flex items-baseline text-4xl font-semibold tabular-nums leading-none">
               {kinderProzent}
@@ -268,7 +268,7 @@ export function Cockpit({
           </div>
         </Link>
 
-        <Link href="/team" className="flex items-center gap-5 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70">
+        <Link href="/team" className="flex min-w-0 flex-col items-start gap-4 rounded-2xl bg-secondary/40 p-5 transition-colors hover:bg-secondary/70 sm:flex-row sm:items-center sm:gap-5">
           <Ring anteil={jetzt.personalProzent / 100} farbe={personalFarbe} beschreibung={`Personal: ${jetzt.personalProzent} Prozent des nötigen`}>
             <span className="flex items-baseline text-4xl font-semibold tabular-nums leading-none">
               {jetzt.personalProzent}

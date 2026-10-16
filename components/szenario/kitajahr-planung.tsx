@@ -117,42 +117,34 @@ export function KitajahrPlanung({
       {/* 1. Annahmen */}
       <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5">
         <h3 className="font-heading text-lg text-primary">1. Deine Annahmen</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[30rem] text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2 pr-3 font-medium">Gruppe</th>
-                <th className="px-3 py-2 text-right font-medium">Vorjahr</th>
-                <th className="px-3 py-2 text-right font-medium">Geplante Kinder</th>
-                <th className="px-3 py-2 text-right font-medium">Plätze</th>
-              </tr>
-            </thead>
-            <tbody>
-              {eingabe.gruppen.map((g) => {
-                const geaendert = Number(kinder[g.id]) !== g.vorschlagKinder;
-                return (
-                  <tr key={g.id} className="border-b last:border-0">
-                    <td className="py-2.5 pr-3 font-medium">{g.name}</td>
-                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{g.vorjahrKinder}</td>
-                    <td className="px-3 py-2.5 text-right">
-                      <Input
-                        type="number"
-                        min={0}
-                        className="ml-auto h-8 w-20 text-right tabular-nums"
-                        value={kinder[g.id]}
-                        disabled={!darfBearbeiten}
-                        onChange={(ev) => setKinder((alt) => ({ ...alt, [g.id]: ev.target.value }))}
-                        aria-label={`Geplante Kinder in ${g.name}`}
-                      />
-                      <span className="mt-0.5 block text-[11px] text-muted-foreground">{geaendert ? `Vorschlag: ${g.vorschlagKinder}` : "Vorschlag"}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-right tabular-nums">{g.sollplaetze}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <p className="-mt-2 text-sm text-muted-foreground">Wie viele Kinder planst du je Gruppe? Der Vorschlag kommt aus Austritten, Schuleintritten und Nachrückern.</p>
+        <ul className="flex flex-col divide-y">
+          {eingabe.gruppen.map((g) => {
+            const geaendert = Number(kinder[g.id]) !== g.vorschlagKinder;
+            return (
+              <li key={g.id} className="flex items-center justify-between gap-4 py-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="font-medium">{g.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    Vorjahr {g.vorjahrKinder} · {g.sollplaetze} Plätze
+                  </span>
+                </div>
+                <div className="flex shrink-0 flex-col items-end">
+                  <Input
+                    type="number"
+                    min={0}
+                    className="h-9 w-20 text-right tabular-nums"
+                    value={kinder[g.id]}
+                    disabled={!darfBearbeiten}
+                    onChange={(ev) => setKinder((alt) => ({ ...alt, [g.id]: ev.target.value }))}
+                    aria-label={`Geplante Kinder in ${g.name}`}
+                  />
+                  <span className="mt-0.5 text-[11px] text-muted-foreground">{geaendert ? `Vorschlag: ${g.vorschlagKinder}` : "Vorschlag"}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="einstellen" className="text-sm text-muted-foreground">
@@ -216,13 +208,13 @@ export function KitajahrPlanung({
           ) : null}
 
           <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[30rem] text-sm">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="px-4 py-2 font-medium">Gruppe</th>
-                  <th className="px-3 py-2 text-right font-medium">Vorjahr</th>
+                  <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Vorjahr</th>
                   <th className="px-3 py-2 text-right font-medium">Geplant</th>
-                  <th className="px-3 py-2 text-right font-medium">Veränderung</th>
+                  <th className="hidden px-3 py-2 text-right font-medium sm:table-cell">Veränderung</th>
                   <th className="px-4 py-2 font-medium">Stand</th>
                 </tr>
               </thead>
@@ -230,11 +222,11 @@ export function KitajahrPlanung({
                 {e.zeilen.map((z) => (
                   <tr key={z.id} className="border-b last:border-0">
                     <td className="px-4 py-2 font-medium">{z.name}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{z.vorjahr}</td>
+                    <td className="hidden px-3 py-2 text-right tabular-nums text-muted-foreground sm:table-cell">{z.vorjahr}</td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {z.plan} / {z.plaetze}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{z.delta > 0 ? `+${z.delta}` : z.delta}</td>
+                    <td className="hidden px-3 py-2 text-right tabular-nums text-muted-foreground sm:table-cell">{z.delta > 0 ? `+${z.delta}` : z.delta}</td>
                     <td className={cn("px-4 py-2 text-xs font-medium", STATUS_KLASSE[z.status])}>{STATUS_WORT[z.status]}</td>
                   </tr>
                 ))}

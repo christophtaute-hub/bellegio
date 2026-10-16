@@ -152,7 +152,7 @@ async function main() {
   await waehle(BAYERN);
   await sichern("dashboard.png", async () => {
     await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 2 });
-    await oeffne("/dashboard", "Verlauf & Details");
+    await oeffne("/dashboard", "Detailansicht");
     await page.screenshot({ path: ziel("dashboard.png") });
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
@@ -173,7 +173,7 @@ async function main() {
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
   await sichern("suche.png", async () => {
-    await oeffne("/dashboard", "Verlauf & Details");
+    await oeffne("/dashboard", "Detailansicht");
     await page.keyboard.down("Meta");
     await page.keyboard.press("k");
     await page.keyboard.up("Meta");

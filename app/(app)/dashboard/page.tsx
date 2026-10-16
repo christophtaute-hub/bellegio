@@ -18,7 +18,7 @@ import Link from "next/link";
 
 /** Das Dashboard beantwortet drei Fragen: Wo ist ein Problem? Warum? Was muss ich tun? Zuerst die zwei Ampeln (Belegung,
  * Personal), dann die Handlungsliste und die Gruppen. Verlauf, Diagramme und der frei wählbare Stichtag stehen erst nach
- * einem Klick auf „Verlauf & Details“. Alles Weitere (Zahlenreihen, Zusammensetzung, Finanzverlauf) steht im Controlling. */
+ * einem Klick auf „Detailansicht“. Alles Weitere (Zahlenreihen, Zusammensetzung, Finanzverlauf) steht im Controlling. */
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ stichtag?: string; monate?: string; ansicht?: string }> }) {
   const { stichtag: stichtagParam, monate: monateParam, ansicht } = await searchParams;
   const verlauf = ansicht === "verlauf";
@@ -53,9 +53,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">{vorname ? `Aloha, ${vorname}` : "Dashboard"}</h1>
-        {stichtag !== heute ? <p className="text-sm text-muted-foreground">Vorschau für den {formatDate(stichtag)}</p> : null}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-3xl tracking-tight text-primary">{vorname ? `Aloha, ${vorname}` : "Dashboard"}</h1>
+          {stichtag !== heute ? <p className="text-sm text-muted-foreground">Vorschau für den {formatDate(stichtag)}</p> : null}
+        </div>
+        {daten && !verlauf ? (
+          <Button nativeButton={false} render={<Link href={verlaufLink} />} variant="outline">
+            Detailansicht
+          </Button>
+        ) : null}
       </div>
 
       {einrichtungId ? (
@@ -101,11 +108,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               zuordnung={daten.zuordnung}
               stichtagMonat={`${stichtag.slice(0, 7)}-01`}
             />
-            <div>
-              <Button nativeButton={false} render={<Link href={verlaufLink} />} variant="outline">
-                Verlauf &amp; Details
-              </Button>
-            </div>
           </>
         )
       ) : null}
