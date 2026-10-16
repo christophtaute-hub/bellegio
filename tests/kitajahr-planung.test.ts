@@ -40,3 +40,28 @@ describe("berechnePlanung", () => {
     expect(berechnePlanung(bayern, { kinder: { k: 14 } }).zeilen[0].status).toBe("zuviel");
   });
 });
+
+describe("berechnePlanung: Finanzen und Ampel", () => {
+  const mitFinanz: PlanungEingabe = {
+    ...bayern,
+    personalIst: 150,
+    finanz: { einnahmenJeKind: 800, personalkostenStart: 20000, kostenJeWochenstunde: 100, sonstigeKostenVorbelegt: 1500 },
+  };
+  it("rechnet Einnahmen, Personalkosten, sonstige Kosten und Ergebnis je Monat", () => {
+    const e = berechnePlanung(mitFinanz, { kinder: { k: 10, g: 20 }, einstellenGeplant: 10 });
+    expect(e.finanzen).toEqual({ einnahmen: 800 * 30, personalkosten: 20000 + 10 * 100, sonstigeKosten: 1500, ergebnis: 24000 - 21000 - 1500 });
+  });
+  it("die eingegebenen sonstigen Kosten ersetzen die Vorbelegung", () => {
+    const e = berechnePlanung(mitFinanz, { kinder: { k: 10, g: 20 }, sonstigeKostenMonat: 4000 });
+    expect(e.finanzen?.sonstigeKosten).toBe(4000);
+  });
+  it("ohne Finanz-Angaben gibt es kein Finanz-Ergebnis", () => {
+    expect(berechnePlanung(bayern).finanzen).toBeNull();
+  });
+  it("Ampel: Personal fehlt → rot, gedeckt → gelb/grün, überbelegt → rot", () => {
+    expect(berechnePlanung(bayern).ampel).toBe("rot");
+    expect(berechnePlanung({ ...bayern, personalIst: 180 }, { kinder: { k: 12, g: 25 } }).ampel).toBe("gruen");
+    expect(berechnePlanung({ ...bayern, personalIst: 100 }, { kinder: { k: 12, g: 25 }, einstellenGeplant: 100 }).ampel).toBe("gelb");
+    expect(berechnePlanung({ ...bayern, personalIst: 500 }, { kinder: { k: 14, g: 25 } }).ampel).toBe("rot");
+  });
+});

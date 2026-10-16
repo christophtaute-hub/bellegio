@@ -19,6 +19,8 @@ import {
   type StaffingRules,
 } from "@/lib/team/anstellungsschluessel";
 import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
+import { BerechnenLeiste } from "@/components/szenario/berechnen-leiste";
+import { useBerechnen } from "@/components/szenario/use-berechnen";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
 type BandOption = { id: string; label: string; factor: number };
@@ -71,7 +73,10 @@ export function SzenarioRechner({
     initialSollplaetzeSumme
   );
 
-  const { kpis, belegung, personalplanung } = useMemo(() => {
+  const { berechnet, veraltet, berechne } = useBerechnen({ matrix, personal, sollplaetzeSumme });
+  const rechnung = useMemo(() => {
+    if (!berechnet) return null;
+    const { matrix, personal, sollplaetzeSumme } = berechnet;
     const rows: PresenceRow[] = [];
     for (const category of categories) {
       for (const band of bands) {
@@ -119,15 +124,15 @@ export function SzenarioRechner({
     );
     return { kpis, belegung, personalplanung };
   }, [
-    matrix,
-    personal,
-    sollplaetzeSumme,
+    berechnet,
     bands,
     categories,
     staffingRules,
     empfohlenerSchluesselWert,
     vollzeitWochenstunden,
   ]);
+
+  const { kpis, belegung, personalplanung } = rechnung ?? { kpis: null, belegung: null, personalplanung: null };
 
   return (
     <div className="flex flex-col gap-8">
@@ -284,7 +289,10 @@ export function SzenarioRechner({
         </Button>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <BerechnenLeiste berechnet={berechnet !== null} veraltet={veraltet} onBerechnen={berechne} />
+
+      {kpis && belegung && personalplanung ? (
+      <section className={`flex flex-col gap-4 rounded-2xl border-2 border-primary/30 p-5 transition-opacity ${veraltet ? "opacity-50" : ""}`} aria-live="polite">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg text-primary">Ergebnis</h2>
           <AmpelBadge ampel={personalplanung.ampel} />
@@ -333,12 +341,13 @@ export function SzenarioRechner({
           </Badge>
         </div>
       </section>
+      ) : null}
 
-      {finanzenHeute ? (
+      {finanzenHeute && berechnet ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
           gehaelterAusgeblendet={!gehaltFelder}
-          personal={personal}
+          personal={berechnet.personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
           lohnnebenkostenProzent={lohnnebenkostenProzent}
           jahressonderzahlungProzent={jahressonderzahlungProzent}

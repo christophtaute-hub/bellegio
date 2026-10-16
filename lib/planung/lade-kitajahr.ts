@@ -64,7 +64,7 @@ export async function ladeKitajahrPlanung(
       .eq("einrichtung_id", einrichtungId)
       .is("archived_at", null)
       .order("sort_order"),
-    buildForecastMonths(supabase, einrichtungId, kitajahrStart, 1),
+    buildForecastMonths(supabase, einrichtungId, kitajahrStart, 1, zeigeFinanzen),
     getKinderPresenceAtDate(supabase, einrichtungId, vorjahrStichtag),
     getKinderPresenceAtDate(supabase, einrichtungId, kitajahrStart),
     supabase.from("kitajahr_planung").select("daten, updated_at").eq("einrichtung_id", einrichtungId).eq("kitajahr_start", kitajahrStart).maybeSingle(),
@@ -110,7 +110,18 @@ export async function ladeKitajahrPlanung(
     }
   }
 
-  const gespeicherteDaten = gespeichert?.daten as { kinder?: Record<string, number>; einstellenGeplant?: number } | null | undefined;
+  const f = monat.finanzen;
+  const kinderStart = monat.kpis.kinderGesamt;
+  const finanz =
+    zeigeFinanzen && f
+      ? {
+          einnahmenJeKind: kinderStart > 0 ? (f.foerdererloeseMonat + (f.elternbeitraegeMonat ?? 0)) / kinderStart : 0,
+          personalkostenStart: f.personalkostenMonat,
+          kostenJeWochenstunde,
+          sonstigeKostenVorbelegt: f.sonstigeKostenMonat ?? 0,
+        }
+      : undefined;
+  const gespeicherteDaten = gespeichert?.daten as { kinder?: Record<string, number>; einstellenGeplant?: number; sonstigeKostenMonat?: number } | null | undefined;
   return {
     kitajahrStart,
     eingabe: {
@@ -131,8 +142,11 @@ export async function ladeKitajahrPlanung(
       personalIst: ausblick.istStunden,
       sollVorschlag: ausblick.sollStunden,
       stundenJeGewichtetemKind,
+      finanz,
     },
-    gespeichert: gespeicherteDaten ? { kinder: gespeicherteDaten.kinder ?? {}, einstellenGeplant: gespeicherteDaten.einstellenGeplant ?? 0 } : null,
+    gespeichert: gespeicherteDaten
+      ? { kinder: gespeicherteDaten.kinder ?? {}, einstellenGeplant: gespeicherteDaten.einstellenGeplant ?? 0, sonstigeKostenMonat: gespeicherteDaten.sonstigeKostenMonat }
+      : null,
     gespeichertAm: gespeichert?.updated_at ?? null,
     kostenJeWochenstunde,
   };

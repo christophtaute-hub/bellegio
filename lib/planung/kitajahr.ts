@@ -13,6 +13,18 @@ export type PlanungGruppe = {
   durchschnittsfaktor: number;
 };
 
+/** Die Geld-Seite der Planung (nur mit Recht „Finanzübersicht“): Werte aus dem Vorschlag zum Kitajahr-Beginn. */
+export type PlanungFinanzEingabe = {
+  /** Fördererlöse + Elternbeiträge je Kind und Monat, gerechnet aus dem Vorschlag (Ø über alle Gruppen). */
+  einnahmenJeKind: number;
+  /** Personalkosten zum Kitajahr-Beginn nach bekannten Austritten, je Monat. */
+  personalkostenStart: number;
+  /** Kosten einer zusätzlichen Wochenstunde je Monat (inkl. Nebenkosten); null, wenn keine Vergütungen erfasst sind. */
+  kostenJeWochenstunde: number | null;
+  /** Sonstige Kosten je Monat, wie in den Einstellungen eingetragen (Vorbelegung). */
+  sonstigeKostenVorbelegt: number;
+};
+
 export type PlanungEingabe = {
   modell: "bayern" | "bw" | "nrw";
   vollzeitWochenstunden: number;
@@ -23,12 +35,15 @@ export type PlanungEingabe = {
   sollVorschlag: number;
   /** Bayern: nötige Wochenstunden je gewichtetem Kind (aus dem Rechenweg des Vorschlags); sonst null. */
   stundenJeGewichtetemKind: number | null;
+  finanz?: PlanungFinanzEingabe;
 };
 
 /** Was die Leitung am Vorschlag ändert (wird gespeichert). */
 export type PlanungDaten = {
   kinder: Record<string, number>;
   einstellenGeplant: number;
+  /** Sonstige Kosten je Monat für diese Planung (Miete, Verpflegung …). */
+  sonstigeKostenMonat?: number;
 };
 
 export type PlanungZeile = {
@@ -54,6 +69,11 @@ export type PlanungErgebnis = {
   satz: { ton: "ok" | "warnung" | "info"; text: string };
   /** BW/NRW: der Bedarf hängt an Gruppenform/Öffnungszeit, nicht an der Kinderzahl. */
   bedarfOhneKinderbezug: boolean;
+  gruppenAnzahl: number;
+  /** Rot = Personal fehlt noch oder Gruppe überbelegt, Gelb = knapp bzw. Plätze bleiben frei, Grün = passt. */
+  ampel: "gruen" | "gelb" | "rot";
+  /** Nur mit Finanz-Angaben: Einnahmen, Kosten und Ergebnis je Monat. */
+  finanzen: { einnahmen: number; personalkosten: number; sonstigeKosten: number; ergebnis: number } | null;
 };
 
 const stunden = (wert: number) => `${Math.max(1, Math.round(wert)).toLocaleString("de-DE")} Wochenstunden`;
@@ -97,5 +117,16 @@ export function berechnePlanung(eingabe: PlanungEingabe, daten: Partial<PlanungD
     satz = { ton: "ok", text: "Zum Start passt das Personal zur geplanten Kinderzahl." };
   }
 
-  return { zeilen, summe, sollPlan, personalIst: eingabe.personalIst, luecke, ueberhang, einstellenStunden, satz, bedarfOhneKinderbezug };
+  const ampel: PlanungErgebnis["ampel"] =
+    einstellenStunden > 0 || zeilen.some((z) => z.status === "zuviel") ? "rot" : luecke >= 1 || zeilen.some((z) => z.status === "frei") ? "gelb" : "gruen";
+
+  let finanzen: PlanungErgebnis["finanzen"] = null;
+  if (eingabe.finanz) {
+    const einnahmen = eingabe.finanz.einnahmenJeKind * summe.plan;
+    const personalkosten = eingabe.finanz.personalkostenStart + geplant * (eingabe.finanz.kostenJeWochenstunde ?? 0);
+    const sonstigeKosten = Math.max(0, daten.sonstigeKostenMonat ?? eingabe.finanz.sonstigeKostenVorbelegt);
+    finanzen = { einnahmen, personalkosten, sonstigeKosten, ergebnis: einnahmen - personalkosten - sonstigeKosten };
+  }
+
+  return { zeilen, summe, sollPlan, personalIst: eingabe.personalIst, luecke, ueberhang, einstellenStunden, satz, bedarfOhneKinderbezug, gruppenAnzahl: eingabe.gruppen.length, ampel, finanzen };
 }

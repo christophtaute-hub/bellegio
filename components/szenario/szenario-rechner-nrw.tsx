@@ -12,6 +12,8 @@ import {
   type NRWPersonalstundenRow,
 } from "@/lib/team/personalschluessel-nrw";
 import { FinanzenSektion } from "@/components/szenario/finanzen-sektion";
+import { BerechnenLeiste } from "@/components/szenario/berechnen-leiste";
+import { useBerechnen } from "@/components/szenario/use-berechnen";
 import type { Ergebnis } from "@/lib/finanzen/ergebnis";
 
 
@@ -75,7 +77,10 @@ export function SzenarioRechnerNRW({
     initialPersonal.map((p) => ({ ...p, id: nextId++ }))
   );
 
+  const { berechnet, veraltet, berechne } = useBerechnen({ gruppen, personal });
   const ergebnis = useMemo(() => {
+    if (!berechnet) return null;
+    const { gruppen, personal } = berechnet;
     const nrwGruppen: NRWGruppe[] = gruppen.map((g) => ({
       id: String(g.id),
       name: g.name,
@@ -89,7 +94,7 @@ export function SzenarioRechnerNRW({
       .filter((p) => p.roleCategory === "ek")
       .reduce((sum, p) => sum + p.wochenstunden, 0);
     return buildNRWPersonalplanung(nrwGruppen, tabelle, istFk, istEk);
-  }, [gruppen, personal, tabelle]);
+  }, [berechnet, tabelle]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -108,7 +113,7 @@ export function SzenarioRechnerNRW({
             </thead>
             <tbody>
               {gruppen.map((g) => {
-                const ergebnisZeile = ergebnis.gruppen.find(
+                const ergebnisZeile = ergebnis?.gruppen.find(
                   (e) => e.gruppeId === String(g.id)
                 );
                 return (
@@ -291,7 +296,10 @@ export function SzenarioRechnerNRW({
         </Button>
       </section>
 
-      <section className="flex flex-col gap-4">
+      <BerechnenLeiste berechnet={berechnet !== null} veraltet={veraltet} onBerechnen={berechne} />
+
+      {ergebnis ? (
+      <section className={`flex flex-col gap-4 rounded-2xl border-2 border-primary/30 p-5 transition-opacity ${veraltet ? "opacity-50" : ""}`} aria-live="polite">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg text-primary">Ergebnis</h2>
           <AmpelBadge ampel={ergebnis.ampel} />
@@ -320,12 +328,13 @@ export function SzenarioRechnerNRW({
           inkl. Leitungsfreistellung. Details siehe Dokumentation.
         </p>
       </section>
+      ) : null}
 
-      {finanzenHeute ? (
+      {finanzenHeute && berechnet ? (
         <FinanzenSektion
           finanzenHeute={finanzenHeute}
           gehaelterAusgeblendet={!gehaltFelder}
-          personal={personal}
+          personal={berechnet.personal}
           vollzeitWochenstunden={vollzeitWochenstunden}
           lohnnebenkostenProzent={lohnnebenkostenProzent}
           jahressonderzahlungProzent={jahressonderzahlungProzent}

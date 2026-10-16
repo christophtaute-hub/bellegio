@@ -5,6 +5,8 @@ import { useMemo, useState, useTransition } from "react";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmpelBadge } from "@/components/team/ampel-badge";
+import { BerechnenLeiste } from "@/components/szenario/berechnen-leiste";
 import { berechnePlanung, type PlanungDaten, type PlanungEingabe } from "@/lib/planung/kitajahr";
 import { speichereKitajahrPlanung, verwerfeKitajahrPlanung } from "@/lib/actions/kitajahr-planung";
 import { meldeErfolg, meldeFehler } from "@/lib/toast";
@@ -49,14 +51,22 @@ export function KitajahrPlanung({
     Object.fromEntries(eingabe.gruppen.map((g) => [g.id, String(gespeichert?.kinder?.[g.id] ?? g.vorschlagKinder)]))
   );
   const [einstellen, setEinstellen] = useState(String(gespeichert?.einstellenGeplant ?? 0));
+  const [sonstige, setSonstige] = useState(String(gespeichert?.sonstigeKostenMonat ?? eingabe.finanz?.sonstigeKostenVorbelegt ?? 0));
   const [istPending, starte] = useTransition();
 
+  // Annahmen (live editierbar) und berechneter Stand (ändert sich nur per Klick auf „Jetzt berechnen“)
   const daten: PlanungDaten = useMemo(
-    () => ({ kinder: Object.fromEntries(Object.entries(kinder).map(([id, v]) => [id, Number(v) || 0])), einstellenGeplant: Number(einstellen) || 0 }),
-    [kinder, einstellen]
+    () => ({
+      kinder: Object.fromEntries(Object.entries(kinder).map(([id, v]) => [id, Number(v) || 0])),
+      einstellenGeplant: Number(einstellen) || 0,
+      ...(eingabe.finanz ? { sonstigeKostenMonat: Number(sonstige) || 0 } : {}),
+    }),
+    [kinder, einstellen, sonstige, eingabe.finanz]
   );
-  const e = useMemo(() => berechnePlanung(eingabe, daten), [eingabe, daten]);
-  const SatzIcon = e.satz.ton === "ok" ? CheckCircle2 : e.satz.ton === "info" ? Info : AlertTriangle;
+  const [berechnet, setBerechnet] = useState<PlanungDaten | null>(gespeichert ? daten : null);
+  const veraltet = berechnet !== null && JSON.stringify(berechnet) !== JSON.stringify(daten);
+  const e = useMemo(() => (berechnet ? berechnePlanung(eingabe, berechnet) : null), [eingabe, berechnet]);
+  const SatzIcon = e ? (e.satz.ton === "ok" ? CheckCircle2 : e.satz.ton === "info" ? Info : AlertTriangle) : Info;
   const v = eingabe.vollzeitWochenstunden;
 
   function speichern() {
@@ -72,6 +82,8 @@ export function KitajahrPlanung({
       if (!r.ok) return meldeFehler(r.error);
       setKinder(Object.fromEntries(eingabe.gruppen.map((g) => [g.id, String(g.vorschlagKinder)])));
       setEinstellen("0");
+      setSonstige(String(eingabe.finanz?.sonstigeKostenVorbelegt ?? 0));
+      setBerechnet(null);
       meldeErfolg("Vorschlag wiederhergestellt.");
     });
   }
@@ -102,115 +114,166 @@ export function KitajahrPlanung({
         </nav>
       </div>
 
-      <p
-        className={cn(
-          "flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[15px] font-medium",
-          e.satz.ton === "ok" && "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
-          e.satz.ton === "info" && "bg-sky-500/10 text-sky-900 dark:text-sky-200",
-          e.satz.ton === "warnung" && "bg-destructive/10 text-destructive"
-        )}
-      >
-        <SatzIcon className="mt-0.5 size-5 shrink-0" aria-hidden />
-        {e.satz.text}
-      </p>
-
-      <div className="overflow-x-auto rounded-2xl border bg-card">
-        <table className="w-full min-w-[34rem] text-sm">
-          <thead>
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th className="px-4 py-2.5 font-medium">Gruppe</th>
-              <th className="px-3 py-2.5 text-right font-medium">Vorjahr</th>
-              <th className="px-3 py-2.5 text-right font-medium">Geplant</th>
-              <th className="px-3 py-2.5 text-right font-medium">Plätze</th>
-              <th className="px-3 py-2.5 text-right font-medium">Veränderung</th>
-              <th className="px-4 py-2.5 font-medium">Stand</th>
-            </tr>
-          </thead>
-          <tbody>
-            {e.zeilen.map((z, i) => {
-              const g = eingabe.gruppen[i];
-              const geaendert = z.plan !== g.vorschlagKinder;
-              return (
-                <tr key={z.id} className="border-b last:border-0">
-                  <td className="px-4 py-2.5 font-medium">{z.name}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{z.vorjahr}</td>
-                  <td className="px-3 py-2.5 text-right">
-                    <Input
-                      type="number"
-                      min={0}
-                      className="ml-auto h-8 w-20 text-right tabular-nums"
-                      value={kinder[z.id]}
-                      disabled={!darfBearbeiten}
-                      onChange={(ev) => setKinder((alt) => ({ ...alt, [z.id]: ev.target.value }))}
-                      aria-label={`Geplante Kinder in ${z.name}`}
-                    />
-                    <span className="mt-0.5 block text-[11px] text-muted-foreground">{geaendert ? `Vorschlag: ${g.vorschlagKinder}` : "Vorschlag"}</span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{z.plaetze}</td>
-                  <td className={cn("px-3 py-2.5 text-right tabular-nums", z.delta < 0 ? "text-muted-foreground" : "")}>{z.delta > 0 ? `+${z.delta}` : z.delta}</td>
-                  <td className={cn("px-4 py-2.5 text-xs font-medium", STATUS_KLASSE[z.status])}>{STATUS_WORT[z.status]}</td>
-                </tr>
-              );
-            })}
-            <tr className="bg-secondary/40 font-semibold">
-              <td className="px-4 py-2.5">Gesamt</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{e.summe.vorjahr}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{e.summe.plan}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{e.summe.plaetze}</td>
-              <td className="px-3 py-2.5 text-right tabular-nums">{e.summe.plan - e.summe.vorjahr > 0 ? "+" : ""}{e.summe.plan - e.summe.vorjahr}</td>
-              <td />
-            </tr>
-          </tbody>
-        </table>
+      {/* 1. Annahmen */}
+      <div className="flex flex-col gap-4 rounded-2xl border bg-card p-5">
+        <h3 className="font-heading text-lg text-primary">1. Deine Annahmen</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[30rem] text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-muted-foreground">
+                <th className="py-2 pr-3 font-medium">Gruppe</th>
+                <th className="px-3 py-2 text-right font-medium">Vorjahr</th>
+                <th className="px-3 py-2 text-right font-medium">Geplante Kinder</th>
+                <th className="px-3 py-2 text-right font-medium">Plätze</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eingabe.gruppen.map((g) => {
+                const geaendert = Number(kinder[g.id]) !== g.vorschlagKinder;
+                return (
+                  <tr key={g.id} className="border-b last:border-0">
+                    <td className="py-2.5 pr-3 font-medium">{g.name}</td>
+                    <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{g.vorjahrKinder}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <Input
+                        type="number"
+                        min={0}
+                        className="ml-auto h-8 w-20 text-right tabular-nums"
+                        value={kinder[g.id]}
+                        disabled={!darfBearbeiten}
+                        onChange={(ev) => setKinder((alt) => ({ ...alt, [g.id]: ev.target.value }))}
+                        aria-label={`Geplante Kinder in ${g.name}`}
+                      />
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">{geaendert ? `Vorschlag: ${g.vorschlagKinder}` : "Vorschlag"}</span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right tabular-nums">{g.sollplaetze}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="einstellen" className="text-sm text-muted-foreground">
+              Geplante Einstellungen oder Aufstockungen (Wochenstunden)
+            </label>
+            <Input id="einstellen" type="number" min={0} className="h-9 w-32 tabular-nums" value={einstellen} disabled={!darfBearbeiten} onChange={(ev) => setEinstellen(ev.target.value)} />
+          </div>
+          {eingabe.finanz ? (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="sonstige" className="text-sm text-muted-foreground">
+                Sonstige Kosten pro Monat (Miete, Verpflegung, Sachkosten)
+              </label>
+              <Input id="sonstige" type="number" min={0} step="50" className="h-9 w-32 tabular-nums" value={sonstige} disabled={!darfBearbeiten} onChange={(ev) => setSonstige(ev.target.value)} />
+            </div>
+          ) : null}
+        </div>
+        <BerechnenLeiste berechnet={berechnet !== null} veraltet={veraltet} onBerechnen={() => setBerechnet(daten)} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex flex-col gap-2 rounded-2xl bg-secondary/40 p-5">
-          <p className="text-sm text-muted-foreground">Personal zum Start</p>
-          <p className="text-2xl font-semibold tabular-nums">
-            {Math.round(e.personalIst).toLocaleString("de-DE")}
-            <span className="text-base font-normal text-muted-foreground"> von {Math.round(e.sollPlan).toLocaleString("de-DE")} nötigen Wochenstunden</span>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Vorhanden ist das Personal nach allen bekannten Austritten.
-            {e.bedarfOhneKinderbezug ? " In diesem Bundesland hängt der Bedarf an Gruppenform bzw. Betriebsform und Buchungszeit — die Kinderzahl ändert ihn nicht." : ""}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 rounded-2xl bg-secondary/40 p-5">
-          <label htmlFor="einstellen" className="text-sm text-muted-foreground">
-            Geplante Einstellungen oder Aufstockungen (Wochenstunden)
-          </label>
-          <Input id="einstellen" type="number" min={0} className="h-9 w-32 tabular-nums" value={einstellen} disabled={!darfBearbeiten} onChange={(ev) => setEinstellen(ev.target.value)} />
-          <p className="text-sm">
-            {e.luecke >= 1 ? (
-              e.einstellenStunden > 0 ? (
-                <>
-                  <span className="font-semibold">Einstellen: {e.einstellenStunden.toLocaleString("de-DE")} Std.</span> ({stellenText(e.einstellenStunden, v)})
-                </>
-              ) : (
-                "Die Lücke ist gedeckt."
-              )
-            ) : (
-              "Es muss niemand eingestellt werden."
+      {/* 2. Ergebnis */}
+      {e ? (
+        <div className={cn("flex flex-col gap-4 rounded-2xl border-2 border-primary/30 bg-card p-5 transition-opacity", veraltet && "opacity-50")} aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-heading text-lg text-primary">2. Ergebnis deiner Planung</h3>
+            <AmpelBadge ampel={e.ampel} />
+          </div>
+          <p
+            className={cn(
+              "flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[15px] font-medium",
+              e.satz.ton === "ok" && "bg-emerald-500/10 text-emerald-900 dark:text-emerald-200",
+              e.satz.ton === "info" && "bg-sky-500/10 text-sky-900 dark:text-sky-200",
+              e.satz.ton === "warnung" && "bg-destructive/10 text-destructive"
             )}
-            {kostenJeWochenstunde !== null && e.einstellenStunden > 0 ? (
-              <span className="block text-xs text-muted-foreground">Das kostet etwa {euro(kostenJeWochenstunde * e.einstellenStunden)} im Monat (Ø Kosten deines Teams inkl. Nebenkosten).</span>
-            ) : null}
+          >
+            <SatzIcon className="mt-0.5 size-5 shrink-0" aria-hidden />
+            {e.satz.text}
           </p>
+
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Kennzahl label="Geplante Kinder" wert={`${e.summe.plan} von ${e.summe.plaetze} Plätzen`} />
+            <Kennzahl label="Gruppen" wert={String(e.gruppenAnzahl)} />
+            <Kennzahl label="Personalbedarf" wert={`${Math.round(e.sollPlan).toLocaleString("de-DE")} Std.`} klein={`vorhanden: ${Math.round(e.personalIst).toLocaleString("de-DE")} Std.`} />
+            <Kennzahl
+              label="Einstellen"
+              wert={e.einstellenStunden > 0 ? `${e.einstellenStunden.toLocaleString("de-DE")} Std.` : "nichts"}
+              klein={e.einstellenStunden > 0 ? stellenText(e.einstellenStunden, v) : e.luecke >= 1 ? "Lücke ist gedeckt" : undefined}
+            />
+          </div>
+
+          {e.finanzen ? (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Kennzahl label="Förderung & Elternbeiträge" wert={`${euro(e.finanzen.einnahmen)} / Monat`} klein="Ø je Kind aus dem Vorschlag" />
+              <Kennzahl label="Personalkosten" wert={`${euro(e.finanzen.personalkosten)} / Monat`} />
+              <Kennzahl label="Sonstige Kosten" wert={`${euro(e.finanzen.sonstigeKosten)} / Monat`} />
+              <Kennzahl
+                label="Erwartetes Ergebnis"
+                wert={`${e.finanzen.ergebnis > 0 ? "+" : ""}${euro(e.finanzen.ergebnis)} / Monat`}
+                ton={e.finanzen.ergebnis >= 0 ? "plus" : "minus"}
+              />
+            </div>
+          ) : null}
+
+          <div className="overflow-x-auto rounded-xl border">
+            <table className="w-full min-w-[30rem] text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="px-4 py-2 font-medium">Gruppe</th>
+                  <th className="px-3 py-2 text-right font-medium">Vorjahr</th>
+                  <th className="px-3 py-2 text-right font-medium">Geplant</th>
+                  <th className="px-3 py-2 text-right font-medium">Veränderung</th>
+                  <th className="px-4 py-2 font-medium">Stand</th>
+                </tr>
+              </thead>
+              <tbody>
+                {e.zeilen.map((z) => (
+                  <tr key={z.id} className="border-b last:border-0">
+                    <td className="px-4 py-2 font-medium">{z.name}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{z.vorjahr}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {z.plan} / {z.plaetze}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{z.delta > 0 ? `+${z.delta}` : z.delta}</td>
+                    <td className={cn("px-4 py-2 text-xs font-medium", STATUS_KLASSE[z.status])}>{STATUS_WORT[z.status]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {e.bedarfOhneKinderbezug ? (
+            <p className="text-xs text-muted-foreground">In diesem Bundesland hängt der Bedarf an Gruppenform bzw. Betriebsform und Buchungszeit — die Kinderzahl ändert ihn nicht.</p>
+          ) : null}
+          {e.finanzen ? (
+            <p className="text-xs text-muted-foreground">
+              Förderung und Elternbeiträge sind eine Schätzung (Ø je Kind aus dem Vorschlag × geplante Kinder); Personalkosten = heutiges Team nach bekannten Austritten plus geplante Einstellungen
+              {kostenJeWochenstunde !== null ? ` (${euro(kostenJeWochenstunde)} je Wochenstunde)` : ""}. Verpflegung und Pflegemittel sind nicht enthalten.
+            </p>
+          ) : null}
         </div>
-      </div>
+      ) : null}
 
       {darfBearbeiten ? (
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={speichern} disabled={istPending}>
+          <Button variant="outline" onClick={speichern} disabled={istPending}>
             Planung speichern
           </Button>
-          <Button variant="outline" onClick={zuruecksetzen} disabled={istPending}>
-            Vorschlag neu berechnen
+          <Button variant="ghost" onClick={zuruecksetzen} disabled={istPending}>
+            Auf Vorschlag zurücksetzen
           </Button>
           {gespeichertAm ? <span className="text-xs text-muted-foreground">Zuletzt gespeichert am {new Date(gespeichertAm).toLocaleDateString("de-DE")}</span> : null}
         </div>
       ) : null}
     </section>
+  );
+}
+
+function Kennzahl({ label, wert, klein, ton }: { label: string; wert: string; klein?: string; ton?: "plus" | "minus" }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-xl bg-secondary/40 p-4">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn("text-lg font-semibold tabular-nums", ton === "plus" && "text-emerald-700 dark:text-emerald-400", ton === "minus" && "text-destructive")}>{wert}</span>
+      {klein ? <span className="text-xs text-muted-foreground">{klein}</span> : null}
+    </div>
   );
 }

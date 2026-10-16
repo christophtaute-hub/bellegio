@@ -20,6 +20,7 @@ export async function speichereKitajahrPlanung(einrichtungId: string, kitajahrSt
         .map(([id, n]) => [id, Math.min(500, Math.max(0, Math.round(n)))])
     ),
     einstellenGeplant: Math.min(2000, Math.max(0, Number(daten.einstellenGeplant) || 0)),
+    ...(daten.sonstigeKostenMonat !== undefined ? { sonstigeKostenMonat: Math.min(1_000_000, Math.max(0, Number(daten.sonstigeKostenMonat) || 0)) } : {}),
   };
   const {
     data: { user },
