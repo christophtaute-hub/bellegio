@@ -575,6 +575,8 @@ export type Database = {
           created_at: string
           empfohlener_anstellungsschluessel: number
           foerderung_monatlich_manuell: number | null
+          personalprogramme_foerderung_monatlich: number | null
+          sonstige_kosten_monatlich: number
           geschwister_ab_dritt_prozent: number | null
           geschwister_zweit_prozent: number | null
           elternbeitragszuschuss_bis: string | null
@@ -607,6 +609,8 @@ export type Database = {
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           foerderung_monatlich_manuell?: number | null
+          personalprogramme_foerderung_monatlich?: number | null
+          sonstige_kosten_monatlich?: number
           geschwister_ab_dritt_prozent?: number | null
           geschwister_zweit_prozent?: number | null
           elternbeitragszuschuss_bis?: string | null
@@ -639,6 +643,8 @@ export type Database = {
           created_at?: string
           empfohlener_anstellungsschluessel?: number
           foerderung_monatlich_manuell?: number | null
+          personalprogramme_foerderung_monatlich?: number | null
+          sonstige_kosten_monatlich?: number
           geschwister_ab_dritt_prozent?: number | null
           geschwister_zweit_prozent?: number | null
           elternbeitragszuschuss_bis?: string | null

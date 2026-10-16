@@ -75,6 +75,22 @@ export function erhaeltZuschuss(geburtsdatum: string | undefined, stichtag: stri
   return stichtag >= `${Number(geburtsdatum.slice(0, 4)) + 3}-09-01`;
 }
 
+/** Bayern bis 2026 (Art. 23 Abs. 3 BayKiBiG): 100 € je Monat und Kind, vom Land an die Gemeinde → Träger gezahlt und an die Eltern weitergegeben. */
+export const BEITRAGSZUSCHUSS_MONAT = 100;
+
+/** Anspruch auf den Beitragszuschuss: Alter wie erhaeltZuschuss, aber nie für Schulkinder („bis zum Schuleintritt“). */
+export function hatZuschussAnspruch(row: PresenceRow, kontext: KindKontext, stichtag: string | undefined): boolean {
+  if (!stichtag || row.weighting_factor_code === "schulkinder") return false;
+  return erhaeltZuschuss(kontext.geburtsdatumByKindId.get(row.kind_id), stichtag, kontext.regeln.zuschussBis);
+}
+
+/** Anzahl Kinder mit Beitragszuschuss (jedes Kind einmal) — der Zuschuss ist unabhängig davon, ob eine Preisliste vorliegt. */
+export function zaehleZuschussKinder(kinderRows: PresenceRow[], kontext: KindKontext, stichtag: string): number {
+  const proKind = new Map<string, PresenceRow>();
+  for (const r of kinderRows) if (!proKind.has(r.kind_id)) proKind.set(r.kind_id, r);
+  return [...proKind.values()].filter((r) => hatZuschussAnspruch(r, kontext, stichtag)).length;
+}
+
 /** Geschwisterermäßigung: das 2. Kind zahlt `zweitProzent`, ab dem 3. Kind `abDrittProzent` des Preises. Kinder mit Zuschuss bekommen sie nicht. */
 export function preisMitGeschwister(preis: number, kindId: string, kontext: KindKontext, stichtag?: string): number {
   const nummer = kontext.geschwisterByKindId.get(kindId) ?? 1;
@@ -148,7 +164,9 @@ export function berechneElternbeitraege(
     const preis = preisFuerKind(preise, r, kontext);
     if (preis === undefined) ohne += 1;
     else {
-      summe += preisMitGeschwister(preis, r.kind_id, kontext, stichtag);
+      const voll = preisMitGeschwister(preis, r.kind_id, kontext, stichtag);
+      // Mit Zuschuss zahlen die Eltern 100 € weniger (nie unter 0); der Zuschuss selbst kommt als Fördererlös.
+      summe += hatZuschussAnspruch(r, kontext, stichtag) ? Math.max(0, voll - BEITRAGSZUSCHUSS_MONAT) : voll;
       mit += 1;
     }
   }

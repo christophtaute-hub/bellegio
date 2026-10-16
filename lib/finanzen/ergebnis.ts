@@ -4,12 +4,29 @@ import {
   type PersonalkostenGesamt,
 } from "@/lib/finanzen/personalkosten";
 
+/** Woraus sich die Fördererlöse eines Monats zusammensetzen (nur, wenn sie aus einer Formel kommen). */
+export type FoerderungDetail = {
+  /** Bayern: staatliche Förderung nach Art. 21 (inkl. Qualitätsbonus bzw. U3-Zuschlag). */
+  staatlichMonat: number;
+  /** Bayern: Eigenanteil der Gemeinde nach Art. 22. */
+  kommunalMonat: number;
+  /** Bayern bis 2026: Beitragszuschuss des Landes (100 € je Kindergartenkind), den Eltern weitergereicht bekommen. */
+  beitragszuschussMonat: number;
+  /** Nur, wenn die Einrichtung Personalprogramme ausdrücklich eingetragen hat. */
+  personalprogrammeMonat: number;
+};
+
 export type Ergebnis = {
+  /** Summe aller Fördererlöse (staatlich, kommunal, Beitragszuschuss, Personalprogramme) bzw. der manuelle Betrag. */
   foerdererloeseMonat: number;
+  /** Aufschlüsselung der Fördererlöse — fehlt bei manuellem Betrag und in NRW. */
+  foerderung?: FoerderungDetail;
+  /** Sachkosten, die die Einrichtung selbst eingetragen hat (Miete, Verpflegung …). */
+  sonstigeKostenMonat?: number;
   personalkostenMonat: number;
   /** Elternbeiträge laut interner Preisliste — null, wenn keine Preisliste hinterlegt ist (dann sind sie nicht Teil des Ergebnisses). */
   elternbeitraegeMonat?: number | null;
-  /** Fördererlöse + Elternbeiträge (falls Preisliste vorhanden) − Personalkosten. Kommunaler Anteil und Sachkosten fehlen. */
+  /** Fördererlöse + Elternbeiträge (falls Preisliste vorhanden) − Personalkosten − sonstige Kosten. */
   ergebnisMonat: number;
   personalkostenNichtErfasst: number;
 };
@@ -17,13 +34,17 @@ export type Ergebnis = {
 export function berechneErgebnis(
   foerdererloeseMonat: number,
   personalkosten: PersonalkostenGesamt,
-  elternbeitraegeMonat: number | null = null
+  elternbeitraegeMonat: number | null = null,
+  extras: { foerderung?: FoerderungDetail; sonstigeKostenMonat?: number } = {}
 ): Ergebnis {
+  const sonstige = extras.sonstigeKostenMonat ?? 0;
   return {
     foerdererloeseMonat,
+    foerderung: extras.foerderung,
+    sonstigeKostenMonat: sonstige,
     elternbeitraegeMonat,
     personalkostenMonat: personalkosten.personalkostenGesamtMonat,
-    ergebnisMonat: foerdererloeseMonat + (elternbeitraegeMonat ?? 0) - personalkosten.personalkostenGesamtMonat,
+    ergebnisMonat: foerdererloeseMonat + (elternbeitraegeMonat ?? 0) - personalkosten.personalkostenGesamtMonat - sonstige,
     personalkostenNichtErfasst: personalkosten.nichtErfasst,
   };
 }
@@ -50,7 +71,8 @@ export function berechneSzenarioErgebnis(
   personal: SzenarioPersonalZeile[],
   vollzeitWochenstunden: number,
   lohnnebenkostenProzent: number,
-  jahressonderzahlungProzent: number
+  jahressonderzahlungProzent: number,
+  sonstigeKostenMonat = 0
 ): SzenarioErgebnis {
   const ergebnisse: PersonalkostenErgebnisProMitarbeiter[] = personal.map((p, i) =>
     p.gehaltVollzeit > 0
@@ -65,7 +87,7 @@ export function berechneSzenarioErgebnis(
   const personalkosten = berechnePersonalkostenGesamt(ergebnisse, lohnnebenkostenProzent, jahressonderzahlungProzent);
   return {
     personalkostenSimuliert: personalkosten.personalkostenGesamtMonat,
-    ergebnisSimuliert: foerdererloeseMonat - personalkosten.personalkostenGesamtMonat,
+    ergebnisSimuliert: foerdererloeseMonat - personalkosten.personalkostenGesamtMonat - sonstigeKostenMonat,
     personalkostenNichtErfasst: personalkosten.nichtErfasst,
   };
 }

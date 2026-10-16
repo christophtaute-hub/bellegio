@@ -210,6 +210,21 @@ export async function updateFoerderungManuell(einrichtungId: string, betrag: num
   revalidatePath("/controlling");
 }
 
+/** Personalprogramme (Personalbonus, Assistenzkraft …) und sonstige Kosten: monatliche Beträge, die die Einrichtung selbst einträgt.
+ * Personalprogramme: null = nicht angesetzt. Gleiche RLS/Guard-Logik wie updateFoerderungManuell. */
+export async function updateMonatsbetrag(einrichtungId: string, feld: "personalprogramme_foerderung_monatlich" | "sonstige_kosten_monatlich", betrag: number | null) {
+  if (betrag !== null && !(betrag >= 0)) throw new Error("Bitte einen gültigen Betrag angeben.");
+  if (feld === "sonstige_kosten_monatlich" && betrag === null) betrag = 0;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("einrichtungen").update(feld === "sonstige_kosten_monatlich" ? { sonstige_kosten_monatlich: betrag ?? 0 } : { personalprogramme_foerderung_monatlich: betrag }).eq("id", einrichtungId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen");
+  revalidatePath("/controlling");
+  revalidatePath("/dashboard");
+}
+
 export async function updateLohnnebenkostenProzent(einrichtungId: string, prozent: number) {
   if (!(prozent >= 0 && prozent <= 100)) {
     throw new Error("Bitte einen Prozentsatz zwischen 0 und 100 angeben.");

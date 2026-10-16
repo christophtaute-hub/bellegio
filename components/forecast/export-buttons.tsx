@@ -114,10 +114,19 @@ function finanzRows(months: ForecastMonth[]): { label: string; values: (string |
   const mitBeitraegen = months.some((m) => m.finanzen?.elternbeitraegeMonat != null);
   return [
     { label: "Fördererlöse", values: months.map((m) => (m.finanzen ? runde(m.finanzen.foerdererloeseMonat, 2) : "")) },
+    ...(months.some((m) => m.finanzen?.foerderung)
+      ? [
+          { label: "davon staatliche Förderung", values: months.map((m) => (m.finanzen?.foerderung ? runde(m.finanzen.foerderung.staatlichMonat, 2) : "")) },
+          { label: "davon kommunaler Anteil (Gemeinde)", values: months.map((m) => (m.finanzen?.foerderung ? runde(m.finanzen.foerderung.kommunalMonat, 2) : "")) },
+        ]
+      : []),
     ...(mitBeitraegen
       ? [{ label: "Elternbeiträge", values: months.map((m) => (m.finanzen?.elternbeitraegeMonat != null ? runde(m.finanzen.elternbeitraegeMonat, 2) : "")) }]
       : []),
     { label: "Personalkosten", values: months.map((m) => (m.finanzen ? runde(m.finanzen.personalkostenMonat, 2) : "")) },
+    ...(months.some((m) => (m.finanzen?.sonstigeKostenMonat ?? 0) > 0)
+      ? [{ label: "Sonstige Kosten", values: months.map((m) => (m.finanzen ? runde(m.finanzen.sonstigeKostenMonat ?? 0, 2) : "")) }]
+      : []),
     { label: "Ergebnis", values: months.map((m) => (m.finanzen ? runde(m.finanzen.ergebnisMonat, 2) : "")) },
   ];
 }

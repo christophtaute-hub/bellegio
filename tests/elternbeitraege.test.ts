@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baueKindKontext, berechneElternbeitraege, beitraegeJeGruppe, erhaeltZuschuss, preisMitGeschwister, preisSchluessel, preiseAmStichtag } from "@/lib/finanzen/elternbeitraege";
+import { baueKindKontext, berechneElternbeitraege, beitraegeJeGruppe, erhaeltZuschuss, preisMitGeschwister, preisSchluessel, preiseAmStichtag, zaehleZuschussKinder } from "@/lib/finanzen/elternbeitraege";
 import type { PresenceRow } from "@/lib/dashboard/presence";
 
 const kind = (id: string, band: string | null, gruppe: string | null = "g1"): PresenceRow => ({
@@ -118,5 +118,32 @@ describe("Geschwisterermäßigung und Elternbeitragszuschuss", () => {
   it("ohne Regeln bleibt der Preis unverändert", () => {
     const ohne = baueKindKontext([], [{ id: "klein", wohnort: null, geburtsdatum: "2024-05-16", geschwisterNummer: 2 }], null);
     expect(preisMitGeschwister(200, "klein", ohne, "2026-10-08")).toBe(200);
+  });
+});
+
+describe("Beitragszuschuss als Fördererlös (Bayern bis 2026)", () => {
+  const regeln = { zweitProzent: null, abDrittProzent: null, zuschussBis: "2026-12-31" };
+  const kontext = baueKindKontext(
+    [],
+    [
+      { id: "kiga", wohnort: null, geburtsdatum: "2022-04-01", geschwisterNummer: 1 },
+      { id: "krippe", wohnort: null, geburtsdatum: "2025-04-01", geschwisterNummer: 1 },
+      { id: "schule", wohnort: null, geburtsdatum: "2019-04-01", geschwisterNummer: 1 },
+    ],
+    null,
+    regeln
+  );
+  const preise = new Map([[preisSchluessel("a", null, false), 250]]);
+  it("Eltern zahlen 100 € weniger (nie unter 0); der Zuschuss kommt separat", () => {
+    const r = berechneElternbeitraege([kind("kiga", "a"), kind("krippe", "a")], preise, kontext, "2026-10-08");
+    expect(r.summe).toBe(150 + 250);
+    expect(zaehleZuschussKinder([kind("kiga", "a"), kind("krippe", "a")], kontext, "2026-10-08")).toBe(1);
+    const billig = new Map([[preisSchluessel("a", null, false), 38]]);
+    expect(berechneElternbeitraege([kind("kiga", "a")], billig, kontext, "2026-10-08").summe).toBe(0);
+  });
+  it("Schulkinder bekommen keinen Zuschuss, nach dem Enddatum auch niemand", () => {
+    const schulkind = { ...kind("schule", "a"), weighting_factor_code: "schulkinder" };
+    expect(zaehleZuschussKinder([schulkind], kontext, "2026-10-08")).toBe(0);
+    expect(zaehleZuschussKinder([kind("kiga", "a")], kontext, "2027-01-01")).toBe(0);
   });
 });

@@ -38,7 +38,8 @@ export function FinanzenSektion({
     personal,
     vollzeitWochenstunden,
     lohnnebenkostenProzent,
-    jahressonderzahlungProzent
+    jahressonderzahlungProzent,
+    finanzenHeute.sonstigeKostenMonat ?? 0
   );
 
   return (

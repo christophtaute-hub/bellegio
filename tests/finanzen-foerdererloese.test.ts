@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   berechneBayernFoerdererloesProKind,
   berechneBayernFoerdererloesGesamt,
+  berechneBayernFoerderungProKind,
+  berechneBayernFoerderungGesamt,
+  istU3FuerFoerderung,
   berechneNRWFoerdererloesProKindMonat,
   berechneNRWFoerdererloesGesamt,
   resolveNRWKindpauschalenTabelleAmStichtag,
@@ -106,3 +109,47 @@ describe("resolveNRWKindpauschalenTabelleAmStichtag (Milestone 29b-Wiederverwend
   });
 });
 
+
+describe("Bayern: staatlich + kommunal (Art. 21/22 BayKiBiG, § 24/§ 20 AVBayKiBiG)", () => {
+  const amtlich: BayernBasiswert = { basiswert: 1563.88, qualitaetsbonus: 268.01 };
+
+  it("Kindergartenkind 1,75 × 1,0: staatlich mit Qualitätsbonus, kommunal nur Basiswert", () => {
+    const f = berechneBayernFoerderungProKind(kind({ buchungszeit_factor: 1.75, weighting_factor_value: 1.0 }), amtlich, false);
+    expect(f.staatlich).toBeCloseTo((1563.88 + 268.01) * 1.75, 6);
+    expect(f.kommunal).toBeCloseTo(1563.88 * 1.75, 6);
+  });
+
+  it("U3-Kind 2,0 × 2,0: Zuschlag +0,15, dafür kein Qualitätsbonus; Eigenanteil ohne Zuschlag", () => {
+    const f = berechneBayernFoerderungProKind(kind({ buchungszeit_factor: 2.0, weighting_factor_value: 2.0 }), amtlich, true);
+    expect(f.staatlich).toBeCloseTo(1563.88 * 2.15 * 2.0, 6);
+    expect(f.kommunal).toBeCloseTo(1563.88 * 2.0 * 2.0, 6);
+    expect(f.staatlich + f.kommunal).toBeCloseTo(12980.2, 1);
+  });
+
+  it("ohne Buchungszeit keine Förderung", () => {
+    expect(berechneBayernFoerderungProKind(kind({ buchungszeit_factor: null }), amtlich, false)).toEqual({ staatlich: 0, kommunal: 0 });
+  });
+
+  it("istU3FuerFoerderung: unter 3, Krippe bis Kindergartenjahresende, Kindergarten sofort nicht mehr", () => {
+    expect(istU3FuerFoerderung("2024-03-14", "krippe", "2026-10-01")).toBe(true);
+    expect(istU3FuerFoerderung("2023-10-01", "krippe", "2026-10-01")).toBe(true); // drittes Jahr gerade vollendet, bis 31.08.2027
+    expect(istU3FuerFoerderung("2023-10-01", "krippe", "2027-08-31")).toBe(true);
+    expect(istU3FuerFoerderung("2023-10-01", "krippe", "2027-09-01")).toBe(false);
+    expect(istU3FuerFoerderung("2023-03-14", "krippe", "2026-10-01")).toBe(false); // 3 seit 03/2026, Kindergartenjahr endete 31.08.2026
+    expect(istU3FuerFoerderung("2023-10-01", "kindergarten", "2026-10-01")).toBe(false);
+    expect(istU3FuerFoerderung(undefined, null, "2026-10-01", "u3")).toBe(true);
+  });
+
+  it("Gesamt: U3-Zuschlag nur bis 31.12.2026, ein Kind zählt einmal mit höchstem Gewichtungsfaktor", () => {
+    const kontext = { geburtsdatumByKindId: new Map([["a", "2025-05-01"]]), gruppenartByGruppeId: new Map<string, string | null>() };
+    const zeilen = [
+      kind({ kind_id: "a", buchungszeit_factor: 2.0, weighting_factor_value: 2.0 }),
+      kind({ kind_id: "a", buchungszeit_factor: 2.0, weighting_factor_value: 1.3 }),
+    ];
+    const in2026 = berechneBayernFoerderungGesamt(zeilen, amtlich, kontext, "2026-10-01");
+    expect(in2026.staatlich).toBeCloseTo(1563.88 * 2.15 * 2.0, 6);
+    const in2027 = berechneBayernFoerderungGesamt(zeilen, amtlich, kontext, "2027-02-01");
+    expect(in2027.staatlich).toBeCloseTo((1563.88 + 268.01) * 2.0 * 2.0, 6);
+    expect(berechneBayernFoerderungGesamt(zeilen, null, kontext, "2026-10-01")).toEqual({ staatlich: 0, kommunal: 0 });
+  });
+});

@@ -21,6 +21,22 @@ const BAYERN_QUELLEN = [
     label: "Art. 21 BayKiBiG (Kindbezogene Förderung, Gewichtungsfaktoren)",
     href: "https://www.gesetze-bayern.de/Content/Document/BayKiBiG-21",
   },
+  {
+    label: "Art. 22 BayKiBiG (Anspruch des Trägers, Eigenanteil der Gemeinde)",
+    href: "https://www.gesetze-bayern.de/Content/Document/BayKiBiG-22",
+  },
+  {
+    label: "Art. 23 BayKiBiG (Qualitätsbonus, Beitragszuschuss)",
+    href: "https://www.gesetze-bayern.de/Content/Document/BayKiBiG-23",
+  },
+  {
+    label: "§ 20 AVBayKiBiG (Qualitätsbonus bei erhöhtem Buchungszeitfaktor)",
+    href: "https://gesetze.legal/bayern/avbaykibig/20",
+  },
+  {
+    label: "Bekanntmachung Basiswert und Qualitätsbonus 2026 (BayMBl. 2025 Nr. 557)",
+    href: "https://www.verkuendung-bayern.de/baymbl/2025-557/",
+  },
 ];
 
 const BW_QUELLEN = [
@@ -251,30 +267,53 @@ export default async function DokumentationPage() {
 
         <div className="flex flex-col gap-3 rounded-xl border bg-secondary/30 p-6">
           <h3 className="font-heading text-lg text-primary">
-            Fördererlöse (staatliche kindbezogene Förderung)
+            Fördererlöse (staatlich und kommunaler Anteil)
           </h3>
           <p className="font-mono text-sm font-semibold text-primary">
-            Förderbetrag je Kind und Jahr = (Basiswert + Qualitätsbonus) × Buchungszeitfaktor × Gewichtungsfaktor
+            Staatlich je Kind und Jahr = (Basiswert + Qualitätsbonus) × Buchungszeitfaktor × Gewichtungsfaktor
+          </p>
+          <p className="font-mono text-sm font-semibold text-primary">
+            Kommunaler Eigenanteil je Kind und Jahr = Basiswert × Buchungszeitfaktor × Gewichtungsfaktor
           </p>
           <p className="text-sm text-muted-foreground">
             Art. 21 Abs. 2 BayKiBiG: „Der jährliche staatliche Förderbetrag pro Kind … errechnet sich als Produkt aus
             Basiswert, Buchungszeit- und Gewichtungsfaktor“. Der Qualitätsbonus erhöht den Basiswert („Basiswert plus“,
             Art. 23 Abs. 1 BayKiBiG) und wird deshalb mit den Faktoren multipliziert. Amtliche Werte für die Förderabschläge
             2026 (BayMBl. 2025 Nr. 557): Basiswert 1.563,88 € (gilt für 3–4 Std. Buchungszeit, Faktor 1,0), Qualitätsbonus
-            268,01 €. Ab 01.01.2027 gilt die Reform: Der Qualitätsbonus beträgt vorläufig 693,28 € (2027), 852,36 € (2028) und
-            857,87 € (2029) und wird dem Basiswert aufgeschlagen; der Basiswert 2027 ist vom Ministerium noch nicht
-            bekanntgegeben und in Bellegio bis dahin mit dem Wert von 2026 fortgeschrieben (Quellen: Handreichung des StMAS,
-            IFKM). Alle Werte sind in Bellegio je Gültigkeitsdatum hinterlegt. Bellegio zeigt den
-            Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen. Bei mehreren Gewichtungsmerkmalen
-            gilt der höchste Faktor.
+            268,01 €. Der Träger hat nach Art. 22 Abs. 1 BayKiBiG Anspruch auf die staatliche Förderung <em>erhöht um einen
+            Eigenanteil der Gemeinde</em>; dieser errechnet sich nach Art. 22 Abs. 2 aus dem „Basiswert ohne Erhöhung“ (also ohne
+            Qualitätsbonus), dem Buchungszeit- und dem Gewichtungsfaktor. Bellegio rechnet beides und zeigt es getrennt.
+            Bei mehreren Gewichtungsmerkmalen gilt der höchste Faktor; die Faktoren stehen oben, die Buchungszeitfaktoren
+            (1,00 bei 3–4 Std. bis 2,50 über 9 Std.) in § 24 AVBayKiBiG.
           </p>
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Nicht abgebildet:</strong> der Eigenanteil der Gemeinde (Art. 22 BayKiBiG: der
-            Anspruch des Trägers ist die staatliche Förderung zuzüglich eines gemeindlichen Anteils — dessen Höhe regelt die
-            Gemeinde), Sonderfälle wie die Erhöhung von Buchungszeitfaktoren nach § 24 AVBayKiBiG (dort entfällt der
-            Qualitätsbonus) sowie die neue Teamkräftepauschale ab 2027, der Wegfall des Elternbeitragszuschusses und der U3-Bundesmittel. Der berechnete Wert ersetzt keinen
-            Blick in den eigenen Zuwendungsbescheid — bei Abweichung lässt sich unter Einrichtung → Finanzen ein
-            manueller Förderbetrag hinterlegen, der die Formel überschreibt.
+            <strong className="text-foreground">Kinder unter drei Jahren (bis 31.12.2026):</strong> Der Buchungszeitfaktor der
+            staatlichen Förderung erhöht sich um 0,15 (§ 24 Abs. 1 Satz 2 AVBayKiBiG); dafür entfällt für dieses Kind der
+            Qualitätsbonus (§ 20 Abs. 2 Satz 2 AVBayKiBiG). Der Eigenanteil der Gemeinde rechnet ohne diesen Zuschlag. Wird ein
+            Kind in der Krippe drei Jahre alt, gilt der Krippenfaktor bis zum Ende des Kindergartenjahres (31.08.) weiter.
+            Die Erhöhung zählt nicht für Anstellungsschlüssel und Fachkraftquote.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Beitragszuschuss (bis 31.12.2026):</strong> Das Land zahlt 100 € je Monat und
+            Kind ab dem 1. September des Jahres, in dem das Kind drei wird, bis zum Schuleintritt (Art. 23 Abs. 3 BayKiBiG). Der
+            Träger gibt den Betrag an die Eltern weiter: Eltern zahlen 100 € weniger (nie unter 0 €), der Zuschuss steht als
+            eigene Zeile in den Fördererlösen.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Reform ab 01.01.2027:</strong> Der Qualitätsbonus beträgt vorläufig 693,28 €
+            (2027), 852,36 € (2028) und 857,87 € (2029) und wird dem Basiswert aufgeschlagen; der Zuschlag von 0,15 und der
+            Beitragszuschuss entfallen. Der Basiswert 2027 ist vom Ministerium noch nicht bekanntgegeben und in Bellegio bis
+            dahin mit dem Wert von 2026 fortgeschrieben (Quellen: Handreichung des StMAS, IFKM). Alle Werte sind je
+            Gültigkeitsdatum hinterlegt. Bellegio zeigt den Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Nicht angesetzt:</strong> Personalbonus, Assistenz- und Sprachfachkraft-Förderung
+            und andere Personalprogramme — sie gelten nur bei erfüllten Voraussetzungen und werden nur berücksichtigt, wenn sie
+            unter Einstellungen → Finanzen ausdrücklich eingetragen sind. Ebenso nicht abgebildet: die Teamkräftepauschale ab 2027,
+            der Vorkurs-Zuschlag und Sonderförderungen. Der Eigenanteil ist der gesetzliche Anspruch des Trägers gegen die Gemeinde;
+            die tatsächliche Zahlung kann je Gemeinde abweichen. Der berechnete Wert ersetzt keinen Blick in den eigenen
+            Zuwendungsbescheid — bei Abweichung lässt sich unter Einstellungen → Finanzen ein manueller Förderbetrag hinterlegen, der
+            die Formel überschreibt.
           </p>
         </div>
 

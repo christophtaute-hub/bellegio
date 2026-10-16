@@ -371,6 +371,15 @@ function formatEuro(value: number): string {
 function FinanzenZeilen({ months }: { months: Zeitreihe }) {
   const nichtErfasstMax = Math.max(0, ...months.map((m) => m.finanzen?.personalkostenNichtErfasst ?? 0));
   const mitBeitraegen = months.some((m) => m.finanzen?.elternbeitraegeMonat !== null && m.finanzen?.elternbeitraegeMonat !== undefined);
+  const detailZeilen = (
+    [
+      { key: "staatlichMonat", label: "staatliche Förderung" },
+      { key: "kommunalMonat", label: "kommunaler Anteil (Gemeinde)" },
+      { key: "beitragszuschussMonat", label: "Beitragszuschuss (an Eltern weitergegeben)" },
+      { key: "personalprogrammeMonat", label: "Personalprogramme" },
+    ] as const
+  ).filter((z) => months.some((m) => (m.finanzen?.foerderung?.[z.key] ?? 0) > 0));
+  const mitSonstigen = months.some((m) => (m.finanzen?.sonstigeKostenMonat ?? 0) > 0);
 
   return (
     <>
@@ -382,6 +391,18 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
           </TableCell>
         ))}
       </TableRow>
+      {detailZeilen.map((z) => (
+        <TableRow key={z.key}>
+          <LabelCell>
+            <span className="pl-3 text-muted-foreground">davon {z.label}</span>
+          </LabelCell>
+          {months.map((m) => (
+            <TableCell key={m.month} className="text-right tabular-nums text-muted-foreground">
+              {m.finanzen?.foerderung ? formatEuro(m.finanzen.foerderung[z.key]) : "–"}
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
       {mitBeitraegen ? (
         <TableRow>
           <LabelCell>Elternbeiträge</LabelCell>
@@ -400,6 +421,16 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
           </TableCell>
         ))}
       </TableRow>
+      {mitSonstigen ? (
+        <TableRow>
+          <LabelCell>Sonstige Kosten</LabelCell>
+          {months.map((m) => (
+            <TableCell key={m.month} className="text-right tabular-nums">
+              {m.finanzen ? formatEuro(m.finanzen.sonstigeKostenMonat ?? 0) : "–"}
+            </TableCell>
+          ))}
+        </TableRow>
+      ) : null}
       <TableRow className="bg-secondary/40">
         <LabelCell stark>Ergebnis</LabelCell>
         {months.map((m) => {

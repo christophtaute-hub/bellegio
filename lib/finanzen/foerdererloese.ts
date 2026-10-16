@@ -38,8 +38,8 @@ export function resolveBayernBasiswertAmStichtag(versionen: BayernBasiswertVersi
  * Produkt aus Basiswert, Buchungszeit- und Gewichtungsfaktor". Der Qualitätsbonus erhöht den Basiswert (Art. 23 Abs. 1 Satz 2
  * BayKiBiG, "Basiswert plus") und geht damit in dieses Produkt ein, er ist kein pauschaler Zuschlag je Kind. Nutzt dieselbe
  * PresenceRow-Form wie kinder_presence_at_date (buchungszeit_factor, weighting_factor_value) statt eigene Faktoren neu herzuleiten.
- * Nur der staatliche Anteil: der Eigenanteil der Gemeinde (Art. 22) und Sonderfälle (z. B. Erhöhung der Buchungszeitfaktoren nach § 24
- * AVBayKiBiG, bei der der Qualitätsbonus entfällt) sind nicht abgebildet. */
+ * Nur der staatliche Regelfall (ohne U3-Zuschlag, ohne Eigenanteil der Gemeinde) — die vollständige Trägerförderung rechnet
+ * berechneBayernFoerderungGesamt weiter unten. */
 export function berechneBayernFoerdererloesProKind(row: PresenceRow, basiswert: BayernBasiswert): number {
   const buchungszeitFactor = row.buchungszeit_factor ?? 0;
   return buchungszeitFactor * row.weighting_factor_value * (basiswert.basiswert + basiswert.qualitaetsbonus);
@@ -48,6 +48,78 @@ export function berechneBayernFoerdererloesProKind(row: PresenceRow, basiswert: 
 export function berechneBayernFoerdererloesGesamt(rows: PresenceRow[], basiswert: BayernBasiswert | null): number {
   if (!basiswert) return 0;
   return rows.reduce((sum, row) => sum + berechneBayernFoerdererloesProKind(row, basiswert), 0);
+}
+
+/** § 24 Abs. 1 Satz 2 AVBayKiBiG: Zuschlag auf den Buchungszeitfaktor für Kinder unter drei Jahren (nur staatlicher Anteil). */
+export const BAYERN_U3_ZUSCHLAG = 0.15;
+/** Der U3-Zuschlag gilt bis zum 31.12.2026; mit der Reform 2027 entfällt er, der Qualitätsbonus gilt dann für alle Kinder. */
+export const BAYERN_U3_ZUSCHLAG_BIS = "2026-12-31";
+
+/** Zählt das Kind für die Förderung als „unter drei“? Ja: jünger als drei Jahre, oder (Art. 21 Abs. 5 Satz 5 BayKiBiG) in einer
+ * Krippe drei geworden — dann gilt der Krippenfaktor bis zum Ende des Kindergartenjahres (31.08.) weiter. Ohne Geburtsdatum
+ * entscheidet der Gewichtungsfaktor „u3“. */
+export function istU3FuerFoerderung(
+  geburtsdatum: string | undefined,
+  gruppenart: string | null | undefined,
+  stichtag: string,
+  gewichtungsCode?: string | null
+): boolean {
+  if (!geburtsdatum) return gewichtungsCode === "u3";
+  const dritterGeburtstag = `${Number(geburtsdatum.slice(0, 4)) + 3}${geburtsdatum.slice(4)}`;
+  if (stichtag < dritterGeburtstag) return true;
+  if (gruppenart !== "krippe") return false;
+  const jahr = Number(dritterGeburtstag.slice(0, 4));
+  const kindergartenjahrEnde = dritterGeburtstag <= `${jahr}-08-31` ? `${jahr}-08-31` : `${jahr + 1}-08-31`;
+  return stichtag <= kindergartenjahrEnde;
+}
+
+export type BayernKindFoerderung = { staatlich: number; kommunal: number };
+
+/** Reine Funktion (Jahresbeträge je Kind), Stand 2026:
+ * - staatlich (Art. 21): (Basiswert + Qualitätsbonus) × Buchungszeitfaktor × Gewichtungsfaktor. Für Kinder unter drei Jahren
+ *   erhöht sich der Buchungszeitfaktor um 0,15 (§ 24 Abs. 1 S. 2 AVBayKiBiG) — dann entfällt der Qualitätsbonus für dieses
+ *   Kind (§ 20 Abs. 2 S. 2 AVBayKiBiG): Basiswert × (Faktor + 0,15) × Gewichtungsfaktor.
+ * - kommunal (Art. 22 Abs. 2): Eigenanteil der Gemeinde = Basiswert ohne Erhöhung × Buchungszeitfaktor (ohne 0,15) × Gewichtungsfaktor.
+ * Der Träger hat Anspruch auf die Summe (Art. 22 Abs. 1). Kinder ohne Buchungszeit werden nicht gefördert. */
+export function berechneBayernFoerderungProKind(row: PresenceRow, basiswert: BayernBasiswert, u3Zuschlag: boolean): BayernKindFoerderung {
+  const faktor = row.buchungszeit_factor;
+  if (faktor === null || faktor === undefined) return { staatlich: 0, kommunal: 0 };
+  const gewicht = row.weighting_factor_value;
+  const staatlich = u3Zuschlag
+    ? basiswert.basiswert * (faktor + BAYERN_U3_ZUSCHLAG) * gewicht
+    : (basiswert.basiswert + basiswert.qualitaetsbonus) * faktor * gewicht;
+  return { staatlich, kommunal: basiswert.basiswert * faktor * gewicht };
+}
+
+export type BayernFoerderungKontext = {
+  geburtsdatumByKindId: Map<string, string>;
+  gruppenartByGruppeId: Map<string, string | null>;
+};
+
+/** Summe über alle anwesenden Kinder (Jahresbeträge). Ein Kind zählt einmal, mit seinem höchsten Gewichtungsfaktor. */
+export function berechneBayernFoerderungGesamt(
+  rows: PresenceRow[],
+  basiswert: BayernBasiswert | null,
+  kontext: BayernFoerderungKontext,
+  stichtag: string
+): BayernKindFoerderung {
+  if (!basiswert) return { staatlich: 0, kommunal: 0 };
+  const proKind = new Map<string, PresenceRow>();
+  for (const r of rows) {
+    const bisher = proKind.get(r.kind_id);
+    if (!bisher || r.weighting_factor_value > bisher.weighting_factor_value) proKind.set(r.kind_id, r);
+  }
+  const zuschlagMoeglich = stichtag <= BAYERN_U3_ZUSCHLAG_BIS;
+  let staatlich = 0;
+  let kommunal = 0;
+  for (const r of proKind.values()) {
+    const gruppenart = r.gruppe_id ? (kontext.gruppenartByGruppeId.get(r.gruppe_id) ?? null) : null;
+    const u3 = zuschlagMoeglich && istU3FuerFoerderung(kontext.geburtsdatumByKindId.get(r.kind_id), gruppenart, stichtag, r.weighting_factor_code);
+    const f = berechneBayernFoerderungProKind(r, basiswert, u3);
+    staatlich += f.staatlich;
+    kommunal += f.kommunal;
+  }
+  return { staatlich, kommunal };
 }
 
 // --- NRW (KiBiz §§32-34, §37 — Kindpauschale) ---

@@ -9,6 +9,7 @@ import {
   FoerderungManuellEditor,
   LohnnebenkostenEditor,
   JahressonderzahlungEditor,
+  MonatsbetragEditor,
 } from "@/components/einrichtung/finanzen-editoren";
 
 /** Reiter „Finanzen“: Förderbetrag, Lohnnebenkosten, Jahressonderzahlung und die Preisliste für Elternbeiträge — nur mit dem Recht „Finanzübersicht“. */
@@ -21,7 +22,7 @@ export default async function FinanzenEinstellungenPage() {
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code, foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis")
+    .select("bundesland_code, foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis")
     .eq("id", einrichtungId)
     .single();
 
@@ -65,6 +66,24 @@ export default async function FinanzenEinstellungenPage() {
               einrichtungId={einrichtungId}
               bundeslandCode={einrichtung.bundesland_code}
               wert={einrichtung.foerderung_monatlich_manuell}
+              canEdit={bearbeiteFinanzen}
+            />
+            <MonatsbetragEditor
+              einrichtungId={einrichtungId}
+              feld="personalprogramme_foerderung_monatlich"
+              label="Personalprogramme (Förderung)"
+              hinweis="Personalbonus, Assistenz- oder Sprachfachkraft-Förderung: nur eintragen, wenn die Fördervoraussetzungen erfüllt sind — sonst wird nichts angesetzt."
+              leerText="nicht angesetzt"
+              wert={einrichtung.personalprogramme_foerderung_monatlich}
+              canEdit={bearbeiteFinanzen}
+            />
+            <MonatsbetragEditor
+              einrichtungId={einrichtungId}
+              feld="sonstige_kosten_monatlich"
+              label="Sonstige Kosten"
+              hinweis="Miete, Verpflegung, Sachkosten: mindern das Ergebnis. Leer = nicht berücksichtigt."
+              leerText="nicht erfasst"
+              wert={Number(einrichtung.sonstige_kosten_monatlich)}
               canEdit={bearbeiteFinanzen}
             />
             <LohnnebenkostenEditor

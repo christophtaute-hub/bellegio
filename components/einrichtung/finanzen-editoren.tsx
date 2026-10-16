@@ -7,6 +7,7 @@ import {
   updateFoerderungManuell,
   updateLohnnebenkostenProzent,
   updateJahressonderzahlungProzent,
+  updateMonatsbetrag,
 } from "@/lib/actions/einrichtung";
 
 function formatEuro(value: number): string {
@@ -246,6 +247,81 @@ export function JahressonderzahlungEditor({
           onChange={(event) => setValue(event.target.value)}
           className="h-8 w-28"
         />
+      </div>
+      <Button type="submit" size="sm" disabled={isSaving}>
+        {isSaving ? "Speichern…" : "Speichern"}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+        Abbrechen
+      </Button>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </form>
+  );
+}
+
+/** Monatsbetrag der Einrichtung (Personalprogramme, sonstige Kosten): Anzeige, bei Recht „bearbeiten“ ein kleines Formular. */
+export function MonatsbetragEditor({
+  einrichtungId,
+  feld,
+  label,
+  hinweis,
+  leerText,
+  wert,
+  canEdit,
+}: {
+  einrichtungId: string;
+  feld: "personalprogramme_foerderung_monatlich" | "sonstige_kosten_monatlich";
+  label: string;
+  hinweis: string;
+  leerText: string;
+  wert: number | null;
+  canEdit: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(wert !== null && wert !== 0 ? String(wert) : "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const anzeige = wert !== null && wert !== 0 ? formatEuro(wert) + "/Monat" : leerText;
+
+  if (!canEdit || !isEditing) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        {canEdit ? (
+          <button type="button" onClick={() => setIsEditing(true)} className="text-left text-sm text-muted-foreground underline-offset-2 hover:underline">
+            {label}: {anzeige} (bearbeiten)
+          </button>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {label}: {anzeige}
+          </p>
+        )}
+        <p className="text-xs text-muted-foreground">{hinweis}</p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="flex items-end gap-2"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setIsSaving(true);
+        setError(null);
+        try {
+          await updateMonatsbetrag(einrichtungId, feld, value ? Number(value) : null);
+          setIsEditing(false);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Fehler beim Speichern.");
+        } finally {
+          setIsSaving(false);
+        }
+      }}
+    >
+      <div className="flex flex-col gap-1">
+        <label htmlFor={feld} className="text-xs text-muted-foreground">
+          {label} (€/Monat, leer = nichts)
+        </label>
+        <Input id={feld} type="number" step="0.01" min="0" value={value} onChange={(event) => setValue(event.target.value)} className="h-8 w-36" />
       </div>
       <Button type="submit" size="sm" disabled={isSaving}>
         {isSaving ? "Speichern…" : "Speichern"}

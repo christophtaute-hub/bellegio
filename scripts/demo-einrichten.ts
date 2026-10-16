@@ -85,6 +85,8 @@ async function main() {
         kostenstelle: q.kostenstelle,
         cluster: q.cluster,
         foerderung_monatlich_manuell: q.foerderung_monatlich_manuell,
+        personalprogramme_foerderung_monatlich: q.personalprogramme_foerderung_monatlich,
+        sonstige_kosten_monatlich: q.sonstige_kosten_monatlich,
         lohnnebenkosten_prozent: q.lohnnebenkosten_prozent,
         jahressonderzahlung_prozent: q.jahressonderzahlung_prozent,
         geschwister_zweit_prozent: q.geschwister_zweit_prozent,

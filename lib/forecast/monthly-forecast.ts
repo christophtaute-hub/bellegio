@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 import { addMonthsUtc, parseIsoDate, toIsoDateString } from "@/lib/kita-datum";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
-import { baueKindKontext, berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag, type BeitragZeile, type KindKontext } from "@/lib/finanzen/elternbeitraege";
+import { BEITRAGSZUSCHUSS_MONAT, baueKindKontext, berechneElternbeitraege, ladeBeitragszeilen, preiseAmStichtag, zaehleZuschussKinder, type BeitragZeile, type KindKontext } from "@/lib/finanzen/elternbeitraege";
 import {
   getKinderPresenceAtDate,
   buildKpis,
@@ -27,7 +27,7 @@ import {
   getNRWKindpauschalenVersionen,
   resolveBayernBasiswertAmStichtag,
   resolveNRWKindpauschalenTabelleAmStichtag,
-  berechneBayernFoerdererloesGesamt,
+  berechneBayernFoerderungGesamt,
   berechneNRWFoerdererloesGesamt,
   type BayernBasiswertVersion,
   type NRWKindpauschaleVersion,
@@ -39,7 +39,7 @@ import {
   berechnePersonalkostenGesamt,
   type TVoedEntgeltVersion,
 } from "@/lib/finanzen/personalkosten";
-import { berechneErgebnis, type Ergebnis } from "@/lib/finanzen/ergebnis";
+import { berechneErgebnis, type Ergebnis, type FoerderungDetail } from "@/lib/finanzen/ergebnis";
 import { berechneGruppenStatus, type GruppenStatusErgebnis } from "@/lib/steuerung/gruppen-status";
 
 export type ZeitkategorieMonat =
@@ -75,6 +75,9 @@ export type ForecastMonth = {
 export type FinanzenBasis = {
   bundeslandCode: string;
   foerderungManuell: number | null;
+  /** Personalprogramme (Personalbonus, Assistenzkraft …): nur, wenn ausdrücklich eingetragen; null = nicht angesetzt. */
+  personalprogrammeMonat: number | null;
+  sonstigeKostenMonat: number;
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
   vollzeitWochenstunden: number;
@@ -101,11 +104,8 @@ export async function ladeKindKontext(supabase: SupabaseClient<Database>, einric
     abDrittProzent: einrichtung?.geschwister_ab_dritt_prozent ?? null,
     zuschussBis: einrichtung?.elternbeitragszuschuss_bis ?? null,
   };
-  // Kinder nur laden, wenn Wohnsitz oder Geschwisterregeln den Preis beeinflussen können
-  const brauchtKinder = standort !== null || regeln.zweitProzent !== null || regeln.abDrittProzent !== null;
-  const { data: kinder } = brauchtKinder
-    ? await supabase.from("kinder").select("id, wohnort, geburtsdatum, geschwister_nummer").eq("einrichtung_id", einrichtungId).limit(5000)
-    : { data: [] as { id: string; wohnort: string | null; geburtsdatum: string; geschwister_nummer: number }[] };
+  // Geburtsdatum braucht auch die Förderung (Bayern: U3-Zuschlag, Beitragszuschuss) → Kinder immer laden
+  const { data: kinder } = await supabase.from("kinder").select("id, wohnort, geburtsdatum, geschwister_nummer").eq("einrichtung_id", einrichtungId).limit(5000);
   return baueKindKontext(
     gruppen ?? [],
     (kinder ?? []).map((k) => ({ id: k.id, wohnort: k.wohnort, geburtsdatum: k.geburtsdatum, geschwisterNummer: k.geschwister_nummer })),
@@ -146,7 +146,7 @@ export async function ladeFinanzenBasis(
     beitraege,
     kindKontext,
   ] = await Promise.all([
-    supabase.from("einrichtungen").select("foerderung_monatlich_manuell, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
+    supabase.from("einrichtungen").select("foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
     getBayernBasiswertVersionen(supabase),
     getNRWKindpauschalenVersionen(supabase),
     getTVoedEntgeltVersionen(supabase),
@@ -162,6 +162,8 @@ export async function ladeFinanzenBasis(
   return {
     bundeslandCode,
     foerderungManuell: einrichtungFinanzen?.foerderung_monatlich_manuell ?? null,
+    personalprogrammeMonat: einrichtungFinanzen?.personalprogramme_foerderung_monatlich ?? null,
+    sonstigeKostenMonat: Number(einrichtungFinanzen?.sonstige_kosten_monatlich ?? 0),
     lohnnebenkostenProzent: Number(einrichtungFinanzen?.lohnnebenkosten_prozent ?? 28),
     jahressonderzahlungProzent: Number(einrichtungFinanzen?.jahressonderzahlung_prozent ?? 85),
     vollzeitWochenstunden,
@@ -185,22 +187,34 @@ export function resolveFinanzenMonat(
   kinderRows: PresenceRow[],
   teamRows: TeamPresenceRow[]
 ): Ergebnis {
+  const programme = basis.personalprogrammeMonat ?? 0;
+  let foerderung: FoerderungDetail | undefined;
   let foerdererloeseMonat: number;
   if (basis.foerderungManuell !== null) {
-    foerdererloeseMonat = basis.foerderungManuell;
+    // Der Beitragszuschuss (Bayern) fließt immer zusätzlich — er wird den Eltern angerechnet, siehe berechneElternbeitraege.
+    const zuschuss = basis.bundeslandCode === "by" ? zaehleZuschussKinder(kinderRows, basis.kindKontext, stichtag) * BEITRAGSZUSCHUSS_MONAT : 0;
+    foerdererloeseMonat = basis.foerderungManuell + programme + zuschuss;
   } else if (basis.bundeslandCode === "by") {
     const basiswert = resolveBayernBasiswertAmStichtag(basis.bayernVersionen, stichtag);
     // Basiswert und Qualitätsbonus sind Jahresbeträge je Kind (Förderabschläge werden in Monatsraten gezahlt) → ÷ 12.
-    foerdererloeseMonat = berechneBayernFoerdererloesGesamt(kinderRows, basiswert) / 12;
+    const jahr = berechneBayernFoerderungGesamt(kinderRows, basiswert, basis.kindKontext, stichtag);
+    foerderung = {
+      staatlichMonat: jahr.staatlich / 12,
+      kommunalMonat: jahr.kommunal / 12,
+      beitragszuschussMonat: zaehleZuschussKinder(kinderRows, basis.kindKontext, stichtag) * BEITRAGSZUSCHUSS_MONAT,
+      personalprogrammeMonat: programme,
+    };
+    foerdererloeseMonat = foerderung.staatlichMonat + foerderung.kommunalMonat + foerderung.beitragszuschussMonat + programme;
   } else if (basis.bundeslandCode === "nrw") {
     const tabelle = resolveNRWKindpauschalenTabelleAmStichtag(basis.nrwKindpauschalenVersionenByGroup, stichtag);
-    foerdererloeseMonat = berechneNRWFoerdererloesGesamt(
-      kinderRows.map((r) => r.gruppe_id),
-      basis.nrwGruppenById,
-      tabelle
-    );
+    foerdererloeseMonat =
+      berechneNRWFoerdererloesGesamt(
+        kinderRows.map((r) => r.gruppe_id),
+        basis.nrwGruppenById,
+        tabelle
+      ) + programme;
   } else {
-    foerdererloeseMonat = 0;
+    foerdererloeseMonat = programme;
   }
 
   const tvoedTabelle = resolveTVoedTabelleAmStichtag(basis.tvoedVersionenByGroup, stichtag);
@@ -220,7 +234,7 @@ export function resolveFinanzenMonat(
   const personalkosten = berechnePersonalkostenGesamt(personalkostenErgebnisse, basis.lohnnebenkostenProzent, basis.jahressonderzahlungProzent);
   const preise = preiseAmStichtag(basis.beitraege, stichtag);
   const elternbeitraege = preise.size > 0 ? berechneElternbeitraege(kinderRows, preise, basis.kindKontext, stichtag).summe : null;
-  return berechneErgebnis(foerdererloeseMonat, personalkosten, elternbeitraege);
+  return berechneErgebnis(foerdererloeseMonat, personalkosten, elternbeitraege, { foerderung, sonstigeKostenMonat: basis.sonstigeKostenMonat });
 }
 
 function monthStart(isoDate: string): string {
