@@ -151,8 +151,8 @@ async function main() {
   // --- Dashboard, Finanzen, Suche (Testkita Bayern: zeigt den Engpass ab April 2027 und Elternbeiträge) ---
   await waehle(BAYERN);
   await sichern("dashboard.png", async () => {
-    await page.setViewport({ width: 1440, height: 1260, deviceScaleFactor: 2 });
-    await oeffne("/dashboard?monate=12", "Kinder & Personal");
+    await page.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 2 });
+    await oeffne("/dashboard", "Verlauf & Details");
     await page.screenshot({ path: ziel("dashboard.png") });
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
@@ -160,12 +160,20 @@ async function main() {
     await oeffne("/controlling", "Fördererlöse");
     await elementOben("finanzen-uebersicht.png", ".overflow-x-auto.rounded-lg.border", 520);
   });
-  await sichern("szenario-finanzen.png", async () => {
-    await oeffne("/szenario?reiter=wenn", "Personalkosten (simuliert)");
-    await abschnitt("szenario-finanzen.png", "Finanzen");
+  await sichern("planung.png", async () => {
+    await page.setViewport({ width: 1440, height: 1500, deviceScaleFactor: 2 });
+    await oeffne("/szenario", "Jetzt berechnen");
+    await page.evaluate(() => {
+      const knopf = Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.includes("Jetzt berechnen"));
+      (knopf as HTMLElement | undefined)?.click();
+    });
+    await page.waitForFunction(() => document.body.innerText.includes("Ergebnis deiner Planung"), { timeout: 20000 });
+    await pause(600);
+    await page.screenshot({ path: ziel("planung.png") });
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
   await sichern("suche.png", async () => {
-    await oeffne("/dashboard", "Kinder & Personal");
+    await oeffne("/dashboard", "Verlauf & Details");
     await page.keyboard.down("Meta");
     await page.keyboard.press("k");
     await page.keyboard.up("Meta");
@@ -183,23 +191,28 @@ async function main() {
     await page.keyboard.press("Escape");
   });
   await sichern("einrichtungen.png", async () => {
-    await page.setViewport({ width: 1440, height: 1100, deviceScaleFactor: 2 });
+    await page.setViewport({ width: 1440, height: 1400, deviceScaleFactor: 2 });
     await oeffne("/einrichtung-auswahl", "Meine Einrichtungen");
-    await page.waitForFunction(() => document.body.innerText.includes("Personal und Gesetz"), { timeout: 60000 });
+    // Alle sechs Karten sind gestreamt, wenn sechsmal „Ergebnis im Monat“ da steht
+    await page.waitForFunction(() => (document.body.innerText.match(/Ergebnis im Monat/g) ?? []).length >= 6, { timeout: 90000 });
     await pause(800);
-    await page.screenshot({ path: ziel("einrichtungen.png"), clip: { x: 170, y: 40, width: 920, height: 962 } });
+    await page.screenshot({ path: ziel("einrichtungen.png"), clip: { x: 190, y: 40, width: 1060, height: 1230 } });
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
   });
 
   // --- Testkita Bayern: Team, Ausblick, Vorschau, Controlling, Kind ---
   await waehle(BAYERN);
   await sichern("personal-ausblick.png", async () => {
-    await oeffne("/dashboard?monate=18", "Kinder & Personal");
+    await oeffne("/dashboard?ansicht=verlauf&monate=18", "Kinder & Personal");
     await abschnitt("personal-ausblick.png", "Kinder & Personal");
   });
   await sichern("team.png", async () => {
     await oeffne("/team", "Anstellungsschlüssel");
     await page.screenshot({ path: ziel("team.png") });
+  });
+  await sichern("gruppen.png", async () => {
+    await oeffne("/gruppen", "Gruppen");
+    await page.screenshot({ path: ziel("gruppen.png") });
   });
   await sichern("belegungs-vorschau.png", async () => {
     await oeffne("/gruppen/vorschau", "Belegungs");

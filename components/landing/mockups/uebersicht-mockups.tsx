@@ -3,7 +3,8 @@ import { BrowserFrame } from "@/components/landing/browser-frame";
 import einrichtungen from "@/public/images/landing/einrichtungen.png";
 import suche from "@/public/images/landing/suche.png";
 import finanzenUebersicht from "@/public/images/landing/finanzen-uebersicht.png";
-import szenarioFinanzen from "@/public/images/landing/szenario-finanzen.png";
+import planung from "@/public/images/landing/planung.png";
+import gruppen from "@/public/images/landing/gruppen.png";
 import controlling from "@/public/images/landing/controlling.png";
 
 /** Echte Bildschirmfotos aus dem Demo-Zugang — siehe scripts/landing-screenshots.ts zum Neuaufnehmen. */
@@ -13,7 +14,7 @@ export function EinrichtungenMockup() {
     <BrowserFrame>
       <Image
         src={einrichtungen}
-        alt="Bellegio-Übersicht aller Einrichtungen eines Trägers, nach Bundesland gruppiert, mit Belegung und Personal-Ampel je Kita"
+        alt="Kita-Ampel in Bellegio: je Einrichtung eine Ampel für Belegung und eine für Personal, mit Ergebnis im Monat, nach Bundesland gruppiert"
         className="h-auto w-full"
       />
     </BrowserFrame>
@@ -40,14 +41,22 @@ export function FinanzenMockup() {
   );
 }
 
-export function SzenarioFinanzenMockup() {
+export function PlanungMockup() {
   return (
     <BrowserFrame>
       <Image
-        src={szenarioFinanzen}
-        alt="Planung in Bellegio (Was wäre wenn): Fördererlöse, simulierte Personalkosten und Ergebnis"
+        src={planung}
+        alt="Planung in Bellegio: Annahmen eingeben, „Jetzt berechnen“ und das Ergebnis mit Personalbedarf, Förderung, Kosten und Ampel"
         className="h-auto w-full"
       />
+    </BrowserFrame>
+  );
+}
+
+export function GruppenMockup() {
+  return (
+    <BrowserFrame>
+      <Image src={gruppen} alt="Gruppen in Bellegio: Belegung und Plätze je Gruppe" className="h-auto w-full" />
     </BrowserFrame>
   );
 }

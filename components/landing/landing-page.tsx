@@ -18,7 +18,8 @@ import {
   EinrichtungenMockup,
   FinanzenMockup,
   SucheMockup,
-  SzenarioFinanzenMockup,
+  GruppenMockup,
+  PlanungMockup,
 } from "@/components/landing/mockups/uebersicht-mockups";
 
 export function LandingPage({ preise }: { preise: Listenpreise }) {
@@ -31,10 +32,12 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
         <StorySection
           id="traeger"
           eyebrow="Alle Einrichtungen im Blick"
-          titel="Ein Träger, viele Kitas — eine Übersicht."
-          text="Nach dem Login siehst du jede Einrichtung als Kachel mit Belegung und Personal-Ampel, nach Bundesland sortiert. Ein Klick öffnet die Kita, die Suche findet jedes Kind und jede Fachkraft."
+          titel="Wo läuft es — und wo musst du handeln?"
+          text="Nach dem Login zeigt jede Einrichtung zwei Ampeln: Belegung und Personal. Beide schauen zwölf Monate voraus und sagen dir in einem Satz, ab wann etwas kritisch wird."
           punkte={[
-            "Kacheln je Einrichtung mit Belegung und Personal-Ampel — nach Bundesland gruppiert",
+            "Ampeln mit Datum: „Ab 01.02.2027 kritisch: 8 freie Plätze“ — für Belegung und Personal getrennt",
+            "Bei Gelb und Rot hältst du Maßnahmen fest — wer, wann, was — zum Beispiel Warteliste, Info-Nachmittag oder Anzeige",
+            "Den Stichtag wählst du frei: So siehst du auch, wie es in einem halben Jahr aussieht",
             "Schnellwechsler im Header: von Kita zu Kita springen und im selben Bereich bleiben",
             "Globale Suche (Strg/Cmd + K) für Einrichtungen, Kinder, Mitarbeitende und Funktionen",
             "Mitarbeitende sehen nur die Einrichtungen und Bereiche, für die sie Rechte haben",
@@ -80,13 +83,13 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
           titel="Was kostet dein Personal — und was kommt rein?"
           text="Fördererlöse und Personalkosten stehen neben der Belegung. In der Planung siehst du, was eine zusätzliche Fachkraft oder ein Austritt für das Ergebnis bedeutet."
           punkte={[
-            "Fördererlöse nach den hinterlegten Regeln des Landes — oder als eigener Betrag, wo es keine Landesformel gibt",
+            "Fördererlöse nach den hinterlegten Regeln des Landes — in Bayern staatlich und kommunal — oder als eigener Betrag, wo es keine Landesformel gibt",
             "Personalkosten nach TVöD SuE oder mit eigenem Gehalt je Mitarbeitendem, inklusive Lohnnebenkosten",
-            "Planung mit Gehaltsfeld je Zeile — ohne echte Daten anzufassen",
+            "Planung als Rechner: Annahmen eingeben, „Jetzt berechnen“, Ergebnis mit Personalbedarf, Kosten und Ampel",
             "Finanzen sehen nur Nutzer mit eigenem Recht, getrennt von Belegung und Personal",
-            "Elternbeiträge trägst du als eigene Preisliste ein; kommunale Anteile und Sachkosten sind nicht enthalten",
+            "Elternbeiträge trägst du als Preisliste ein, Sachkosten als Monatsbetrag; Verpflegung und Pflegemittel sind nicht enthalten",
           ]}
-          mockups={[<FinanzenMockup key="finanzen" />, <SzenarioFinanzenMockup key="szenario" />]}
+          mockups={[<FinanzenMockup key="finanzen" />, <PlanungMockup key="planung" />]}
         />
 
         <section id="bundeslaender" className="scroll-mt-16 py-20 md:py-32">
@@ -123,7 +126,7 @@ export function LandingPage({ preise }: { preise: Listenpreise }) {
             "Freie Plätze je Gruppe auf einen Blick",
             "Belegungs-Vorschau mit Vorschlag, welches Nachrücker-Kind in den frei werdenden Platz passt",
           ]}
-          mockups={[<BelegungMockup key="belegung" />]}
+          mockups={[<GruppenMockup key="gruppen" />, <BelegungMockup key="belegung" />]}
         />
 
         <StorySection
