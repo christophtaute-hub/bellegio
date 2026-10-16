@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { KIND_STATUS_LABEL, GESCHLECHT_LABEL } from "@/lib/constants";
-import { austrittWarnung, calculateAgeDecimal, formatDate, toIsoDateString } from "@/lib/kita-datum";
+import { austrittWarnung, calculateAgeDecimal, formatAlter, formatDate, toIsoDateString } from "@/lib/kita-datum";
 import { BASIS_FAKTOR, istBasisCode, leiteBasisfaktorAb } from "@/lib/kinder/basisfaktor";
 import { canWriteBelegung } from "@/lib/server/current-user-role";
 import { cn } from "cn";
@@ -208,6 +208,7 @@ export default async function KinderPage({
     Name: `${kind.vorname} ${kind.nachname}`,
     Gruppe: kind.gruppen?.name ?? "–",
     Geburtstag: formatDate(kind.geburtsdatum),
+    Alter: formatAlter(kind.geburtsdatum),
     Eintritt: formatDate(kind.eintritt),
     Austritt: formatDate(kind.austritt),
     Status: KIND_STATUS_LABEL[kind.status] ?? kind.status,
@@ -375,6 +376,7 @@ export default async function KinderPage({
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {formatDate(kind.geburtsdatum)}
+                        <span className="text-muted-foreground"> · {formatAlter(kind.geburtsdatum)}</span>
                       </TableCell>
                       <TableCell className="tabular-nums">
                         {formatDate(kind.eintritt)}

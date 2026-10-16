@@ -14,6 +14,9 @@ import { ladeWechselDaten } from "@/lib/steuerung/wechsel-daten";
 import { baueHandlungen, type GruppenVerlauf, type Handlung } from "@/lib/steuerung/handlungen";
 import { bewerteZusage, type Zusage } from "@/lib/steuerung/zusage";
 import type { Ampel } from "@/lib/team/anstellungsschluessel";
+import { berechneBelegungAmpel } from "@/lib/steuerung/belegung-ampel";
+import { berechnePersonalAmpel } from "@/lib/steuerung/personal-ampel";
+import type { KitaAmpel } from "@/lib/steuerung/kita-ampel";
 
 /** Wie weit das Dashboard mindestens vorausschaut (Aufgaben, Gruppen-Ampel, Ausblick). */
 export const STEUERUNG_MONATE = 18;
@@ -41,6 +44,8 @@ export type SteuerungsDaten = {
   zuordnung: { belastbar: boolean; quote: number; ohneGruppeStunden: number };
   ausblick: AusblickErgebnis;
   monate: ForecastMonth[];
+  /** Die zwei Ampeln (Belegung, Personal) — dieselben wie in „Meine Einrichtungen“, aus denselben Daten berechnet. */
+  kitaAmpel: KitaAmpel;
 };
 
 function monatsErster(iso: string): string {
@@ -55,7 +60,7 @@ export async function ladeSteuerung(
   stichtag: string,
   optionen: { zeigeFinanzen: boolean; zeigeGehaelter: boolean; monateVoraus?: number }
 ): Promise<SteuerungsDaten> {
-  const [monate, kinderHeute, gruppenRes, kinderRes, einrichtungRes, teamRes, ausfallRes] = await Promise.all([
+  const [monate, kinderHeute, gruppenRes, kinderRes, einrichtungRes, teamRes, ausfallRes, massnahmenRes] = await Promise.all([
     buildForecastMonths(supabase, einrichtungId, stichtag, Math.max(STEUERUNG_MONATE, optionen.monateVoraus ?? 0), optionen.zeigeFinanzen, true),
     getKinderPresenceAtDate(supabase, einrichtungId, stichtag),
     supabase
@@ -88,6 +93,7 @@ export async function ladeSteuerung(
       .eq("team.status", "aktiv")
       .lte("von", stichtag)
       .or(`bis.is.null,bis.gte.${stichtag}`),
+    supabase.from("massnahmen").select("bereich, titel").eq("einrichtung_id", einrichtungId).order("created_at", { ascending: false }).limit(20),
   ]);
 
   const gruppenListe = gruppenRes.data ?? [];
@@ -240,5 +246,14 @@ export async function ladeSteuerung(
     },
     ausblick,
     monate,
+    kitaAmpel: {
+      belegung: berechneBelegungAmpel(vorschauGruppen, vorschauKinder, stichtag),
+      personal: berechnePersonalAmpel(ausblick),
+      ergebnisMonat: finanzen?.ergebnisMonat ?? null,
+      letzteMassnahme: {
+        belegung: (massnahmenRes.data ?? []).find((m) => m.bereich === "belegung")?.titel ?? null,
+        personal: (massnahmenRes.data ?? []).find((m) => m.bereich === "personal")?.titel ?? null,
+      },
+    },
   };
 }

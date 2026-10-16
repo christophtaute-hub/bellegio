@@ -1,19 +1,24 @@
 import { createClient } from "@/lib/supabase/server";
 import { canViewFinanzen, canWriteBelegung, canWritePersonal } from "@/lib/server/current-user-role";
-import { ladeKitaAmpel } from "@/lib/steuerung/kita-ampel";
+import { ladeKitaAmpel, type KitaAmpel } from "@/lib/steuerung/kita-ampel";
 import { plusMinusStatus } from "@/lib/ui/status";
 import { AmpelZeile } from "@/components/steuerung/ampel-zeile";
 
 /** Die zwei Ampeln einer Einrichtung (Belegung, Personal) plus — mit Finanz-Recht — das Ergebnis des Monats als farbige Zahl.
- * Wird von der Einrichtungs-Übersicht („Meine Einrichtungen“) und vom Dashboard benutzt. */
-export async function KitaAmpelBlock({ einrichtungId, einrichtungName, stichtag }: { einrichtungId: string; einrichtungName: string; stichtag: string }) {
-  const supabase = await createClient();
-  const [zeigeFinanzen, darfBelegung, darfPersonal] = await Promise.all([
-    canViewFinanzen(supabase, einrichtungId),
-    canWriteBelegung(supabase, einrichtungId),
-    canWritePersonal(supabase, einrichtungId),
-  ]);
-  const a = await ladeKitaAmpel(supabase, einrichtungId, stichtag, { zeigeFinanzen });
+ * Reine Anzeige; die Daten kommen aus ladeKitaAmpel (Übersicht) bzw. ladeSteuerung (Dashboard). */
+export function KitaAmpelAnsicht({
+  einrichtungId,
+  einrichtungName,
+  ampel: a,
+  darfBelegung,
+  darfPersonal,
+}: {
+  einrichtungId: string;
+  einrichtungName: string;
+  ampel: KitaAmpel;
+  darfBelegung: boolean;
+  darfPersonal: boolean;
+}) {
   const geld = a.ergebnisMonat !== null ? { ...plusMinusStatus(a.ergebnisMonat), betrag: a.ergebnisMonat } : null;
 
   if (a.belegung.sollplaetze === 0) {
@@ -60,4 +65,16 @@ export async function KitaAmpelBlock({ einrichtungId, einrichtungName, stichtag 
       ) : null}
     </div>
   );
+}
+
+/** Lädt die Ampeln selbst — für „Meine Einrichtungen“, wo jede Karte ihre Zahlen einzeln streamt. */
+export async function KitaAmpelBlock({ einrichtungId, einrichtungName, stichtag }: { einrichtungId: string; einrichtungName: string; stichtag: string }) {
+  const supabase = await createClient();
+  const [zeigeFinanzen, darfBelegung, darfPersonal] = await Promise.all([
+    canViewFinanzen(supabase, einrichtungId),
+    canWriteBelegung(supabase, einrichtungId),
+    canWritePersonal(supabase, einrichtungId),
+  ]);
+  const ampel = await ladeKitaAmpel(supabase, einrichtungId, stichtag, { zeigeFinanzen });
+  return <KitaAmpelAnsicht einrichtungId={einrichtungId} einrichtungName={einrichtungName} ampel={ampel} darfBelegung={darfBelegung} darfPersonal={darfPersonal} />;
 }

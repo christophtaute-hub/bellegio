@@ -143,3 +143,22 @@
     margin: 0 !important;
   }
 }
+/* Ladezustand: Zeichen atmet leicht, dünner Balken läuft; erscheint erst nach 300 ms, damit schnelle Seiten nicht flackern. */
+@keyframes ladezustand-einblenden {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ladezustand-atmen {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes ladezustand-lauf {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+.ladezustand-einblenden { opacity: 0; animation: ladezustand-einblenden 200ms ease-out 300ms forwards; }
+.ladezustand-logo { animation: ladezustand-atmen 1.6s ease-in-out infinite; }
+.ladezustand-balken { animation: ladezustand-lauf 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ladezustand-logo, .ladezustand-balken { animation: none; }
+}

@@ -235,7 +235,7 @@ export function Cockpit({
           {ZEITRAEUME.map((n) => (
             <Link
               key={n}
-              href={`/dashboard?monate=${n}${stichtagParam ? `&stichtag=${stichtagParam}` : ""}`}
+              href={`/dashboard?ansicht=verlauf&monate=${n}${stichtagParam ? `&stichtag=${stichtagParam}` : ""}`}
               scroll={false}
               aria-current={n === monate ? "true" : undefined}
               className={cn(

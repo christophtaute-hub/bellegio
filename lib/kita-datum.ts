@@ -16,6 +16,23 @@ export function calculateAge(geburtsdatum: string, today = new Date()): number {
   return age;
 }
 
+/** Alter in Jahren und Monaten zum heutigen Tag, z. B. „4 Jahre 7 Monate“. Wird nie gespeichert, sondern immer neu gerechnet.
+ * Ein Monat ist voll, wenn der Tag des Monats erreicht ist (Geburt am 31. → Monatsende zählt als voll). */
+export function formatAlter(geburtsdatum: string, today = new Date()): string {
+  const birth = parseIsoDate(geburtsdatum);
+  let monate = (today.getUTCFullYear() - birth.getUTCFullYear()) * 12 + (today.getUTCMonth() - birth.getUTCMonth());
+  const letzterTag = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0)).getUTCDate();
+  const geburtstagImMonat = Math.min(birth.getUTCDate(), letzterTag);
+  if (today.getUTCDate() < geburtstagImMonat) monate -= 1;
+  if (monate < 0) return "noch nicht geboren";
+  const jahre = Math.floor(monate / 12);
+  const rest = monate % 12;
+  const jahrText = `${jahre} ${jahre === 1 ? "Jahr" : "Jahre"}`;
+  const monatText = `${rest} ${rest === 1 ? "Monat" : "Monate"}`;
+  if (jahre === 0) return monatText;
+  return rest === 0 ? jahrText : `${jahrText} ${monatText}`;
+}
+
 /** Ende des laufenden Kitajahres (z.B. 31.08. bei kitaYearStartMonth=9). */
 export function kitajahrEnde(today: Date, kitaYearStartMonth: number): Date {
   const currentMonth = today.getUTCMonth() + 1;

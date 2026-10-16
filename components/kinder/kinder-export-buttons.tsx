@@ -7,6 +7,7 @@ export type KinderExportRow = {
   Name: string;
   Gruppe: string;
   Geburtstag: string;
+  Alter: string;
   Eintritt: string;
   Austritt: string;
   Status: string;
