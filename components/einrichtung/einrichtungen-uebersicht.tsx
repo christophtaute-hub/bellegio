@@ -67,7 +67,7 @@ export function EinrichtungenUebersicht({ eintraege }: { eintraege: Eintrag[] })
                 {gruppe.label} <span className="font-normal">({gruppe.einrichtungen.length})</span>
               </h2>
             ) : null}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {gruppe.einrichtungen.map((e) => (
                 <div key={e.id}>{e.kachel}</div>
               ))}

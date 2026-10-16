@@ -209,6 +209,15 @@ export function berechnePersonalAusblick(
       const namen = verursacher.map((a) => a.name).join(", ");
       ursache = `${namen} ${verursacher.length === 1 ? "scheidet" : "scheiden"} aus (${zahl(summe, 0)} Wochenstunden weniger).`;
     }
+    if (verursacher.length === 0) {
+      // Kein Austritt als Auslöser: sind es weniger Wochenstunden (Stundenreduzierung, Ausfall) oder mehr Kinder?
+      const davor = monate.find((m) => m.monat === vorher);
+      if (davor && kritisch.istStunden < davor.istStunden - 0.5) {
+        ursache = `Das Team hat ${zahl(davor.istStunden - kritisch.istStunden, 0)} Wochenstunden weniger (Stundenreduzierung oder Ausfall).`;
+      } else if (davor && kritisch.kinder > davor.kinder) {
+        ursache = `Es kommen ${kritisch.kinder - davor.kinder} ${kritisch.kinder - davor.kinder === 1 ? "Kind" : "Kinder"} dazu.`;
+      }
+    }
     if (kritisch.fehlendeStunden > 0) {
       const luecke = stunden(kritisch.fehlendeStunden);
       empfehlungen.push(

@@ -55,6 +55,26 @@ async function main() {
   await supabase.from("team_verguetung").update({ monatsgehalt_manuell: 2900 }).eq("team_id", berger!.id);
   await supabase.from("team_verguetung").update({ stufe: 5 }).eq("team_id", sommer!.id);
   await supabase.from("einrichtungen").update({ sonstige_kosten_monatlich: 1200 }).eq("id", testkita);
+  // Belegungs-Ampel: Testkita Bayern voll belegt (Nachrücker ersetzt einen Abgang zum Jahreswechsel),
+  // Testkita Baden-Württemberg ohne freie Plätze — Sonnenschein und Testkita NRW bleiben unterbelegt (rot).
+  const { data: kigaGruppe } = await supabase.from("gruppen").select("id").eq("einrichtung_id", testkita).eq("gruppenart", "kindergarten").single();
+  const { data: abgang } = await supabase
+    .from("kinder")
+    .select("id")
+    .eq("gruppe_id", kigaGruppe!.id)
+    .eq("status", "aktiv")
+    .gte("austritt", "2027-06-30")
+    .order("austritt", { ascending: true })
+    .limit(1)
+    .single();
+  const { data: mira } = await supabase.from("kinder").select("id").eq("einrichtung_id", testkita).eq("vorname", "Mira").eq("nachname", "Albrecht").single();
+  if (abgang && mira) {
+    await supabase.from("kinder").update({ austritt: "2026-12-31" }).eq("id", abgang.id);
+    await supabase.from("kinder").update({ eintritt: "2027-01-01", ersetzt_kind_id: abgang.id }).eq("id", mira.id);
+  }
+  const bw = await einrichtungId("Testkita Baden-Württemberg");
+  await supabase.from("gruppen").update({ sollplatze: 18 }).eq("einrichtung_id", bw).eq("name", "Ganztagsgruppe");
+  await supabase.from("gruppen").update({ sollplatze: 17 }).eq("einrichtung_id", bw).eq("name", "Regelgruppe");
   console.log("Demo-Ergebnis-Daten gesetzt. Jetzt: npx tsx --env-file=.env.local scripts/demo-einrichten.ts");
 }
 main();

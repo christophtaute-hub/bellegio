@@ -250,7 +250,9 @@ export async function buildForecastMonths(
   includeFinanzen = false,
   /** true: der erste Eintrag nutzt `startMonth` als exakten Stichtag (Tag genau) statt des Monatsersten —
    * für das Dashboard, dessen Stichtag „heute“ sein soll. Alle weiteren Einträge sind Monatserste. */
-  ersterStichtagExakt = false
+  ersterStichtagExakt = false,
+  /** Nur diese Stichtage rechnen (erster = exakter Stichtag) statt monatlich ab startMonth — für die schnelle Kita-Ampel. */
+  stuetzstichtage?: string[]
 ): Promise<ForecastMonth[]> {
   const [{ data: gruppen }, { data: einrichtung }, personalBasis] = await Promise.all([
     supabase
@@ -302,9 +304,9 @@ export async function buildForecastMonths(
   ]);
 
   const start = monthStart(startMonth);
-  const months = Array.from({ length: monthCount }, (_, i) =>
-    i === 0 && ersterStichtagExakt ? startMonth : toIsoDateString(addMonthsUtc(parseIsoDate(start), i))
-  );
+  const months =
+    stuetzstichtage ??
+    Array.from({ length: monthCount }, (_, i) => (i === 0 && ersterStichtagExakt ? startMonth : toIsoDateString(addMonthsUtc(parseIsoDate(start), i))));
 
   return Promise.all(
     months.map(async (month) => {

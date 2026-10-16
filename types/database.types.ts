@@ -817,6 +817,73 @@ export type Database = {
           },
         ]
       }
+      massnahmen: {
+        Row: {
+          bereich: string
+          created_at: string
+          created_by: string | null
+          einrichtung_id: string
+          erledigt_am: string | null
+          erledigt_von: string | null
+          id: string
+          notiz: string | null
+          status: string
+          titel: string
+          typ: string
+          ziel_monat: string | null
+        }
+        Insert: {
+          bereich: string
+          created_at?: string
+          created_by?: string | null
+          einrichtung_id: string
+          erledigt_am?: string | null
+          erledigt_von?: string | null
+          id?: string
+          notiz?: string | null
+          status?: string
+          titel: string
+          typ: string
+          ziel_monat?: string | null
+        }
+        Update: {
+          bereich?: string
+          created_at?: string
+          created_by?: string | null
+          einrichtung_id?: string
+          erledigt_am?: string | null
+          erledigt_von?: string | null
+          id?: string
+          notiz?: string | null
+          status?: string
+          titel?: string
+          typ?: string
+          ziel_monat?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "massnahmen_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "massnahmen_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "massnahmen_erledigt_von_fkey"
+            columns: ["erledigt_von"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kind_gruppen_historie: {
         Row: {
           created_at: string

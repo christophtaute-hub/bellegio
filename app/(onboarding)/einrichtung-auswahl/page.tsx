@@ -11,12 +11,16 @@ import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
 import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import { EinrichtungKachel } from "@/components/einrichtung/einrichtung-kachel";
 import { EinrichtungenUebersicht } from "@/components/einrichtung/einrichtungen-uebersicht";
+import { StichtagPicker } from "@/components/shared/stichtag-picker";
 import { Button } from "@/components/ui/button";
 
-export default async function EinrichtungAuswahlPage() {
+export default async function EinrichtungAuswahlPage({ searchParams }: { searchParams: Promise<{ stichtag?: string }> }) {
   if (await zustimmungOffen()) redirect("/zustimmung");
   const supabase = await createClient();
-  const stichtag = toIsoDateString(new Date());
+  const heute = toIsoDateString(new Date());
+  const { stichtag: stichtagParam } = await searchParams;
+  // Frei wählbarer Stichtag: beide Ampeln schauen von diesem Tag aus 12 Monate voraus
+  const stichtag = stichtagParam && /^\d{4}-\d{2}-\d{2}$/.test(stichtagParam) && !Number.isNaN(Date.parse(stichtagParam)) ? stichtagParam : heute;
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -48,8 +52,9 @@ export default async function EinrichtungAuswahlPage() {
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-8 p-4 py-16">
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="font-heading text-2xl text-primary">Meine Einrichtungen</h1>
-        <p className="text-sm text-muted-foreground">Wähle die Einrichtung, mit der du arbeiten möchtest.</p>
+        <p className="text-sm text-muted-foreground">Wo läuft es — und wo musst du jetzt handeln?</p>
       </div>
+      {einrichtungen && einrichtungen.length > 0 ? <StichtagPicker basePath="/einrichtung-auswahl" stichtag={stichtag} /> : null}
 
       {einrichtungen && einrichtungen.length > 0 ? (
         <EinrichtungenUebersicht
