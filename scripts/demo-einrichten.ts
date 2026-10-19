@@ -110,6 +110,20 @@ async function main() {
       if (be) throw new Error(be.message);
     }
 
+    // Marketing-Ampel: Bewertung und Kampagnen mitkopieren (Nutzer des Quell-Trägers gibt es im Demo-Träger nicht → leer)
+    const { data: mb } = await sb.from("marketing_bewertung").select("*").eq("einrichtung_id", q.id).maybeSingle();
+    if (mb) {
+      const { error: mbe } = await sb.from("marketing_bewertung").insert({ ...mb, einrichtung_id: e.id, regionalleitung_user_id: null, bewertet_von: null });
+      if (mbe) throw new Error(mbe.message);
+    }
+    const { data: mk } = await sb.from("marketing_kampagne").select("*").eq("einrichtung_id", q.id);
+    if ((mk ?? []).length > 0) {
+      const { error: mke } = await sb
+        .from("marketing_kampagne")
+        .insert((mk ?? []).map(({ id: _id, ...k }) => ({ ...k, einrichtung_id: e.id, verantwortlich_user_id: null, created_by: null })));
+      if (mke) throw new Error(mke.message);
+    }
+
     // Gruppen
     const { data: gruppen } = await sb.from("gruppen").select("*").eq("einrichtung_id", q.id).is("archived_at", null);
     const gruppeNeu = new Map<string, string>();

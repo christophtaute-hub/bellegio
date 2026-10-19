@@ -4,7 +4,8 @@ import { buildForecastMonths } from "@/lib/forecast/monthly-forecast";
 import { getKinderPresenceAtDate } from "@/lib/dashboard/presence";
 import { berechnePersonalAusblick } from "@/lib/ausblick/personal-ausblick";
 import { toIsoDateString } from "@/lib/kita-datum";
-import { STANDARD_GRENZEN, stufeAusGrenzen } from "@/lib/marketing/ampel";
+import { stufeAusGrenzen } from "@/lib/marketing/ampel";
+import { ladeMarketingEinstellungen } from "@/lib/marketing/einstellungen";
 import { getMarketingZugriff } from "@/lib/server/marketing";
 
 export type MarketingVorschlag = {
@@ -31,6 +32,7 @@ export async function ladeMarketingVorschlag(einrichtungId: string): Promise<Mar
     return null;
   }
   const heute = toIsoDateString(new Date());
+  const { grenzen } = await ladeMarketingEinstellungen(supabase);
   const [{ data: gruppen }, kinderRows, monate, { data: einrichtung }] = await Promise.all([
     dienst.from("gruppen").select("id, gruppenart, sollplatze").eq("einrichtung_id", einrichtungId).is("archived_at", null),
     getKinderPresenceAtDate(dienst, einrichtungId, heute),
@@ -59,7 +61,7 @@ export async function ladeMarketingVorschlag(einrichtungId: string): Promise<Mar
     freieU3,
     freieUe3,
     fehlendeStunden,
-    stufeBelegung: stufeAusGrenzen(freieU3 + freieUe3, STANDARD_GRENZEN.belegung),
-    stufePersonalbedarf: stufeAusGrenzen(fehlendeStunden, STANDARD_GRENZEN.personalbedarf),
+    stufeBelegung: stufeAusGrenzen(freieU3 + freieUe3, grenzen.belegung),
+    stufePersonalbedarf: stufeAusGrenzen(fehlendeStunden, grenzen.personalbedarf),
   };
 }

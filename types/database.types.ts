@@ -879,6 +879,44 @@ export type Database = {
           },
         ]
       }
+      marketing_einstellungen: {
+        Row: {
+          bewertung_veraltet_nach_tagen: number
+          grenzen: Json
+          kampagne_endet_in_tagen: number
+          kriterien: Json
+          trager_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bewertung_veraltet_nach_tagen?: number
+          grenzen?: Json
+          kampagne_endet_in_tagen?: number
+          kriterien?: Json
+          trager_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bewertung_veraltet_nach_tagen?: number
+          grenzen?: Json
+          kampagne_endet_in_tagen?: number
+          kriterien?: Json
+          trager_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_einstellungen_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: true
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_kampagne: {
         Row: {
           anzahl: number | null

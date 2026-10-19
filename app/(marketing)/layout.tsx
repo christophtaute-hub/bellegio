@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 /** Marketing-Ampel: eigener Bereich ohne Einrichtungs-Kontext (wie die Betreiber-Zentrale). Für alle ohne Marketing-Recht
  * existiert er nicht (404). Bestehende Bereiche der App bleiben unberührt. */
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  if ((await getMarketingZugriff()) === "kein_zugriff") notFound();
+  const zugriff = await getMarketingZugriff();
+  if (zugriff === "kein_zugriff") notFound();
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -17,7 +18,7 @@ export default async function MarketingLayout({ children }: { children: React.Re
         <Link href="/marketing" className="font-heading text-lg text-primary">
           Bellegio <span className="text-muted-foreground">· Marketing-Ampel</span>
         </Link>
-        <MarketingNav />
+        <MarketingNav zusaetzlich={zugriff === "bearbeiten" ? [{ href: "/marketing/einstellungen", label: "Kriterien & Fristen" }] : []} />
         <div className="flex-1" />
         <Button variant="ghost" size="xs" nativeButton={false} render={<Link href="/einrichtung-auswahl" />} className="gap-1 text-muted-foreground">
           <ArrowLeft className="size-3.5" />

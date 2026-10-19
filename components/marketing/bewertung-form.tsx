@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { speichereMarketingBewertung } from "@/lib/actions/marketing-bewertung";
-import { AMPEL_TITEL, ampelStufen, STANDARD_KRITERIEN, type AmpelFarbe, type MarketingAmpelArt } from "@/lib/marketing/ampel";
+import { AMPEL_TITEL, ampelStufen, type AmpelFarbe, type MarketingAmpelArt } from "@/lib/marketing/ampel";
 import type { MarketingVorschlag } from "@/lib/marketing/lade-vorschlag";
 import { meldeErfolg, meldeFehler } from "@/lib/toast";
 
@@ -66,12 +66,15 @@ export function BewertungForm({
   start,
   nutzer,
   vorschlag,
+  kriterien,
   darfBearbeiten,
 }: {
   einrichtungId: string;
   start: BewertungWerte;
   nutzer: { id: string; full_name: string | null }[];
   vorschlag: MarketingVorschlag | null;
+  /** Beschreibung je Ampel und Stufe (zentral einstellbar). */
+  kriterien: Record<MarketingAmpelArt, string[]>;
   darfBearbeiten: boolean;
 }) {
   const [w, setW] = useState<BewertungWerte>(start);
@@ -99,7 +102,7 @@ export function BewertungForm({
     });
   }
 
-  const kriterium = (art: MarketingAmpelArt, stufe: number | null) => (stufe === null ? "Noch nicht bewertet." : STANDARD_KRITERIEN[art][stufe]);
+  const kriterium = (art: MarketingAmpelArt, stufe: number | null) => (stufe === null ? "Noch nicht bewertet." : kriterien[art][stufe]);
   const feld = "flex flex-col gap-1 text-xs text-muted-foreground";
 
   return (

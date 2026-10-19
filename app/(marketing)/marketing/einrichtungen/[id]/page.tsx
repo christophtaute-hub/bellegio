@@ -7,6 +7,7 @@ import { getMarketingZugriff } from "@/lib/server/marketing";
 import { ladeMarketingVorschlag } from "@/lib/marketing/lade-vorschlag";
 import { beschreibeBewertungsAenderung, beschreibeKampagnenAenderung } from "@/lib/marketing/protokoll";
 import { ladeKampagnen } from "@/lib/marketing/lade-kampagnen";
+import { ladeMarketingEinstellungen } from "@/lib/marketing/einstellungen";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { KampagneDialog } from "@/components/marketing/kampagne-dialog";
 import { KampagnenListe } from "@/components/marketing/kampagnen-liste";
@@ -28,11 +29,12 @@ export default async function MarketingEinrichtungPage({ params }: { params: Pro
   const einrichtung = (einrichtungen ?? []).find((e) => e.id === id);
   if (!einrichtung) notFound();
 
-  const [{ data: b }, { data: protokoll }, vorschlag, kampagnen] = await Promise.all([
+  const [{ data: b }, { data: protokoll }, vorschlag, kampagnen, einstellungen] = await Promise.all([
     supabase.from("marketing_bewertung").select("*").eq("einrichtung_id", id).maybeSingle(),
     supabase.from("marketing_protokoll").select("id, tabelle, aktion, alt, neu, geaendert_von, geaendert_am").eq("einrichtung_id", id).order("geaendert_am", { ascending: false }).limit(30),
     zugriff === "bearbeiten" ? ladeMarketingVorschlag(id) : Promise.resolve(null),
     ladeKampagnen(supabase, id),
+    ladeMarketingEinstellungen(supabase),
   ]);
 
   const nutzerName = new Map((nutzer ?? []).map((n) => [n.id, n.full_name ?? "Ohne Namen"]));
@@ -85,7 +87,7 @@ export default async function MarketingEinrichtungPage({ params }: { params: Pro
         </p>
       </div>
 
-      <BewertungForm einrichtungId={id} start={start} nutzer={nutzer ?? []} vorschlag={vorschlag} darfBearbeiten={zugriff === "bearbeiten"} />
+      <BewertungForm einrichtungId={id} start={start} nutzer={nutzer ?? []} vorschlag={vorschlag} kriterien={einstellungen.kriterien} darfBearbeiten={zugriff === "bearbeiten"} />
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
