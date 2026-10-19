@@ -817,6 +817,68 @@ export type Database = {
           },
         ]
       }
+      marketing_bewertung: {
+        Row: {
+          ampel_belegung: number | null
+          ampel_paedagogische_qualitaet: number | null
+          ampel_personalbedarf: number | null
+          ampel_personelle_qualitaet: number | null
+          bewertet_am: string | null
+          bewertet_von: string | null
+          einrichtung_id: string
+          fehlende_stunden_woche: number | null
+          freie_plaetze_u3: number | null
+          freie_plaetze_ue3: number | null
+          kommentar: string | null
+          leitung_performance: number | null
+          offene_stellen: number | null
+          regionalleitung_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ampel_belegung?: number | null
+          ampel_paedagogische_qualitaet?: number | null
+          ampel_personalbedarf?: number | null
+          ampel_personelle_qualitaet?: number | null
+          bewertet_am?: string | null
+          bewertet_von?: string | null
+          einrichtung_id: string
+          fehlende_stunden_woche?: number | null
+          freie_plaetze_u3?: number | null
+          freie_plaetze_ue3?: number | null
+          kommentar?: string | null
+          leitung_performance?: number | null
+          offene_stellen?: number | null
+          regionalleitung_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ampel_belegung?: number | null
+          ampel_paedagogische_qualitaet?: number | null
+          ampel_personalbedarf?: number | null
+          ampel_personelle_qualitaet?: number | null
+          bewertet_am?: string | null
+          bewertet_von?: string | null
+          einrichtung_id?: string
+          fehlende_stunden_woche?: number | null
+          freie_plaetze_u3?: number | null
+          freie_plaetze_ue3?: number | null
+          kommentar?: string | null
+          leitung_performance?: number | null
+          offene_stellen?: number | null
+          regionalleitung_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_bewertung_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: true
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_protokoll: {
         Row: {
           aktion: string

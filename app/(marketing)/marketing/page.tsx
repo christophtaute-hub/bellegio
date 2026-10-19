@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
 
@@ -23,7 +24,11 @@ export default async function MarketingDashboardPage() {
             {(einrichtungen ?? []).map((e) => (
               <tr key={e.id} className="border-b last:border-0">
                 <td className="px-4 py-2.5 tabular-nums text-muted-foreground">{e.kostenstelle ?? "–"}</td>
-                <td className="px-3 py-2.5 font-medium">{e.name}</td>
+                <td className="px-3 py-2.5 font-medium">
+                  <Link href={`/marketing/einrichtungen/${e.id}`} className="text-primary hover:underline">
+                    {e.name}
+                  </Link>
+                </td>
                 <td className="px-3 py-2.5">{BUNDESLAENDER.find((b) => b.code === e.bundesland_code)?.label ?? e.bundesland_code}</td>
                 <td className="px-3 py-2.5 text-muted-foreground">{e.cluster ?? "–"}</td>
               </tr>
