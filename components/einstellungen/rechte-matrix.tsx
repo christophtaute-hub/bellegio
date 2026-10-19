@@ -27,6 +27,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { setzeMarketingZugang } from "@/lib/actions/marketing-zugang";
+import { meldeErfolg, meldeFehler } from "@/lib/toast";
 
 const ZUGRIFF_OPTIONS: { value: Zugriff; label: string; rang: number }[] = [
   { value: "kein_zugriff", label: "Kein Zugriff", rang: 0 },
@@ -66,7 +68,10 @@ export function RechteMatrix({
   berechtigungen,
   eigeneZugriffe,
   lokaleAdmins,
+  marketingZugang = {},
 }: {
+  /** Marketing-Recht je Nutzer (trägerweit); fehlt ein Nutzer, hat er keins. */
+  marketingZugang?: Record<string, "ansehen" | "bearbeiten">;
   currentUserId: string;
   istTraegerAdmin: boolean;
   einrichtungen: MatrixEinrichtung[];
@@ -226,6 +231,10 @@ export function RechteMatrix({
                 ) : null}
 
                 {istTraegerAdmin && user.id !== currentUserId && user.role !== "traeger_admin" ? (
+                  <MarketingZugangSelect userId={user.id} wert={marketingZugang[user.id] ?? "kein_zugriff"} />
+                ) : null}
+
+                {istTraegerAdmin && user.id !== currentUserId && user.role !== "traeger_admin" ? (
                   <KannRechteVerwaltenToggle
                     userId={user.id}
                     wert={user.kann_rechte_verwalten}
@@ -324,6 +333,36 @@ function ClusterBulkZeile({
         </TableRow>
       ) : null}
     </>
+  );
+}
+
+/** Marketing-Ampel: trägerweites Recht für alle Einrichtungen, getrennt von den Bereichen je Einrichtung — gibt keinen Zugriff
+ * auf Kinder, Personal oder Finanzen. */
+function MarketingZugangSelect({ userId, wert }: { userId: string; wert: "kein_zugriff" | "ansehen" | "bearbeiten" }) {
+  const [isPending, startTransition] = useTransition();
+  return (
+    <label className="flex w-fit flex-wrap items-center gap-2 text-sm">
+      <span>Marketing-Ampel (alle Einrichtungen):</span>
+      <select
+        className={SELECT_CLASS}
+        defaultValue={wert}
+        disabled={isPending}
+        onChange={(e) => {
+          const neu = e.target.value as "kein_zugriff" | "ansehen" | "bearbeiten";
+          startTransition(async () => {
+            const r = await setzeMarketingZugang(userId, neu);
+            if (r.ok) meldeErfolg("Marketing-Recht gespeichert.");
+            else meldeFehler(r.error);
+          });
+        }}
+      >
+        {ZUGRIFF_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 

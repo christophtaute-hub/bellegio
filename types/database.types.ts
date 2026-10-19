@@ -817,6 +817,86 @@ export type Database = {
           },
         ]
       }
+      marketing_protokoll: {
+        Row: {
+          aktion: string
+          alt: Json | null
+          datensatz_id: string | null
+          einrichtung_id: string
+          geaendert_am: string
+          geaendert_von: string | null
+          id: string
+          neu: Json | null
+          tabelle: string
+        }
+        Insert: {
+          aktion: string
+          alt?: Json | null
+          datensatz_id?: string | null
+          einrichtung_id: string
+          geaendert_am?: string
+          geaendert_von?: string | null
+          id?: string
+          neu?: Json | null
+          tabelle: string
+        }
+        Update: {
+          aktion?: string
+          alt?: Json | null
+          datensatz_id?: string | null
+          einrichtung_id?: string
+          geaendert_am?: string
+          geaendert_von?: string | null
+          id?: string
+          neu?: Json | null
+          tabelle?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_protokoll_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_zugang: {
+        Row: {
+          created_at: string
+          trager_id: string
+          user_id: string
+          zugriff: string
+        }
+        Insert: {
+          created_at?: string
+          trager_id: string
+          user_id: string
+          zugriff: string
+        }
+        Update: {
+          created_at?: string
+          trager_id?: string
+          user_id?: string
+          zugriff?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_zugang_trager_id_fkey"
+            columns: ["trager_id"]
+            isOneToOne: false
+            referencedRelation: "trager"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketing_zugang_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       massnahmen: {
         Row: {
           bereich: string
@@ -2427,6 +2507,24 @@ export type Database = {
       }
     }
     Functions: {
+      marketing_einrichtungen: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bundesland_code: string
+          cluster: string | null
+          id: string
+          kostenstelle: string | null
+          name: string
+          ort: string | null
+        }[]
+      }
+      marketing_nutzer: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          full_name: string | null
+          id: string
+        }[]
+      }
       audit_zusammenfassung: {
         Args: { p_bis: string; p_einrichtung_id: string; p_von: string }
         Returns: {

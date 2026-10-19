@@ -40,7 +40,7 @@ export default async function NutzerUndRechtePage() {
     );
   }
 
-  const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }, { data: alleLokalenAdmins }] = await Promise.all([
+  const [{ data: alleEinrichtungen }, { data: alleUsers }, { data: alleBerechtigungen }, { data: alleLokalenAdmins }, { data: marketingZeilen }] = await Promise.all([
     supabase
       .from("einrichtungen")
       .select("id, name, cluster")
@@ -54,6 +54,7 @@ export default async function NutzerUndRechtePage() {
       .order("full_name"),
     supabase.from("einrichtung_berechtigungen").select("user_id, einrichtung_id, bereich, zugriff"),
     supabase.from("einrichtung_lokale_admins").select("user_id, einrichtung_id"),
+    istTraegerAdmin ? supabase.from("marketing_zugang").select("user_id, zugriff") : Promise.resolve({ data: [] as { user_id: string; zugriff: string }[] }),
   ]);
 
   // Eine lokale Administration (nicht trägerweit kann_rechte_verwalten) sieht und bearbeitet nur
@@ -116,6 +117,7 @@ export default async function NutzerUndRechtePage() {
         berechtigungen={alleBerechtigungen ?? []}
         eigeneZugriffe={eigeneZugriffe}
         lokaleAdmins={alleLokalenAdmins ?? []}
+        marketingZugang={Object.fromEntries((marketingZeilen ?? []).map((z) => [z.user_id, z.zugriff as "ansehen" | "bearbeiten"]))}
       />
     </div>
   );

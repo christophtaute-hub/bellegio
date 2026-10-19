@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
-import { Shield, Plus } from "lucide-react";
+import { Megaphone, Shield, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
+import { getMarketingZugriff } from "@/lib/server/marketing";
 import { EinrichtungKachel } from "@/components/einrichtung/einrichtung-kachel";
 import { EinrichtungenUebersicht } from "@/components/einrichtung/einrichtungen-uebersicht";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
@@ -37,6 +38,10 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
         .is("archived_at", null)
         .order("name")
     : { data: [] };
+
+  // Marketing-Nutzer ohne eigene Einrichtungsrechte arbeiten ausschließlich in der Marketing-Ampel
+  const marketingZugriff = await getMarketingZugriff();
+  if (marketingZugriff !== "kein_zugriff" && !istTraegerAdmin && (einrichtungen?.length ?? 0) === 0) redirect("/marketing");
 
   // Wer nur eine einzige Einrichtung sieht (und sie nicht verwaltet), braucht keine Auswahl: direkt öffnen.
   if (!istTraegerAdmin && einrichtungen?.length === 1) {
@@ -82,6 +87,12 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
           <Button nativeButton={false} render={<Link href="/einrichtung-auswahl/neu" />} variant="outline" size="sm">
             <Plus className="size-3.5" />
             Neue Einrichtung
+          </Button>
+        ) : null}
+        {marketingZugriff !== "kein_zugriff" ? (
+          <Button nativeButton={false} render={<Link href="/marketing" />} variant="outline" size="sm">
+            <Megaphone className="size-3.5" />
+            Marketing
           </Button>
         ) : null}
         {istBetreiber ? (

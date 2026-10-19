@@ -69,6 +69,7 @@ export async function updateSession(request: NextRequest) {
     pathname !== "/mfa" &&
     pathname !== "/zustimmung" &&
     !pathname.startsWith("/admin") &&
+    !pathname.startsWith("/marketing") &&
     !isPublicPath
   ) {
     const url = request.nextUrl.clone();
