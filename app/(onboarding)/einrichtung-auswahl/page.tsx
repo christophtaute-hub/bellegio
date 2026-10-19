@@ -6,9 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { toIsoDateString } from "@/lib/kita-datum";
 import { getCurrentUserRole, isPlatformOperator } from "@/lib/server/current-user-role";
-import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
-import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
-import { EinrichtungenVerwalten } from "@/components/einrichtung/einrichtungen-verwalten";
 import { EinrichtungKachel } from "@/components/einrichtung/einrichtung-kachel";
 import { EinrichtungenUebersicht } from "@/components/einrichtung/einrichtungen-uebersicht";
 import { StichtagPicker } from "@/components/shared/stichtag-picker";
@@ -35,7 +32,7 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
   const { data: einrichtungen } = profil
     ? await supabase
         .from("einrichtungen")
-        .select("id, name, address_city, bundesland_code, kostenstelle, cluster")
+        .select("id, name, address_city, bundesland_code")
         .eq("trager_id", profil.trager_id)
         .is("archived_at", null)
         .order("name")
@@ -45,8 +42,6 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
   if (!istTraegerAdmin && einrichtungen?.length === 1) {
     redirect(`/einrichtung-auswahl/oeffnen?id=${einrichtungen[0].id}`);
   }
-
-  const aktiveEinrichtungId = istTraegerAdmin ? await getActiveEinrichtungId() : null;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center gap-8 p-4 py-16">
@@ -101,29 +96,6 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
           </Button>
         </form>
       </div>
-
-      {istTraegerAdmin && einrichtungen && einrichtungen.length > 0 ? (
-        <div className="flex w-full max-w-2xl flex-col gap-3 border-t pt-8">
-          <div className="flex flex-col gap-1">
-            <h2 className="font-heading text-base text-primary">Verwaltung</h2>
-            <p className="text-xs text-muted-foreground">
-              Kostenstelle/Cluster pflegen oder nicht mehr genutzte Einrichtungen archivieren. Archivierte
-              Einrichtungen verschwinden aus der Auswahl, ihre Daten bleiben erhalten.
-            </p>
-          </div>
-          <EinrichtungenVerwalten
-            aktiveId={aktiveEinrichtungId ?? ""}
-            einrichtungen={einrichtungen.map((e) => ({
-              id: e.id,
-              name: e.name,
-              ort: e.address_city,
-              bundeslandLabel: BUNDESLAENDER.find((b) => b.code === e.bundesland_code)?.label ?? e.bundesland_code,
-              kostenstelle: e.kostenstelle,
-              cluster: e.cluster,
-            }))}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -277,6 +277,7 @@ export async function updateEinrichtungKostenstelleCluster(
   if (error) throw new Error(error.message);
 
   revalidatePath("/einstellungen");
+  revalidatePath("/einstellungen/einrichtungen");
 }
 
 export type EinrichtungErgebnis = { ok: true; id: string } | { ok: false; error: string };
@@ -328,6 +329,7 @@ export async function legeEinrichtungAn(input: NeueEinrichtungInput): Promise<Ei
 
   revalidatePath("/einrichtung-auswahl");
   revalidatePath("/einstellungen");
+  revalidatePath("/einstellungen/einrichtungen");
   return { ok: true, id };
 }
 
@@ -349,5 +351,6 @@ export async function archiviereEinrichtung(einrichtungId: string): Promise<Einr
 
   revalidatePath("/einrichtung-auswahl");
   revalidatePath("/einstellungen");
+  revalidatePath("/einstellungen/einrichtungen");
   return { ok: true, id: data.id };
 }

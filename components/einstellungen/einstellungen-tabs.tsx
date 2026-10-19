@@ -6,7 +6,7 @@ import { cn } from "cn";
 
 export type EinstellungenTab = { href: string; label: string };
 
-/** Reiter oben in den Einstellungen: Einrichtung, Nutzer & Rechte, Datenschutz, Rechtsgrundlagen, Mein Profil. */
+/** Reiter oben in den Einstellungen: Einrichtung, Finanzen, Nutzer & Rechte, Einrichtungen (nur Träger-Admin/Betreiber), Datenschutz, Rechtsgrundlagen, Mein Profil. */
 export function EinstellungenTabs({ tabs }: { tabs: EinstellungenTab[] }) {
   const pathname = usePathname();
   const aktiv = tabs
