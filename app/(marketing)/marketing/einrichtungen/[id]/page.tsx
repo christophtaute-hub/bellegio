@@ -5,7 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 import { BUNDESLAENDER } from "@/lib/admin/neuer-kunde";
 import { getMarketingZugriff } from "@/lib/server/marketing";
 import { ladeMarketingVorschlag } from "@/lib/marketing/lade-vorschlag";
-import { beschreibeBewertungsAenderung } from "@/lib/marketing/protokoll";
+import { beschreibeBewertungsAenderung, beschreibeKampagnenAenderung } from "@/lib/marketing/protokoll";
+import { ladeKampagnen } from "@/lib/marketing/lade-kampagnen";
+import { toIsoDateString } from "@/lib/kita-datum";
+import { KampagneDialog } from "@/components/marketing/kampagne-dialog";
+import { KampagnenListe } from "@/components/marketing/kampagnen-liste";
 import { BewertungForm, type BewertungWerte } from "@/components/marketing/bewertung-form";
 import { Button } from "@/components/ui/button";
 
@@ -24,13 +28,15 @@ export default async function MarketingEinrichtungPage({ params }: { params: Pro
   const einrichtung = (einrichtungen ?? []).find((e) => e.id === id);
   if (!einrichtung) notFound();
 
-  const [{ data: b }, { data: protokoll }, vorschlag] = await Promise.all([
+  const [{ data: b }, { data: protokoll }, vorschlag, kampagnen] = await Promise.all([
     supabase.from("marketing_bewertung").select("*").eq("einrichtung_id", id).maybeSingle(),
     supabase.from("marketing_protokoll").select("id, tabelle, aktion, alt, neu, geaendert_von, geaendert_am").eq("einrichtung_id", id).order("geaendert_am", { ascending: false }).limit(30),
     zugriff === "bearbeiten" ? ladeMarketingVorschlag(id) : Promise.resolve(null),
+    ladeKampagnen(supabase, id),
   ]);
 
   const nutzerName = new Map((nutzer ?? []).map((n) => [n.id, n.full_name ?? "Ohne Namen"]));
+  const nutzerOpt = (nutzer ?? []).map((n) => ({ id: n.id, label: n.full_name ?? "Ohne Namen" }));
   const start: BewertungWerte = {
     regionalleitung: b?.regionalleitung_user_id ?? "",
     personalbedarf: b?.ampel_personalbedarf ?? null,
@@ -52,7 +58,9 @@ export default async function MarketingEinrichtungPage({ params }: { params: Pro
       zeilen:
         p.tabelle === "marketing_bewertung"
           ? beschreibeBewertungsAenderung(p.aktion, p.alt as Record<string, unknown> | null, p.neu as Record<string, unknown> | null, (uid) => nutzerName.get(uid) ?? "Unbekannt")
-          : [],
+          : p.tabelle === "marketing_kampagne"
+            ? beschreibeKampagnenAenderung(p.aktion, p.alt as Record<string, unknown> | null, p.neu as Record<string, unknown> | null)
+            : [],
     }))
     .filter((p) => p.zeilen.length > 0);
 
@@ -78,6 +86,24 @@ export default async function MarketingEinrichtungPage({ params }: { params: Pro
       </div>
 
       <BewertungForm einrichtungId={id} start={start} nutzer={nutzer ?? []} vorschlag={vorschlag} darfBearbeiten={zugriff === "bearbeiten"} />
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-heading text-lg text-primary">Marketingmaßnahmen</h2>
+          {zugriff === "bearbeiten" ? (
+            <KampagneDialog einrichtungId={id} einrichtungen={[{ id, label: einrichtung.name }]} nutzer={nutzerOpt} kind={<Button variant="outline" size="sm">Kampagne anlegen</Button>} />
+          ) : null}
+        </div>
+        <KampagnenListe
+          kampagnen={kampagnen}
+          einrichtungName={new Map([[id, einrichtung.name]])}
+          nutzerName={nutzerName}
+          einrichtungen={[{ id, label: einrichtung.name }]}
+          nutzer={nutzerOpt}
+          darfBearbeiten={zugriff === "bearbeiten"}
+          heute={toIsoDateString(new Date())}
+        />
+      </section>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-heading text-lg text-primary">Verlauf</h2>

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
 
-const ITEMS = [{ href: "/marketing", label: "Dashboard", exakt: true }] as { href: string; label: string; exakt?: boolean }[];
+const ITEMS = [
+  { href: "/marketing", label: "Dashboard", exakt: true },
+  { href: "/marketing/kampagnen", label: "Kampagnen" },
+] as { href: string; label: string; exakt?: boolean }[];
 
 /** Navigation der Marketing-Ampel; Einträge kommen mit den jeweiligen Seiten dazu. */
 export function MarketingNav({ zusaetzlich = [] }: { zusaetzlich?: { href: string; label: string; exakt?: boolean }[] }) {

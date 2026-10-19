@@ -879,6 +879,80 @@ export type Database = {
           },
         ]
       }
+      marketing_kampagne: {
+        Row: {
+          anzahl: number | null
+          art: string
+          beginn: string | null
+          beworbenes: string
+          budget: number | null
+          created_at: string
+          created_by: string | null
+          einrichtung_id: string
+          ende: string | null
+          id: string
+          kanal: string
+          kommentar: string | null
+          kosten: number | null
+          links: string[]
+          naechster_schritt: string | null
+          schritt_faellig: string | null
+          status: string
+          updated_at: string
+          verantwortlich_user_id: string | null
+        }
+        Insert: {
+          anzahl?: number | null
+          art: string
+          beginn?: string | null
+          beworbenes: string
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          einrichtung_id: string
+          ende?: string | null
+          id?: string
+          kanal: string
+          kommentar?: string | null
+          kosten?: number | null
+          links?: string[]
+          naechster_schritt?: string | null
+          schritt_faellig?: string | null
+          status?: string
+          updated_at?: string
+          verantwortlich_user_id?: string | null
+        }
+        Update: {
+          anzahl?: number | null
+          art?: string
+          beginn?: string | null
+          beworbenes?: string
+          budget?: number | null
+          created_at?: string
+          created_by?: string | null
+          einrichtung_id?: string
+          ende?: string | null
+          id?: string
+          kanal?: string
+          kommentar?: string | null
+          kosten?: number | null
+          links?: string[]
+          naechster_schritt?: string | null
+          schritt_faellig?: string | null
+          status?: string
+          updated_at?: string
+          verantwortlich_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_kampagne_einrichtung_id_fkey"
+            columns: ["einrichtung_id"]
+            isOneToOne: false
+            referencedRelation: "einrichtungen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketing_protokoll: {
         Row: {
           aktion: string

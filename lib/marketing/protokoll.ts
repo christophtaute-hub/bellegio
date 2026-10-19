@@ -41,3 +41,32 @@ export function beschreibeBewertungsAenderung(aktion: string, alt: Zeile | null,
   if (alt?.kommentar !== neu.kommentar) zeilen.push("Kommentar geändert");
   return zeilen;
 }
+
+const KAMPAGNE_FELDER: Record<string, string> = {
+  status: "Status",
+  budget: "Budget",
+  kosten: "Kosten",
+  beginn: "Beginn",
+  ende: "Ende",
+  beworbenes: "Beworbenes",
+  naechster_schritt: "Nächster Schritt",
+  schritt_faellig: "Schritt fällig",
+};
+const STATUS_WORT: Record<string, string> = { geplant: "Geplant", aktiv: "Aktiv", pausiert: "Pausiert", beendet: "Beendet" };
+const KANAL_WORT: Record<string, string> = { meta: "Meta Ads", google: "Google Ads", sonstige: "Sonstiges" };
+
+/** Protokollzeilen einer Kampagne („Kampagne ‚Meta Ads · 6 Ü3-Plätze‘: Status Geplant → Aktiv“). */
+export function beschreibeKampagnenAenderung(aktion: string, alt: Zeile | null, neu: Zeile | null): string[] {
+  if (!neu) return [];
+  const titel = `${KANAL_WORT[String(neu.kanal)] ?? String(neu.kanal)} · ${String(neu.beworbenes)}`;
+  if (aktion === "INSERT") return [`Kampagne angelegt: ${titel}`];
+  const wert = (feld: string, v: unknown) => (feld === "status" ? (STATUS_WORT[String(v)] ?? String(v)) : text(v));
+  const zeilen: string[] = [];
+  for (const [feld, label] of Object.entries(KAMPAGNE_FELDER)) {
+    if (alt?.[feld] !== neu[feld]) zeilen.push(`Kampagne „${titel}“: ${label} ${wert(feld, alt?.[feld])} → ${wert(feld, neu[feld])}`);
+  }
+  if (JSON.stringify(alt?.links) !== JSON.stringify(neu.links) || alt?.kommentar !== neu.kommentar || alt?.verantwortlich_user_id !== neu.verantwortlich_user_id || alt?.kanal !== neu.kanal || alt?.art !== neu.art || alt?.anzahl !== neu.anzahl) {
+    zeilen.push(`Kampagne „${titel}“: weitere Angaben geändert`);
+  }
+  return zeilen;
+}

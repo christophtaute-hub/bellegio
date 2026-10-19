@@ -25,3 +25,19 @@ describe("beschreibeBewertungsAenderung", () => {
     expect(beschreibeBewertungsAenderung("UPDATE", { ampel_belegung: null }, { ampel_belegung: 0 }, name)).toEqual(["Belegung: nicht bewertet → Grün"]);
   });
 });
+
+import { beschreibeKampagnenAenderung } from "@/lib/marketing/protokoll";
+
+describe("beschreibeKampagnenAenderung", () => {
+  const basis = { kanal: "meta", beworbenes: "6 Ü3-Plätze", status: "geplant", budget: 500, links: [], kommentar: null };
+  it("neu angelegt", () => {
+    expect(beschreibeKampagnenAenderung("INSERT", null, basis)).toEqual(["Kampagne angelegt: Meta Ads · 6 Ü3-Plätze"]);
+  });
+  it("Statuswechsel und Budget", () => {
+    const z = beschreibeKampagnenAenderung("UPDATE", basis, { ...basis, status: "aktiv", budget: 800 });
+    expect(z).toEqual(["Kampagne „Meta Ads · 6 Ü3-Plätze“: Status Geplant → Aktiv", "Kampagne „Meta Ads · 6 Ü3-Plätze“: Budget 500 → 800"]);
+  });
+  it("Links oder Kommentar: eine Sammelzeile", () => {
+    expect(beschreibeKampagnenAenderung("UPDATE", basis, { ...basis, links: ["https://a.de/"] })).toEqual(["Kampagne „Meta Ads · 6 Ü3-Plätze“: weitere Angaben geändert"]);
+  });
+});
