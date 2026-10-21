@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   updateFoerderungManuell,
   updateLohnnebenkostenProzent,
   updateJahressonderzahlungProzent,
   updateMonatsbetrag,
+  updateTeamkraeftePauschale,
 } from "@/lib/actions/einrichtung";
 
 function formatEuro(value: number): string {
@@ -331,5 +333,43 @@ export function MonatsbetragEditor({
       </Button>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </form>
+  );
+}
+
+/** Bayern ab 2027: Schalter „Teamkräftepauschale ansetzen“ — Voraussetzungen stehen im Hinweis, geprüft wird nichts automatisch. */
+export function TeamkraeftePauschaleSchalter({ einrichtungId, aktiv, canEdit }: { einrichtungId: string; aktiv: boolean; canEdit: boolean }) {
+  const [an, setAn] = useState(aktiv);
+  const [speichert, setSpeichert] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-3">
+        <Switch
+          checked={an}
+          disabled={!canEdit || speichert}
+          onCheckedChange={async (neu) => {
+            setSpeichert(true);
+            setError(null);
+            setAn(neu);
+            try {
+              await updateTeamkraeftePauschale(einrichtungId, neu);
+            } catch (err) {
+              setAn(!neu);
+              setError(err instanceof Error ? err.message : "Fehler beim Speichern.");
+            } finally {
+              setSpeichert(false);
+            }
+          }}
+          aria-label="Teamkräftepauschale ansetzen"
+        />
+        <span className="text-sm text-muted-foreground">Teamkräftepauschale (Bayern ab 2027) ansetzen</span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Nur anhaken, wenn mindestens eine Teamkraft beschäftigt ist (ab 100 Plätzen mit mindestens 35 Wochenstunden). Angesetzt werden je Platz 500 € bis 50 Plätze und
+        167,61 € darüber (2027), höchstens 150 Plätze — Beträge vorläufig, Plätze = Summe der Sollplätze. Gilt ab dem 01.01.2027.
+      </p>
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }

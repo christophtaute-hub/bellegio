@@ -5,7 +5,14 @@ import type { PresenceRow } from "@/lib/dashboard/presence";
 
 // --- Bayern (Art. 21 BayKiBiG) ---
 
-export type BayernBasiswert = { basiswert: number; qualitaetsbonus: number };
+export type BayernBasiswert = {
+  basiswert: number;
+  qualitaetsbonus: number;
+  /** Teamkräftepauschale (ab 2027): Betrag je Platz bis 50 Plätze / je Platz darüber / Höchstzahl förderfähiger Plätze. */
+  teamkraefteBis50?: number;
+  teamkraefteUeber50?: number;
+  teamkraefteMaxPlaetze?: number;
+};
 export type BayernBasiswertVersion = BayernBasiswert & Versioniert;
 
 /** Lädt alle je erfassten Fassungen (aktuelle Zeile + Historie) — Milestone 29c, nutzt dieselbe
@@ -14,24 +21,53 @@ export async function getBayernBasiswertVersionen(
   supabase: SupabaseClient<Database>
 ): Promise<BayernBasiswertVersion[]> {
   const [{ data: live }, { data: historie }] = await Promise.all([
-    supabase.from("bayern_foerderung_basiswert").select("basiswert, qualitaetsbonus, gueltig_ab").eq("bundesland_code", "by"),
-    supabase.from("bayern_foerderung_basiswert_historie").select("basiswert, qualitaetsbonus, gueltig_ab, gueltig_bis").eq("bundesland_code", "by"),
+    supabase.from("bayern_foerderung_basiswert").select("basiswert, qualitaetsbonus, teamkraefte_bis_50, teamkraefte_ueber_50, teamkraefte_max_plaetze, gueltig_ab").eq("bundesland_code", "by"),
+    supabase.from("bayern_foerderung_basiswert_historie").select("basiswert, qualitaetsbonus, teamkraefte_bis_50, teamkraefte_ueber_50, teamkraefte_max_plaetze, gueltig_ab, gueltig_bis").eq("bundesland_code", "by"),
   ]);
   const versionen: BayernBasiswertVersion[] = (historie ?? []).map((h) => ({
     basiswert: h.basiswert,
     qualitaetsbonus: h.qualitaetsbonus,
+    teamkraefteBis50: Number(h.teamkraefte_bis_50),
+    teamkraefteUeber50: Number(h.teamkraefte_ueber_50),
+    teamkraefteMaxPlaetze: h.teamkraefte_max_plaetze,
     gueltigAb: h.gueltig_ab,
     gueltigBis: h.gueltig_bis,
   }));
   for (const row of live ?? []) {
-    versionen.push({ basiswert: row.basiswert, qualitaetsbonus: row.qualitaetsbonus, gueltigAb: row.gueltig_ab, gueltigBis: null });
+    versionen.push({
+      basiswert: row.basiswert,
+      qualitaetsbonus: row.qualitaetsbonus,
+      teamkraefteBis50: Number(row.teamkraefte_bis_50),
+      teamkraefteUeber50: Number(row.teamkraefte_ueber_50),
+      teamkraefteMaxPlaetze: row.teamkraefte_max_plaetze,
+      gueltigAb: row.gueltig_ab,
+      gueltigBis: null,
+    });
   }
   return versionen;
 }
 
 export function resolveBayernBasiswertAmStichtag(versionen: BayernBasiswertVersion[], stichtag: string): BayernBasiswert | null {
   const treffer = versionAmStichtagMitFallback(versionen, stichtag);
-  return treffer ? { basiswert: treffer.basiswert, qualitaetsbonus: treffer.qualitaetsbonus } : null;
+  return treffer
+    ? {
+        basiswert: treffer.basiswert,
+        qualitaetsbonus: treffer.qualitaetsbonus,
+        teamkraefteBis50: treffer.teamkraefteBis50,
+        teamkraefteUeber50: treffer.teamkraefteUeber50,
+        teamkraefteMaxPlaetze: treffer.teamkraefteMaxPlaetze,
+      }
+    : null;
+}
+
+/** Teamkräftepauschale (Bayern ab 2027, § 22 AVBayKiBiG n. F.), Jahresbetrag der Einrichtung: je Platz bis 50 Plätze der erste Satz,
+ * je Platz darüber der zweite, höchstens für die Höchstzahl (150) Plätze. Rein staatlich, vorläufig. Vor 2027 sind die Sätze 0. */
+export function berechneTeamkraeftepauschaleJahr(plaetze: number, basiswert: BayernBasiswert | null): number {
+  if (!basiswert) return 0;
+  const bis50 = basiswert.teamkraefteBis50 ?? 0;
+  const ueber50 = basiswert.teamkraefteUeber50 ?? 0;
+  const gedeckelt = Math.max(0, Math.min(plaetze, basiswert.teamkraefteMaxPlaetze ?? 150));
+  return Math.min(gedeckelt, 50) * bis50 + Math.max(0, gedeckelt - 50) * ueber50;
 }
 
 /** Reine Funktion (Jahresbetrag je Kind!): Art. 21 Abs. 2 BayKiBiG — "der jährliche staatliche Förderbetrag pro Kind … errechnet sich als

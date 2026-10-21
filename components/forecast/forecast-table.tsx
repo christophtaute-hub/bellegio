@@ -377,6 +377,7 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
       { key: "kommunalMonat", label: "kommunaler Anteil (Gemeinde)" },
       { key: "beitragszuschussMonat", label: "Beitragszuschuss (an Eltern weitergegeben)" },
       { key: "personalprogrammeMonat", label: "Personalprogramme" },
+      { key: "teamkraeftepauschaleMonat", label: "Teamkräftepauschale (vorläufig)" },
     ] as const
   ).filter((z) => months.some((m) => (m.finanzen?.foerderung?.[z.key] ?? 0) > 0));
   const mitSonstigen = months.some((m) => (m.finanzen?.sonstigeKostenMonat ?? 0) > 0);
@@ -398,7 +399,7 @@ function FinanzenZeilen({ months }: { months: Zeitreihe }) {
           </LabelCell>
           {months.map((m) => (
             <TableCell key={m.month} className="text-right tabular-nums text-muted-foreground">
-              {m.finanzen?.foerderung ? formatEuro(m.finanzen.foerderung[z.key]) : "–"}
+              {m.finanzen?.foerderung ? formatEuro(m.finanzen.foerderung[z.key] ?? 0) : "–"}
             </TableCell>
           ))}
         </TableRow>

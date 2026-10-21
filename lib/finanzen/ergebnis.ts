@@ -14,6 +14,8 @@ export type FoerderungDetail = {
   beitragszuschussMonat: number;
   /** Nur, wenn die Einrichtung Personalprogramme ausdrücklich eingetragen hat. */
   personalprogrammeMonat: number;
+  /** Bayern ab 2027: Teamkräftepauschale (vorläufig), nur wenn die Einrichtung sie aktiviert hat. */
+  teamkraeftepauschaleMonat?: number;
 };
 
 export type Ergebnis = {

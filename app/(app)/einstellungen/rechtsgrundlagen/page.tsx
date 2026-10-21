@@ -37,6 +37,10 @@ const BAYERN_QUELLEN = [
     label: "Bekanntmachung Basiswert und Qualitätsbonus 2026 (BayMBl. 2025 Nr. 557)",
     href: "https://www.verkuendung-bayern.de/baymbl/2025-557/",
   },
+  {
+    label: "Gesetz zur Änderung des BayKiBiG vom 28.07.2026 (GVBl. 2026 S. 401, Reform ab 2027)",
+    href: "https://www.verkuendung-bayern.de/gvbl/2026-401/",
+  },
 ];
 
 const BW_QUELLEN = [
@@ -300,17 +304,27 @@ export default async function DokumentationPage() {
             eigene Zeile in den Fördererlösen.
           </p>
           <p className="text-sm text-muted-foreground">
-            <strong className="text-foreground">Reform ab 01.01.2027:</strong> Der Qualitätsbonus beträgt vorläufig 693,28 €
-            (2027), 852,36 € (2028) und 857,87 € (2029) und wird dem Basiswert aufgeschlagen; der Zuschlag von 0,15 und der
-            Beitragszuschuss entfallen. Der Basiswert 2027 ist vom Ministerium noch nicht bekanntgegeben und in Bellegio bis
-            dahin mit dem Wert von 2026 fortgeschrieben (Quellen: Handreichung des StMAS, IFKM). Alle Werte sind je
-            Gültigkeitsdatum hinterlegt. Bellegio zeigt den Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen.
+            <strong className="text-foreground">Reform ab 01.01.2027</strong> (Gesetz vom 28.07.2026, GVBl. 2026 S. 401; die
+            Artikel werden neu nummeriert, aus Art. 22 wird Art. 19): Der Qualitätsbonus beträgt vorläufig 693,28 € (2027),
+            852,36 € (2028) und 857,87 € (2029), wird nicht mehr dynamisiert und dem Basiswert aufgeschlagen; der Zuschlag von
+            0,15 und der Beitragszuschuss entfallen, sie sind in den Qualitätsbonus eingegangen. Der kommunale Eigenanteil
+            bleibt bestehen. Der Basiswert 2027 ist vom Ministerium noch nicht bekanntgegeben und in Bellegio bis dahin mit dem
+            Wert von 2026 fortgeschrieben — er folgt künftig dem Tarif (TVöD S 8a Stufe 4), die Fortschreibung ist daher
+            vermutlich zu niedrig (Quellen: Handreichung des StMAS, IFKM). Alle Werte sind je Gültigkeitsdatum hinterlegt.
+            Bellegio zeigt den Monatswert (Jahresbetrag ÷ 12), weil die Abschläge monatlich fließen.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-foreground">Teamkräftepauschale ab 2027</strong> (§ 22 AVBayKiBiG n. F.): je genehmigtem
+            Platz, höchstens für 150 Plätze — 2027 sind es 500,00 € je Platz bis 50 Plätze und 167,61 € je Platz darüber, 2028
+            und 2029 dann 700,00 € und 242,37 €. Voraussetzung ist mindestens eine Teamkraft, ab 100 Plätzen mit mindestens 35
+            Wochenstunden. Die Pauschale ist rein staatlich (kein kommunaler Anteil) und vorläufig. In Bellegio setzt du sie je
+            Einrichtung unter Einstellungen → Finanzen mit einem Schalter an; die Voraussetzungen prüft Bellegio nicht. Als
+            Platzzahl gilt die Summe der Sollplätze.
           </p>
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Nicht angesetzt:</strong> Personalbonus, Assistenz- und Sprachfachkraft-Förderung
             und andere Personalprogramme — sie gelten nur bei erfüllten Voraussetzungen und werden nur berücksichtigt, wenn sie
-            unter Einstellungen → Finanzen ausdrücklich eingetragen sind. Ebenso nicht abgebildet: die Teamkräftepauschale ab 2027,
-            der Vorkurs-Zuschlag und Sonderförderungen. Der Eigenanteil ist der gesetzliche Anspruch des Trägers gegen die Gemeinde;
+            unter Einstellungen → Finanzen ausdrücklich eingetragen sind. Ebenso nicht abgebildet: der Vorkurs-Zuschlag und Sonderförderungen. Der Eigenanteil ist der gesetzliche Anspruch des Trägers gegen die Gemeinde;
             die tatsächliche Zahlung kann je Gemeinde abweichen. Der berechnete Wert ersetzt keinen Blick in den eigenen
             Zuwendungsbescheid — bei Abweichung lässt sich unter Einstellungen → Finanzen ein manueller Förderbetrag hinterlegen, der
             die Formel überschreibt.

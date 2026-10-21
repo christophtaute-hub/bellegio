@@ -10,6 +10,7 @@ import {
   LohnnebenkostenEditor,
   JahressonderzahlungEditor,
   MonatsbetragEditor,
+  TeamkraeftePauschaleSchalter,
 } from "@/components/einrichtung/finanzen-editoren";
 
 /** Reiter „Finanzen“: Förderbetrag, Lohnnebenkosten, Jahressonderzahlung und die Preisliste für Elternbeiträge — nur mit dem Recht „Finanzübersicht“. */
@@ -22,7 +23,7 @@ export default async function FinanzenEinstellungenPage() {
 
   const { data: einrichtung } = await supabase
     .from("einrichtungen")
-    .select("bundesland_code, foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis")
+    .select("bundesland_code, foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, teamkraefte_pauschale_aktiv, lohnnebenkosten_prozent, jahressonderzahlung_prozent, standort_gemeinde, geschwister_zweit_prozent, geschwister_ab_dritt_prozent, elternbeitragszuschuss_bis")
     .eq("id", einrichtungId)
     .single();
 
@@ -77,6 +78,9 @@ export default async function FinanzenEinstellungenPage() {
               wert={einrichtung.personalprogramme_foerderung_monatlich}
               canEdit={bearbeiteFinanzen}
             />
+            {einrichtung.bundesland_code === "by" ? (
+              <TeamkraeftePauschaleSchalter einrichtungId={einrichtungId} aktiv={einrichtung.teamkraefte_pauschale_aktiv} canEdit={bearbeiteFinanzen} />
+            ) : null}
             <MonatsbetragEditor
               einrichtungId={einrichtungId}
               feld="sonstige_kosten_monatlich"

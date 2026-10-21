@@ -225,6 +225,17 @@ export async function updateMonatsbetrag(einrichtungId: string, feld: "personalp
   revalidatePath("/dashboard");
 }
 
+/** Bayern ab 2027: Teamkräftepauschale für diese Einrichtung ansetzen (Schalter). Gleiche RLS/Guard-Logik wie die übrigen Finanzfelder. */
+export async function updateTeamkraeftePauschale(einrichtungId: string, aktiv: boolean) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("einrichtungen").update({ teamkraefte_pauschale_aktiv: aktiv }).eq("id", einrichtungId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/einstellungen/finanzen");
+  revalidatePath("/controlling");
+  revalidatePath("/dashboard");
+}
+
 export async function updateLohnnebenkostenProzent(einrichtungId: string, prozent: number) {
   if (!(prozent >= 0 && prozent <= 100)) {
     throw new Error("Bitte einen Prozentsatz zwischen 0 und 100 angeben.");

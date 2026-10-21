@@ -120,6 +120,9 @@ function finanzRows(months: ForecastMonth[]): { label: string; values: (string |
           { label: "davon kommunaler Anteil (Gemeinde)", values: months.map((m) => (m.finanzen?.foerderung ? runde(m.finanzen.foerderung.kommunalMonat, 2) : "")) },
         ]
       : []),
+    ...(months.some((m) => (m.finanzen?.foerderung?.teamkraeftepauschaleMonat ?? 0) > 0)
+      ? [{ label: "davon Teamkräftepauschale (vorläufig)", values: months.map((m) => runde(m.finanzen?.foerderung?.teamkraeftepauschaleMonat ?? 0, 2)) }]
+      : []),
     ...(mitBeitraegen
       ? [{ label: "Elternbeiträge", values: months.map((m) => (m.finanzen?.elternbeitraegeMonat != null ? runde(m.finanzen.elternbeitraegeMonat, 2) : "")) }]
       : []),

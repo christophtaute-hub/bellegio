@@ -26,6 +26,7 @@ import {
   getBayernBasiswertVersionen,
   getNRWKindpauschalenVersionen,
   resolveBayernBasiswertAmStichtag,
+  berechneTeamkraeftepauschaleJahr,
   resolveNRWKindpauschalenTabelleAmStichtag,
   berechneBayernFoerderungGesamt,
   berechneNRWFoerdererloesGesamt,
@@ -78,6 +79,9 @@ export type FinanzenBasis = {
   /** Personalprogramme (Personalbonus, Assistenzkraft …): nur, wenn ausdrücklich eingetragen; null = nicht angesetzt. */
   personalprogrammeMonat: number | null;
   sonstigeKostenMonat: number;
+  /** Bayern ab 2027: Teamkräftepauschale ansetzen (Schalter der Einrichtung) und Summe der Sollplätze aktiver Gruppen. */
+  teamkraeftePauschaleAktiv: boolean;
+  plaetzeSoll: number;
   lohnnebenkostenProzent: number;
   jahressonderzahlungProzent: number;
   vollzeitWochenstunden: number;
@@ -139,6 +143,7 @@ export async function ladeFinanzenBasis(
 ): Promise<FinanzenBasis> {
   const [
     { data: einrichtungFinanzen },
+    { data: gruppenPlaetze },
     bayernVersionen,
     nrwKindpauschalenVersionenByGroup,
     tvoedVersionenByGroup,
@@ -146,7 +151,8 @@ export async function ladeFinanzenBasis(
     beitraege,
     kindKontext,
   ] = await Promise.all([
-    supabase.from("einrichtungen").select("foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
+    supabase.from("einrichtungen").select("foerderung_monatlich_manuell, personalprogramme_foerderung_monatlich, sonstige_kosten_monatlich, teamkraefte_pauschale_aktiv, lohnnebenkosten_prozent, jahressonderzahlung_prozent").eq("id", einrichtungId).single(),
+    supabase.from("gruppen").select("sollplatze").eq("einrichtung_id", einrichtungId).is("archived_at", null),
     getBayernBasiswertVersionen(supabase),
     getNRWKindpauschalenVersionen(supabase),
     getTVoedEntgeltVersionen(supabase),
@@ -164,6 +170,8 @@ export async function ladeFinanzenBasis(
     foerderungManuell: einrichtungFinanzen?.foerderung_monatlich_manuell ?? null,
     personalprogrammeMonat: einrichtungFinanzen?.personalprogramme_foerderung_monatlich ?? null,
     sonstigeKostenMonat: Number(einrichtungFinanzen?.sonstige_kosten_monatlich ?? 0),
+    teamkraeftePauschaleAktiv: einrichtungFinanzen?.teamkraefte_pauschale_aktiv ?? false,
+    plaetzeSoll: (gruppenPlaetze ?? []).reduce((summe, g) => summe + Number(g.sollplatze ?? 0), 0),
     lohnnebenkostenProzent: Number(einrichtungFinanzen?.lohnnebenkosten_prozent ?? 28),
     jahressonderzahlungProzent: Number(einrichtungFinanzen?.jahressonderzahlung_prozent ?? 85),
     vollzeitWochenstunden,
@@ -198,13 +206,15 @@ export function resolveFinanzenMonat(
     const basiswert = resolveBayernBasiswertAmStichtag(basis.bayernVersionen, stichtag);
     // Basiswert und Qualitätsbonus sind Jahresbeträge je Kind (Förderabschläge werden in Monatsraten gezahlt) → ÷ 12.
     const jahr = berechneBayernFoerderungGesamt(kinderRows, basiswert, basis.kindKontext, stichtag);
+    const teamkraefte = basis.teamkraeftePauschaleAktiv ? berechneTeamkraeftepauschaleJahr(basis.plaetzeSoll, basiswert) / 12 : 0;
     foerderung = {
       staatlichMonat: jahr.staatlich / 12,
       kommunalMonat: jahr.kommunal / 12,
       beitragszuschussMonat: zaehleZuschussKinder(kinderRows, basis.kindKontext, stichtag) * BEITRAGSZUSCHUSS_MONAT,
       personalprogrammeMonat: programme,
+      teamkraeftepauschaleMonat: teamkraefte,
     };
-    foerdererloeseMonat = foerderung.staatlichMonat + foerderung.kommunalMonat + foerderung.beitragszuschussMonat + programme;
+    foerdererloeseMonat = foerderung.staatlichMonat + foerderung.kommunalMonat + foerderung.beitragszuschussMonat + programme + teamkraefte;
   } else if (basis.bundeslandCode === "nrw") {
     const tabelle = resolveNRWKindpauschalenTabelleAmStichtag(basis.nrwKindpauschalenVersionenByGroup, stichtag);
     foerdererloeseMonat =

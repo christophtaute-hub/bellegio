@@ -23,6 +23,9 @@ export type Database = {
           id: string
           qualitaetsbonus: number
           updated_at: string
+          teamkraefte_bis_50: number
+          teamkraefte_max_plaetze: number
+          teamkraefte_ueber_50: number
         }
         Insert: {
           basiswert: number
@@ -31,6 +34,9 @@ export type Database = {
           gueltig_ab: string
           id?: string
           qualitaetsbonus: number
+          teamkraefte_bis_50?: number
+          teamkraefte_max_plaetze?: number
+          teamkraefte_ueber_50?: number
           updated_at?: string
         }
         Update: {
@@ -40,6 +46,9 @@ export type Database = {
           gueltig_ab?: string
           id?: string
           qualitaetsbonus?: number
+          teamkraefte_bis_50?: number
+          teamkraefte_max_plaetze?: number
+          teamkraefte_ueber_50?: number
           updated_at?: string
         }
         Relationships: [
@@ -61,6 +70,9 @@ export type Database = {
           gueltig_bis: string
           id: string
           qualitaetsbonus: number
+          teamkraefte_bis_50: number
+          teamkraefte_max_plaetze: number
+          teamkraefte_ueber_50: number
           quelle_id: string
         }
         Insert: {
@@ -71,6 +83,9 @@ export type Database = {
           gueltig_bis: string
           id?: string
           qualitaetsbonus: number
+          teamkraefte_bis_50?: number
+          teamkraefte_max_plaetze?: number
+          teamkraefte_ueber_50?: number
           quelle_id: string
         }
         Update: {
@@ -81,6 +96,9 @@ export type Database = {
           gueltig_bis?: string
           id?: string
           qualitaetsbonus?: number
+          teamkraefte_bis_50?: number
+          teamkraefte_max_plaetze?: number
+          teamkraefte_ueber_50?: number
           quelle_id?: string
         }
         Relationships: [
@@ -588,6 +606,7 @@ export type Database = {
           lohnnebenkosten_prozent: number
           name: string
           standort_gemeinde: string | null
+          teamkraefte_pauschale_aktiv: boolean
           trager_id: string
           updated_at: string
           vollzeit_wochenstunden: number
@@ -656,6 +675,7 @@ export type Database = {
           lohnnebenkosten_prozent?: number
           name?: string
           standort_gemeinde?: string | null
+          teamkraefte_pauschale_aktiv?: boolean
           trager_id?: string
           updated_at?: string
           vollzeit_wochenstunden?: number

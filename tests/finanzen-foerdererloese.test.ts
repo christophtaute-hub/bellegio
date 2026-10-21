@@ -5,6 +5,7 @@ import {
   berechneBayernFoerderungProKind,
   berechneBayernFoerderungGesamt,
   istU3FuerFoerderung,
+  berechneTeamkraeftepauschaleJahr,
   berechneNRWFoerdererloesProKindMonat,
   berechneNRWFoerdererloesGesamt,
   resolveNRWKindpauschalenTabelleAmStichtag,
@@ -151,5 +152,38 @@ describe("Bayern: staatlich + kommunal (Art. 21/22 BayKiBiG, § 24/§ 20 AVBayKi
     const in2027 = berechneBayernFoerderungGesamt(zeilen, amtlich, kontext, "2027-02-01");
     expect(in2027.staatlich).toBeCloseTo((1563.88 + 268.01) * 2.0 * 2.0, 6);
     expect(berechneBayernFoerderungGesamt(zeilen, null, kontext, "2026-10-01")).toEqual({ staatlich: 0, kommunal: 0 });
+  });
+});
+
+describe("berechneTeamkraeftepauschaleJahr (Bayern ab 2027)", () => {
+  const s2027: BayernBasiswert = { basiswert: 1563.88, qualitaetsbonus: 693.28, teamkraefteBis50: 500, teamkraefteUeber50: 167.61, teamkraefteMaxPlaetze: 150 };
+
+  it("bis 50 Plätze: nur der erste Satz", () => {
+    expect(berechneTeamkraeftepauschaleJahr(40, s2027)).toBe(40 * 500);
+  });
+
+  it("über 50 Plätze: erste 50 zum ersten Satz, der Rest zum zweiten", () => {
+    expect(berechneTeamkraeftepauschaleJahr(80, s2027)).toBeCloseTo(50 * 500 + 30 * 167.61, 6);
+  });
+
+  it("gedeckelt bei 150 Plätzen", () => {
+    expect(berechneTeamkraeftepauschaleJahr(160, s2027)).toBeCloseTo(50 * 500 + 100 * 167.61, 6);
+    expect(berechneTeamkraeftepauschaleJahr(160, s2027)).toBe(berechneTeamkraeftepauschaleJahr(150, s2027));
+  });
+
+  it("2026 (Sätze 0) oder keine Basiswert-Fassung: 0", () => {
+    expect(berechneTeamkraeftepauschaleJahr(80, { basiswert: 1563.88, qualitaetsbonus: 268.01, teamkraefteBis50: 0, teamkraefteUeber50: 0 })).toBe(0);
+    expect(berechneTeamkraeftepauschaleJahr(80, { basiswert: 1563.88, qualitaetsbonus: 268.01 })).toBe(0);
+    expect(berechneTeamkraeftepauschaleJahr(80, null)).toBe(0);
+  });
+
+  it("ab 2028 höhere Sätze", () => {
+    const s2028: BayernBasiswert = { ...s2027, teamkraefteBis50: 700, teamkraefteUeber50: 242.37 };
+    expect(berechneTeamkraeftepauschaleJahr(60, s2028)).toBeCloseTo(50 * 700 + 10 * 242.37, 6);
+  });
+
+  it("negative oder leere Platzzahl ergibt 0", () => {
+    expect(berechneTeamkraeftepauschaleJahr(0, s2027)).toBe(0);
+    expect(berechneTeamkraeftepauschaleJahr(-5, s2027)).toBe(0);
   });
 });
