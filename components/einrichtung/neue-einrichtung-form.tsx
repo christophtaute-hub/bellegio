@@ -83,7 +83,7 @@ export function NeueEinrichtungForm() {
         <Button type="submit" disabled={pending}>
           {pending ? "Wird angelegt…" : "Einrichtung anlegen"}
         </Button>
-        <Button type="button" variant="ghost" onClick={() => router.push("/einrichtung-auswahl")}>
+        <Button type="button" variant="ghost" onClick={() => router.back()}>
           Abbrechen
         </Button>
       </div>

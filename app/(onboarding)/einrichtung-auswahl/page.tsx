@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { zustimmungOffen } from "@/lib/server/zustimmung";
-import { Megaphone, Shield, Plus } from "lucide-react";
+import { Megaphone, Shield } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/actions/auth";
 import { toIsoDateString } from "@/lib/kita-datum";
@@ -76,19 +76,20 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
         />
       ) : (
         <p className="text-sm text-muted-foreground">
-          {istTraegerAdmin
-            ? "In deinem Träger ist noch keine Einrichtung angelegt."
-            : "Dir ist noch keine Einrichtung zugeordnet. Bitte wende dich an deinen Träger-Administrator."}
+          {istTraegerAdmin ? (
+            <>
+              In deinem Träger ist noch keine Einrichtung angelegt.{" "}
+              <Link href="/einrichtung-auswahl/neu" className="font-medium text-primary hover:underline">
+                Einrichtung anlegen
+              </Link>
+            </>
+          ) : (
+            "Dir ist noch keine Einrichtung zugeordnet. Bitte wende dich an deinen Träger-Administrator."
+          )}
         </p>
       )}
 
       <div className="flex items-center gap-2">
-        {istTraegerAdmin ? (
-          <Button nativeButton={false} render={<Link href="/einrichtung-auswahl/neu" />} variant="outline" size="sm">
-            <Plus className="size-3.5" />
-            Neue Einrichtung
-          </Button>
-        ) : null}
         {marketingZugriff !== "kein_zugriff" ? (
           <Button nativeButton={false} render={<Link href="/marketing" />} variant="outline" size="sm">
             <Megaphone className="size-3.5" />
