@@ -37,3 +37,14 @@ Die Demo-Daten sind frei erfunden; geprüft wird die **Rechenlogik**, nicht echt
 - TVöD-Tabelle (S3–S18) nicht gegen die Primärquelle (VKA/dbb) geprüft.
 - Ergebnis = Fördererlöse − Personalkosten; Elternbeiträge, kommunaler Anteil und Sachkosten fehlen.
 - Einschulungsstatus (Muss/Kann/Korridor) in den Demo-Daten nach vereinfachten Stichtagsregeln vergeben.
+
+## Stand 21.10.2026 (nach Milestone 34 und 36)
+
+Die Tabelle oben stammt aus der Zeit vor dem kommunalen Anteil und ist überholt. Aktuelle Werte (Oktober 2026, aus `scripts/ergebnis-pruefen.ts`, dieselbe Berechnung wie Controlling):
+
+| Einrichtung | Fördererlöse | Personalkosten | Ergebnis |
+| --- | --- | --- | --- |
+| Testkita Bayern | 29.276 € (staatlich 14.267, kommunal 12.609, Zuschuss 2.400) | 31.508 € (inkl. SuE-Zulage) | +1.263 € |
+| Kita Sonnenschein | 25.198 € | 32.061 € | −2.928 € |
+
+Neu seit Milestone 36: SuE-Zulage (130 €/180 € je Vollzeit) in den Personalkosten, NRW-Kindpauschalen 2026/27 auf die amtlichen Werte (Drs. 18/20466), Teamkräftepauschale Bayern ab 2027 (Schalter je Einrichtung, bei 37 Plätzen 1.542 €/Monat, per Skript nachgerechnet).
