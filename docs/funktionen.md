@@ -16,7 +16,7 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 | `/einrichtung-auswahl` („Meine Einrichtungen“) | Karten je Einrichtung mit Belegungs- und Personal-Ampel, frei wählbarer Stichtag, Filter nach Bundesland; wer nur eine Einrichtung sieht, geht direkt hinein | angemeldet | `components/einrichtung/einrichtung-kachel.tsx`, `lib/steuerung/kita-ampel.ts` |
 | `/einrichtung-auswahl/neu` | neue Einrichtung anlegen (Bundesland danach fest) | Träger-Admin | `lib/actions/einrichtung.ts` (`legeEinrichtungAn`) |
 
-## Dashboard
+## Dashboard (`/dashboard`)
 
 | Funktion | Wer | Code |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 | `/controlling` | Monatsreihe: Kinder, Plätze, Personal-Ampel, Schlüssel; mit Finanzrecht Förderung, Elternbeiträge, Personalkosten, Ergebnis; Ansicht „Übersicht“ oder „Alle Kennzahlen“; Zeitraum Kitajahr, Kalenderjahr oder mehrere Jahre; Kinder nach Buchungszeit inkl. I-Status; Excel-Export; Rechtsstand-Hinweise | Controlling ansehen; Finanzzeilen mit Finanzübersicht | `lib/forecast/monthly-forecast.ts`, `components/forecast/` |
 | `/controlling/mappe` | Prüfungsmappe zum Drucken (PDF über den Browser) und als Excel | wie oben | `components/controlling/mappe-export-buttons.tsx` |
 
-## Planung
+## Planung (`/szenario`)
 
 | Funktion | Wer | Code |
 | --- | --- | --- |
@@ -75,15 +75,16 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 
 ## Einstellungen (Reiter)
 
-| Reiter | Funktion | Wer |
+| Reiter (Route) | Funktion | Wer |
 | --- | --- | --- |
-| Einrichtung | Grunddaten, „auf einen Blick“, Vollzeit-Wochenstunden, empfohlener Schlüssel | alle sehen, Träger-Admin ändert |
-| Finanzen | Förderbetrag manuell, Personalprogramme, sonstige Kosten, Teamkräftepauschale (Bayern), Lohnnebenkosten, Jahressonderzahlung, Elternbeitrags-Preisliste (nach Krippe/Kindergarten und Wohnsitz, Geschwister, Zuschuss) | Finanzübersicht (ansehen/bearbeiten) |
-| Nutzer & Rechte | Nutzer anlegen (Einladung oder Passwort), sperren, löschen; Rechte-Schalter je Einrichtung und Bereich, „Für ganzes Cluster setzen“, lokale Admins, Marketing-Recht | Träger-Admin; Rechteverwalter und lokale Admins für ihre Einrichtungen |
-| Einrichtungen | Kostenstelle, Cluster, Archivieren, „Neue Einrichtung“ | Träger-Admin, Betreiber |
-| Datenschutz | Löschfristen, Löschkandidaten | Träger-Admin |
-| Rechtsgrundlagen | Berechnungen, Gesetze, Quellen, Prüfstand | alle |
-| Mein Profil | Name, Passwort, Zwei-Faktor (TOTP); für Demo-Konten ausgeblendet | alle |
+| Einrichtung (`/einstellungen`) | Grunddaten, „auf einen Blick“, Vollzeit-Wochenstunden, empfohlener Schlüssel | alle sehen, Träger-Admin ändert |
+| Finanzen (`/einstellungen/finanzen`) | Förderbetrag manuell, Personalprogramme, sonstige Kosten, Teamkräftepauschale (Bayern), Lohnnebenkosten, Jahressonderzahlung, Elternbeitrags-Preisliste (nach Krippe/Kindergarten und Wohnsitz, Geschwister, Zuschuss) | Finanzübersicht (ansehen/bearbeiten) |
+| Nutzer & Rechte (`/einstellungen/nutzer`) | Nutzer anlegen (Einladung oder Passwort), sperren, löschen; Rechte-Schalter je Einrichtung und Bereich, „Für ganzes Cluster setzen“, lokale Admins, Marketing-Recht | Träger-Admin; Rechteverwalter und lokale Admins für ihre Einrichtungen |
+| Einrichtungen (`/einstellungen/einrichtungen`) | Kostenstelle, Cluster, Archivieren, „Neue Einrichtung“ | Träger-Admin, Betreiber |
+| Datenschutz (`/einstellungen/datenschutz`) | Löschfristen, Löschkandidaten | Träger-Admin |
+| Rechtsgrundlagen (`/einstellungen/rechtsgrundlagen`) | Berechnungen, Gesetze, Quellen, Prüfstand | alle |
+| Hilfe (`/einstellungen/hilfe`, Kapitel unter `/einstellungen/hilfe/[id]`) | Handbuch für Laien aus `docs/handbuch/`, Glossar, häufige Fragen; Kontextlinks „Wie funktioniert das?“ an Dashboard, Controlling, Planung, Nutzer & Rechte | alle |
+| Mein Profil (`/einstellungen/profil`) | Name, Passwort, Zwei-Faktor (TOTP); für Demo-Konten ausgeblendet | alle |
 
 ## Suche und Hilfsfunktionen
 

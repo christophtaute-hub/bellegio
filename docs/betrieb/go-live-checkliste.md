@@ -9,7 +9,7 @@ Reihenfolge ist wichtig: Erst Abschnitt 1–3, dann echte Daten. Bis dahin gilt:
 | --- | --- | --- | --- |
 | 1.1 | Supabase **Pro-Plan** für die Organisation buchen (Backups, kein Auto-Pausieren, Leaked-Password-Schutz). Kosten zeigt Supabase vor der Bestätigung. | C | offen |
 | 1.2 | Produktionsprojekt `bellegio-prod` (Frankfurt, eu-central-1) anlegen — oder „Rollen tauschen“ (siehe [produktion-einrichten.md](produktion-einrichten.md)). | C bestätigt, K richtet ein | offen |
-| 1.3 | Alle Migrationen aus `supabase/migrations/` einspielen (68 Dateien, Dateinamen-Reihenfolge); Bündel für den SQL-Editor: `cat supabase/migrations/*.sql > /tmp/bellegio-alle-migrationen.sql`. Danach `get_advisors` (Security). **Erster Wiederholungslauf auf einer leeren Datenbank — bisher nicht getestet.** | K | offen |
+| 1.3 | Alle Migrationen aus `supabase/migrations/` einspielen (81 Dateien, Dateinamen-Reihenfolge); Bündel für den SQL-Editor: `cat supabase/migrations/*.sql > /tmp/bellegio-alle-migrationen.sql`. Danach `get_advisors` (Security). **Erster Wiederholungslauf auf einer leeren Datenbank — bisher nicht getestet.** | K | offen |
 | 1.4 | Erstbetreiber anlegen: `scripts/prod-erstbetreiber.ts` (Service-Key nur im Terminal, nie im Chat). | K + C | offen |
 | 1.5 | Hostinger: die drei Umgebungsvariablen auf Produktion umstellen (URL, anon-Key, Service-Role-Key) und unter „Einsätze“ neu bereitstellen. | C | offen |
 | 1.6 | Demo auf eigene Adresse (`demo.bellegio.de`, zweite Web-App auf dem Testprojekt); Demo-Daten und Testkonten bleiben im Testprojekt. | C + K | offen |

@@ -53,7 +53,7 @@ Entscheidung treffen wir gemeinsam, sobald ein Pilot-Termin feststeht.
 
 ### B. Datenbank aufsetzen (ich)
 
-- Alle 68 Dateien (Stand 07.10.2026) aus `supabase/migrations/` in Dateinamen-Reihenfolge einspielen (per `apply_migration`; für den SQL-Editor als ein Bündel: `cat supabase/migrations/*.sql > /tmp/bellegio-alle-migrationen.sql`). Geprüft: keine festen UUIDs,
+- Alle 81 Dateien (Stand 07.10.2026) aus `supabase/migrations/` in Dateinamen-Reihenfolge einspielen (per `apply_migration`; für den SQL-Editor als ein Bündel: `cat supabase/migrations/*.sql > /tmp/bellegio-alle-migrationen.sql`). Geprüft: keine festen UUIDs,
   die Daten-Migrationen (`betreiberdaten_wolfenbuettel`, `gruppen_voll_demokorrektur`) laufen auf leerer Datenbank ohne Wirkung bzw. setzen nur
   Impressums-Daten; Singleton-Zeilen (`listenpreise`, `betreiber_einstellungen`, `betreiber_oeffentlich`) legen die Migrationen selbst an.
 - Danach `get_advisors` (Security): erwartet wird höchstens die Leaked-Password-Warnung bis Schritt C erledigt ist.

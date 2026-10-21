@@ -1,3 +1,4 @@
+import { HilfeLink } from "@/components/hilfe/hilfe-link";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { formatDate, toIsoDateString } from "@/lib/kita-datum";
@@ -84,9 +85,12 @@ export default async function ControllingPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-heading text-3xl tracking-tight text-primary">
-          Controlling
-        </h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="font-heading text-3xl tracking-tight text-primary">
+            Controlling
+          </h1>
+          <HilfeLink kapitel="04-controlling" />
+        </div>
         {months.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/controlling/mappe" className={buttonVariants({ variant: "outline", size: "sm" })}>

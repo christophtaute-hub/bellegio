@@ -1,3 +1,4 @@
+import { HilfeLink } from "@/components/hilfe/hilfe-link";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { KitajahrPlanung } from "@/components/szenario/kitajahr-planung";
@@ -374,7 +375,10 @@ export default async function SzenarioPage({ searchParams }: { searchParams: Pro
   const wasWaereWenn = reiter === "wenn";
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-heading text-3xl tracking-tight text-primary">Planung</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="font-heading text-3xl tracking-tight text-primary">Planung</h1>
+        <HilfeLink kapitel="05-planung" />
+      </div>
       <nav className="flex gap-1 border-b" aria-label="Planung">
         {[
           { href: "/szenario", label: "Kitajahr planen", aktiv: !wasWaereWenn },

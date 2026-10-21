@@ -31,6 +31,7 @@ export default async function EinstellungenLayout({ children }: { children: Reac
     ...(darfEinrichtungenVerwalten ? [{ href: "/einstellungen/einrichtungen", label: "Einrichtungen" }] : []),
     ...(istTraegerAdmin ? [{ href: "/einstellungen/datenschutz", label: "Datenschutz" }] : []),
     { href: "/einstellungen/rechtsgrundlagen", label: "Rechtsgrundlagen" },
+    { href: "/einstellungen/hilfe", label: "Hilfe" },
     { href: "/einstellungen/profil", label: "Mein Profil" },
   ];
 

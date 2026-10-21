@@ -1,3 +1,4 @@
+import { HilfeLink } from "@/components/hilfe/hilfe-link";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { getZugriff } from "@/lib/server/current-user-role";
@@ -96,6 +97,7 @@ export default async function NutzerUndRechtePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Nutzer &amp; Rechte</h1>
+        <HilfeLink kapitel="06-einstellungen#nutzer-und-rechte" />
         <p className="max-w-2xl text-sm text-muted-foreground">
           Wer sieht welche Einrichtung, und wer darf in welchem Bereich bearbeiten? Träger-Admins haben
           immer vollen Zugriff, die Einrichtungsleitung standardmäßig alles außer Finanzübersicht und Einzelgehältern. Wer selbst Rechte

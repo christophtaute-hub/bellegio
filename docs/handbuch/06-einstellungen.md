@@ -69,7 +69,7 @@ Je Bereich gibt es **Ansehen** und **Ändern**. „Ändern“ setzt „Ansehen�
 *Träger-Administration.*
 
 - **Löschfristen:** Wie lange ausgetretene Kinder und ausgeschiedenes Personal aufbewahrt werden, bevor Bellegio erinnert. Gelöscht wird nie automatisch.
-- **Anonymisieren oder Löschen:** Auf der Seite eines **ausgetretenen** Kindes (oder ausgeschiedenen Mitarbeitenden) gibt es die Datenschutz-Aktionen. Anonymisieren entfernt Name und Notizen, behält aber die Zahlen für die Statistik; Löschen entfernt den Datensatz ganz. Beides ist endgültig und wird protokolliert (ohne persönliche Inhalte).
+- **Anonymisieren oder Löschen:** Auf der Seite eines **ausgetretenen** Kindes (oder ausgeschiedenen Mitarbeitenden) gibt es die Datenschutz-Aktionen. Anonymisieren ersetzt den Namen durch „Anonym“, behält nur das Geburtsjahr, löscht das Änderungsprotokoll und lässt die Zahlen für die Statistik stehen; Löschen entfernt den Datensatz ganz. Beides ist endgültig und wird protokolliert (ohne persönliche Inhalte).
 - **Auskunft nach Art. 15 DSGVO:** Auf der Seite des Kindes oder der Person öffnest du die **Auskunft** — alle gespeicherten Daten und die Änderungshistorie zum Ausdrucken.
 
 ## Rechtsgrundlagen

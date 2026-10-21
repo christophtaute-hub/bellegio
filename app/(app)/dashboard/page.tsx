@@ -1,3 +1,4 @@
+import { HilfeLink } from "@/components/hilfe/hilfe-link";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
@@ -57,6 +58,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <div className="flex flex-col gap-1">
           <h1 className="font-heading text-3xl tracking-tight text-primary">{vorname ? `Aloha, ${vorname}` : "Dashboard"}</h1>
           {stichtag !== heute ? <p className="text-sm text-muted-foreground">Vorschau für den {formatDate(stichtag)}</p> : null}
+          <HilfeLink kapitel="01-dashboard" text="Die Ampeln erklärt" />
         </div>
         {daten && !verlauf ? (
           <Button nativeButton={false} render={<Link href={verlaufLink} />} variant="outline">
