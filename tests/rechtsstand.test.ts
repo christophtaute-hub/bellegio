@@ -11,8 +11,14 @@ const monate = (von: string, n: number) =>
 describe("Rechtsstand-Hinweise", () => {
   it("Bayern: erst ab Januar 2027 und nur mit Finanzübersicht", () => {
     expect(rechtsstandHinweise({ bundeslandCode: "by", monate: monate("2026-01-01", 12), zeigeFinanzen: true })).toHaveLength(0);
-    expect(rechtsstandHinweise({ bundeslandCode: "by", monate: monate("2026-09-01", 12), zeigeFinanzen: true })).toHaveLength(1);
+    expect(rechtsstandHinweise({ bundeslandCode: "by", monate: monate("2026-09-01", 5), zeigeFinanzen: true })).toHaveLength(1);
     expect(rechtsstandHinweise({ bundeslandCode: "by", monate: monate("2026-09-01", 12), zeigeFinanzen: false })).toHaveLength(0);
+  });
+  it("Tarif: Hinweis ab April 2027, nur mit Finanzübersicht", () => {
+    const hinweise = rechtsstandHinweise({ bundeslandCode: "nrw", monate: monate("2026-10-01", 6), zeigeFinanzen: true });
+    expect(hinweise.filter((h) => h.includes("Tarifvertrag"))).toHaveLength(0);
+    expect(rechtsstandHinweise({ bundeslandCode: "nrw", monate: monate("2026-10-01", 7), zeigeFinanzen: true }).filter((h) => h.includes("Tarifvertrag"))).toHaveLength(1);
+    expect(rechtsstandHinweise({ bundeslandCode: "nrw", monate: monate("2026-10-01", 12), zeigeFinanzen: false }).filter((h) => h.includes("Tarifvertrag"))).toHaveLength(0);
   });
   it("NRW: ab August 2027", () => {
     expect(rechtsstandHinweise({ bundeslandCode: "nrw", monate: monate("2026-08-01", 12), zeigeFinanzen: false })).toHaveLength(0);

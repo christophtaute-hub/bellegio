@@ -17,7 +17,12 @@ export function rechtsstandHinweise({ bundeslandCode, monate, zeigeFinanzen }: R
 
   if (bundeslandCode === "by" && zeigeFinanzen && letzter >= "2027-01-01") {
     hinweise.push(
-      "Ab Januar 2027 gilt die Reform des BayKiBiG: Der Qualitätsbonus (2027 vorläufig 693,28 €, 2028 852,36 €, 2029 857,87 €) ist eingerechnet. Der Basiswert 2027 ist noch nicht bekanntgegeben und mit dem Wert von 2026 fortgeschrieben. Die neue Teamkräftepauschale ist nicht enthalten."
+      "Ab Januar 2027 gilt die Reform des BayKiBiG: Der Qualitätsbonus (2027 vorläufig 693,28 €, 2028 852,36 €, 2029 857,87 €) ist eingerechnet. Der Basiswert 2027 ist noch nicht bekanntgegeben und mit dem Wert von 2026 fortgeschrieben. Die neue Teamkräftepauschale ist nur enthalten, wenn sie unter Einstellungen → Finanzen angesetzt ist (Beträge vorläufig)."
+    );
+  }
+  if (zeigeFinanzen && letzter >= "2027-04-01") {
+    hinweise.push(
+      "Der Tarifvertrag mit der Entgelttabelle vom 01.05.2026 läuft bis 31.03.2027. Was ab April 2027 gilt, ist noch offen — die Personalkosten rechnen ab dann mit der bisherigen Tabelle weiter."
     );
   }
   if (bundeslandCode === "nrw" && letzter >= "2027-08-01") {
