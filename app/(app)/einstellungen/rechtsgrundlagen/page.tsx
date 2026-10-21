@@ -882,6 +882,13 @@ export default async function DokumentationPage() {
             die Tabelle immer ersetzt, wenn gesetzt. Ohne beides zählt der Mitarbeiter als &bdquo;nicht
             erfasst&ldquo; und trägt 0 € bei — Controlling weist das aus, statt es zu verschweigen.
           </p>
+          <p className="text-sm text-muted-foreground">
+            Zum Tabellenentgelt kommt die <strong>SuE-Zulage</strong> (§ 52 Abs. 6 BT-B TVöD VKA): 130 € im Monat für
+            S 2 bis S 11a, 180 € für S 11b und S 12 — bei Teilzeit anteilig. S 14 und S 15 erhalten sie nur in einer
+            engen Fallgruppe und werden nicht angesetzt. Bei einem manuell eingetragenen Monatsgehalt wird nichts
+            aufgeschlagen; der Wert gilt als Gesamtbetrag. Lohnnebenkosten und Jahressonderzahlung werden auf die
+            Bruttosumme einschließlich Zulage gerechnet.
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 rounded-xl border border-accent bg-accent/10 p-6">
@@ -891,17 +898,20 @@ export default async function DokumentationPage() {
           <p className="text-sm text-muted-foreground">
             Die hinterlegte TVöD-SuE-Tabelle (Entgeltgruppen S 2 bis S 18 ohne S 5, S 6 und S 10, Stufen 1–6, gültig ab
             01.05.2026) wurde im Oktober 2026 gegen die amtliche VKA-Entgelttabelle geprüft (Quelle: Entgelttabellen 2026
-            der Stadt Böblingen, Stichprobe S 8a zusätzlich gegen eine zweite Veröffentlichung). Werte vor dem 01.05.2026
+            der Stadt Böblingen, Stichprobe S 8a zusätzlich gegen eine zweite Veröffentlichung; im Oktober 2026 erneut mit einer weiteren
+            Veröffentlichung verglichen, alle Gruppen und Stufen ohne Abweichung — die Primärquelle der VKA war nicht
+            abrufbar). Die Tabelle gilt bis 31.03.2027; was danach gilt, ist noch offen. Werte vor dem 01.05.2026
             sind nicht hinterlegt. TVöD ist außerdem kein Universal-Tarif: kirchliche
             Träger (Caritas/Diakonie) zahlen meist nach AVR, private Träger frei — für diese Fälle das manuelle
             Monatsgehalt je Mitarbeiter nutzen statt Entgeltgruppe/Stufe.
           </p>
           <p className="text-sm text-muted-foreground">
-            Lohnnebenkosten (Standard 28 %) und Jahressonderzahlung (Standard 85 %) sind eigene Schätzwerte aus
-            mehreren Quellen zusammengesetzt, keine einzelne belegbare Zahl — beide Prozentsätze lassen sich unter
-            Einrichtung → Finanzen an die eigene Situation anpassen. Die Jahressonderzahlung wird technisch
-            gleichmäßig auf alle 12 Monate verteilt statt einmalig im November berücksichtigt, damit der
-            Monats-Forecast keinen einzelnen künstlichen Ausschlag zeigt.
+            Die Jahressonderzahlung beträgt im Sozial- und Erziehungsdienst ab 2026 85 % eines Monatsentgelts (VKA,
+            Tarifeinigung vom 06.04.2025). Die Lohnnebenkosten (Standard 28 %) sind ein Richtwert: Arbeitgeberanteil
+            zur Zusatzversorgung (VBL West 5,49 %) und zur Sozialversicherung (etwa 21 %) ergeben rund 26 bis 28 % —
+            je nach Träger und Zusatzversorgung kann es abweichen. Beide Prozentsätze lassen sich unter Einstellungen →
+            Finanzen anpassen. Die Jahressonderzahlung wird technisch gleichmäßig auf alle 12 Monate verteilt statt
+            einmalig im November berücksichtigt, damit der Monats-Forecast keinen einzelnen künstlichen Ausschlag zeigt.
           </p>
         </div>
       </section>

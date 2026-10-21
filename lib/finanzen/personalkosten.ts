@@ -57,6 +57,24 @@ export function resolveTVoedTabelleAmStichtag(versionenByGroup: Map<string, TVoe
   return tabelle;
 }
 
+/** SuE-Zulage (Sozial- und Erziehungsdienst, § 52 Abs. 6 BT-B TVöD VKA / Entgeltordnung Teil B Abschnitt XXIV):
+ * monatlicher Betrag bei Vollzeit, bei Teilzeit anteilig; steckt nicht in den Tabellenentgelten. S2–S11a: 130 €,
+ * S11b und S12: 180 €. S14/S15 erhalten sie nur in einer engen Fallgruppe (Fallgruppe 6) und werden hier nicht
+ * angesetzt; alle übrigen Gruppen erhalten keine. Quellen: Rechner-Seiten zum TVöD-SuE (nicht gegen die VKA-Primärquelle
+ * geprüft). Bei manuell eingetragenem Gehalt wird sie nicht addiert — der manuelle Wert gilt als Gesamtbetrag. */
+export const SUE_ZULAGE_VOLLZEIT: Record<string, number> = {
+  S2: 130,
+  S3: 130,
+  S4: 130,
+  S7: 130,
+  S8a: 130,
+  S8b: 130,
+  S9: 130,
+  S11a: 130,
+  S11b: 180,
+  S12: 180,
+};
+
 export type TeamVerguetungRow = {
   teamId: string;
   wochenstunden: number | null;
@@ -69,7 +87,7 @@ export type PersonalkostenErgebnisProMitarbeiter =
   | { teamId: string; status: "berechnet"; bruttoMonat: number; quelle: "manuell" | "tvoed" }
   | { teamId: string; status: "nicht_erfasst" };
 
-/** Reine Funktion: manueller Override > TVöD-Tabelle > "nicht erfasst" (nie stillschweigend 0 —
+/** Reine Funktion: manueller Override > TVöD-Tabelle (zuzüglich SuE-Zulage) > "nicht erfasst" (nie stillschweigend 0 —
  * ehrlicher Zähler, Muster nichtZugeordnet aus lib/controlling/jahreskategorisierung.ts). Teilzeit
  * skaliert linear über wochenstunden/vollzeitWochenstunden (Einrichtungs-Referenz, Standard 39 —
  * dieselbe Vollzeit-Referenz wie der Anstellungsschlüssel). */
@@ -86,7 +104,8 @@ export function berechnePersonalkostenProMitarbeiter(
   if (row.entgeltgruppe && row.stufe !== null) {
     const vollzeitBetrag = tvoedTabelle.get(tvoedSchluessel(row.entgeltgruppe, row.stufe));
     if (vollzeitBetrag !== undefined) {
-      return { teamId: row.teamId, status: "berechnet", bruttoMonat: vollzeitBetrag * teilzeitFaktor, quelle: "tvoed" };
+      const zulage = SUE_ZULAGE_VOLLZEIT[row.entgeltgruppe] ?? 0;
+      return { teamId: row.teamId, status: "berechnet", bruttoMonat: (vollzeitBetrag + zulage) * teilzeitFaktor, quelle: "tvoed" };
     }
   }
   return { teamId: row.teamId, status: "nicht_erfasst" };

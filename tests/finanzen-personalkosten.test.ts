@@ -9,6 +9,8 @@ import {
 const tvoedTabelle = new Map<string, number>([
   ["S8a::3", 4772.18],
   ["S3::1", 3743.84],
+  ["S11b::2", 4100],
+  ["S13::2", 4200],
 ]);
 
 function mitglied(partial: Partial<TeamVerguetungRow>): TeamVerguetungRow {
@@ -38,7 +40,27 @@ describe("berechnePersonalkostenProMitarbeiter", () => {
   it("TVöD-Entgeltgruppe+Stufe ohne Override wird aus der Tabelle aufgelöst, Teilzeit korrekt skaliert", () => {
     const row = mitglied({ entgeltgruppe: "S8a", stufe: 3, wochenstunden: 19.5 });
     const ergebnis = berechnePersonalkostenProMitarbeiter(row, tvoedTabelle, 39);
-    expect(ergebnis).toEqual({ teamId: "t1", status: "berechnet", bruttoMonat: 4772.18 / 2, quelle: "tvoed" });
+    expect(ergebnis).toEqual({ teamId: "t1", status: "berechnet", bruttoMonat: (4772.18 + 130) / 2, quelle: "tvoed" });
+  });
+
+  it("addiert die SuE-Zulage (S8a: 130 €) zum Tabellenentgelt, bei Vollzeit voll", () => {
+    const row = mitglied({ entgeltgruppe: "S8a", stufe: 3 });
+    expect(berechnePersonalkostenProMitarbeiter(row, tvoedTabelle, 39)).toMatchObject({ bruttoMonat: 4772.18 + 130, quelle: "tvoed" });
+  });
+
+  it("S11b erhält 180 € Zulage", () => {
+    const row = mitglied({ entgeltgruppe: "S11b", stufe: 2 });
+    expect(berechnePersonalkostenProMitarbeiter(row, tvoedTabelle, 39)).toMatchObject({ bruttoMonat: 4100 + 180 });
+  });
+
+  it("S13 erhält keine Zulage", () => {
+    const row = mitglied({ entgeltgruppe: "S13", stufe: 2 });
+    expect(berechnePersonalkostenProMitarbeiter(row, tvoedTabelle, 39)).toMatchObject({ bruttoMonat: 4200 });
+  });
+
+  it("manuelles Gehalt bekommt keine Zulage on top", () => {
+    const row = mitglied({ monatsgehaltManuell: 3000, entgeltgruppe: "S8a", stufe: 3 });
+    expect(berechnePersonalkostenProMitarbeiter(row, tvoedTabelle, 39)).toMatchObject({ bruttoMonat: 3000, quelle: "manuell" });
   });
 
   it("weder Override noch Entgeltgruppe/Stufe gesetzt: 'nicht_erfasst', keine stillschweigende 0", () => {
