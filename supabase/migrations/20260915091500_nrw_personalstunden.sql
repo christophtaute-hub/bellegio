@@ -17,7 +17,7 @@ create policy nrw_personalstunden_select on public.nrw_personalstunden
 
 -- Quelle: KiBiz NRW (Stand 01.08.2022), Anlage zu §33 Abs. 1 KiBiz, plus
 -- Leitungsfreistellung nach §29 Abs. 2 KiBiz. Die genaue Stunden-Tabelle
--- stammt aus Praktiker-Quellen (Kitazentrale), nicht direkt aus der
+-- stammt aus Praktiker-Quellen (Kitazentrale); später bestätigt durch Landtag NRW Drs. 18/17575 Anlage 1, nicht direkt aus der
 -- Primär-PDF (Font-Extraktion fehlgeschlagen) — vor Produktivsetzung mit
 -- der Anlage im Original gegenprüfen, siehe Dokumentationsseite. Die
 -- Leitungsfreistellung (+5/+7/+9 Std.) wurde einheitlich auf alle drei

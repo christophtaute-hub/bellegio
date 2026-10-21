@@ -767,12 +767,14 @@ export default async function DokumentationPage() {
           </p>
           <p className="text-sm text-muted-foreground">
             Hinterlegt sind die Kindpauschalen für alle Gruppenformen (I, II, III) und Betreuungsumfänge (25/35/45 Std./Woche)
-            im Kindergartenjahr 2026/27 (Gruppenform I z. B. 8.029,57 / 10.794,38 / 13.856,85 € je Kind und Jahr). Die Werte
-            stammen aus einer kommunalen Beschlussvorlage, die die Landespauschalen wiedergibt (Stadt Ratingen, Vorlage 10/2026),
-            und sind intern stimmig (Absenkung um 0,14 % gegenüber 2025/26) — sie wurden{" "}
+            im Kindergartenjahr 2026/27 (Gruppenform I z. B. 8.029,60 / 10.794,41 / 13.856,86 € je Kind und Jahr). Die Werte
+            stammen aus der Anlage 2 zu § 33 KiBiz im Änderungsantrag des Landtags (Drucksache 18/20466); die verkündete
+            Fassung (GV. NRW. 2026 S. 525) war nicht abrufbar, die Werte wurden{" "}
             <strong className="text-foreground">nicht direkt gegen KiBiz.web</strong> geprüft. Vor Produktivbetrieb dort
             gegenchecken. Die Pauschalen ändern sich jährlich über die Fortschreibungsrate nach §37 KiBiz; die Vorjahreswerte
-            bleiben für frühere Monate gespeichert.
+            bleiben für frühere Monate gespeichert. Die Pauschalen für 2027/28 und die neuen Reihen für 30 und 40 Wochenstunden
+            sind noch nicht bekannt und deshalb nicht hinterlegt. Die Personalstunden je Gruppenform stimmen mit der Anlage 1
+            der Drucksache 18/17575 überein („Personalbemessung unverändert“).
           </p>
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Wichtig:</strong> Die Kindpauschale ist die Summe der anerkennungsfähigen Kosten.
