@@ -101,7 +101,8 @@ export default async function NutzerUndRechtePage() {
         <p className="max-w-2xl text-sm text-muted-foreground">
           Wer sieht welche Einrichtung, und wer darf in welchem Bereich bearbeiten? Träger-Admins haben
           immer vollen Zugriff, die Einrichtungsleitung standardmäßig alles außer Finanzübersicht und Einzelgehältern. Wer selbst Rechte
-          vergeben darf, kann anderen nie mehr geben, als er selbst hat.
+          vergeben darf, kann anderen nie mehr geben, als er selbst hat. Abrechnung und Kundenverwaltung sieht nur der System-Admin
+          von Bellegio — auch Träger-Admins nicht.
         </p>
       </div>
 

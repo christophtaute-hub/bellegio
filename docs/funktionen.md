@@ -4,7 +4,7 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 
 ## Menü
 
-**Seitenleiste:** Dashboard · Gruppen · Kinder · Team · Controlling · Planung · Einstellungen (+ „Abrechnung“ nur für den Betreiber). Die Seitenleiste blendet keine Punkte nach Rechten aus; ohne Recht zeigt die Seite einen Hinweis, eine 404-Seite oder nur leere Daten. **Kopfzeile:** Einrichtung (Klick: „auf einen Blick“), Bundesland, Einrichtungs-Wechsler (nur bei mehr als einer Einrichtung), Suche (Strg/Cmd+K), Nutzermenü (Einstellungen, Einrichtung wechseln, Mein Profil, Betreiber-Zentrale, Abmelden).
+**Seitenleiste:** Dashboard · Gruppen · Kinder · Team · Controlling · Planung · Einstellungen (+ „Abrechnung“ nur für den System-Admin, nie für Träger-Admins). Die Seitenleiste blendet keine Punkte nach Rechten aus; ohne Recht zeigt die Seite einen Hinweis, eine 404-Seite oder nur leere Daten. **Kopfzeile:** Einrichtung (Klick: „auf einen Blick“), Bundesland, Einrichtungs-Wechsler (nur bei mehr als einer Einrichtung), Suche (Strg/Cmd+K), Nutzermenü (Einstellungen, Einrichtung wechseln, Mein Profil, System-Admin (nur der Betreiber), Abmelden).
 
 ## Anmelden und Start
 
@@ -80,7 +80,7 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 | Einrichtung (`/einstellungen`) | Grunddaten, „auf einen Blick“, Vollzeit-Wochenstunden, empfohlener Schlüssel | alle sehen, Träger-Admin ändert |
 | Finanzen (`/einstellungen/finanzen`) | Förderbetrag manuell, Personalprogramme, sonstige Kosten, Teamkräftepauschale (Bayern), Lohnnebenkosten, Jahressonderzahlung, Elternbeitrags-Preisliste (nach Krippe/Kindergarten und Wohnsitz, Geschwister, Zuschuss) | Finanzübersicht (ansehen/bearbeiten) |
 | Nutzer & Rechte (`/einstellungen/nutzer`) | Nutzer anlegen (Einladung oder Passwort), sperren, löschen; Rechte-Schalter je Einrichtung und Bereich, „Für ganzes Cluster setzen“, lokale Admins, Marketing-Recht | Träger-Admin; Rechteverwalter und lokale Admins für ihre Einrichtungen |
-| Einrichtungen (`/einstellungen/einrichtungen`) | Kostenstelle, Cluster, Archivieren, „Neue Einrichtung“ | Träger-Admin, Betreiber |
+| Einrichtungen (`/einstellungen/einrichtungen`) | Kostenstelle, Cluster, Archivieren, „Neue Einrichtung“ | Träger-Admin, System-Admin |
 | Datenschutz (`/einstellungen/datenschutz`) | Löschfristen, Löschkandidaten | Träger-Admin |
 | Rechtsgrundlagen (`/einstellungen/rechtsgrundlagen`) | Berechnungen, Gesetze, Quellen, Prüfstand | alle |
 | Hilfe (`/einstellungen/hilfe`, Kapitel unter `/einstellungen/hilfe/[id]`) | Handbuch für Laien aus `docs/handbuch/`, Glossar, häufige Fragen; Kontextlinks „Wie funktioniert das?“ an Dashboard, Controlling, Planung, Nutzer & Rechte | alle |
@@ -96,7 +96,7 @@ Welche Funktion gibt es, wer darf sie, wo liegt sie im Code. Rechte stammen aus 
 
 Übersicht aller Einrichtungen des Trägers mit vier Ampeln und Hinweisen, Filter; Einrichtungsansicht mit Bewertung (von Hand, mit Vorschlag aus Bellegio-Daten), Kampagnen (Dialog, Liste, Budget, Status), Verlauf; „Kriterien & Fristen“ (nur bearbeiten). Code: `lib/marketing/`, `lib/actions/marketing-*.ts`. Marketing sieht keine Kinder- oder Personaldaten ([0010](entscheidungen/0010-betreiber-und-marketing-getrennt.md)).
 
-## Betreiber-Zentrale (`/admin`, nur Betreiber, ggf. mit Zwei-Faktor)
+## System-Admin (`/admin`, nur der Betreiber des Dienstes, ggf. mit Zwei-Faktor)
 
 Abrechnung mit Umsatzkennzahlen, Einnahmen (Diagramm, Export), Rechnungen (Entwurf, freigeben, bezahlt, stornieren), Kunden und Preise (Staffel je Einrichtung), Kunden anlegen (Träger, erste Einrichtung, Träger-Administration), Demo-Anfragen, Betreiberdaten und Freigabe der Rechtstexte. Code: `lib/admin/`, `lib/actions/admin.ts`.
 

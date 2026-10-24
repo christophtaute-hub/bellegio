@@ -99,7 +99,7 @@ export default async function EinrichtungAuswahlPage({ searchParams }: { searchP
         {istBetreiber ? (
           <Button nativeButton={false} render={<Link href="/admin" />} variant="outline" size="sm">
             <Shield className="size-3.5" />
-            Betreiber-Zentrale
+            System-Admin
           </Button>
         ) : null}
         <form action={signOut}>

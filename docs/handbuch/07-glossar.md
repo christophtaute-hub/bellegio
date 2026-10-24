@@ -40,6 +40,8 @@
 
 **SuE-Zulage** — Monatliche Zulage für Beschäftigte im Sozial- und Erziehungsdienst (130 € bzw. 180 €), die zum Tabellengehalt kommt.
 
+**System-Admin** — Bellegio selbst (der Betreiber des Dienstes). Er legt Kunden an und sieht Rechnungen und Einnahmen. Kein Kunde, auch keine Träger-Administration, hat diese Rolle.
+
 **Teamkräftepauschale** (Bayern ab 2027) — Zusätzliche Förderung je Platz, wenn mindestens eine Teamkraft beschäftigt ist. In Bellegio per Schalter je Einrichtung.
 
 **VZÄ (Vollzeitäquivalent)** — Stellen in Vollzeit gerechnet. Zwei Halbtagskräfte sind 1,0 VZÄ.

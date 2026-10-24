@@ -83,7 +83,7 @@ export default async function AbrechnungPage({
       <div className="flex flex-col gap-1">
         <h1 className="font-heading text-3xl tracking-tight text-primary">Abrechnung</h1>
         <p className="text-sm text-muted-foreground">
-          Deine Einnahmen — Umsatz netto nach Rechnungsdatum. Diese Seite sieht nur der Betreiber.
+          Deine Einnahmen — Umsatz netto nach Rechnungsdatum. Diese Seite sieht nur der System-Admin von Bellegio — kein Träger-Admin.
         </p>
       </div>
 

@@ -56,7 +56,7 @@ export function UserMenu({
         {istBetreiber ? (
           <DropdownMenuItem render={<Link href="/admin" />}>
             <Shield />
-            Betreiber-Zentrale
+            System-Admin
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuSeparator />

@@ -7,7 +7,7 @@
 - **Einrichtungsleitung und Verwaltung** — Kinder, Gruppen, Personal, Ampeln, Planung.
 - **Träger-Administration** — mehrere Einrichtungen, Nutzer und Rechte, Datenschutz.
 - **Marketing** (optional) — Ampeln über alle Einrichtungen des Trägers und Kampagnen.
-- **Betreiber** (Bellegio selbst) — Kunden anlegen, Rechnungen, Einnahmen.
+- **System-Admin** (Bellegio selbst, Betreiber des Dienstes) — Kunden anlegen, Rechnungen, Einnahmen. Das ist die einzige Rolle, die Abrechnung sieht; auch Träger-Administratoren nicht.
 
 ## Was die App kann
 
@@ -20,7 +20,7 @@
 | Planung | Kitajahr durchrechnen („Jetzt berechnen“) und „Was wäre wenn“ |
 | Einstellungen | Einrichtung, Finanzen, Nutzer und Rechte, Datenschutz, Rechtsgrundlagen, Profil |
 | Marketing-Ampel | Vier Ampeln je Einrichtung, Kampagnen mit Budget und Status |
-| Betreiber-Zentrale | Kunden, Rechnungen, Einnahmen |
+| System-Admin (`/admin`) | Kunden, Rechnungen, Einnahmen — nur für den System-Admin |
 
 ## Drei Bundesländer, drei Rechenwege
 

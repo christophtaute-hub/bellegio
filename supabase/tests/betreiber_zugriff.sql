@@ -2,7 +2,7 @@
 --
 -- Ausführen (SQL-Editor oder execute_sql). Der Test legt einen fremden Träger-Administrator nur innerhalb der
 -- Transaktion an und bricht am Ende absichtlich mit einer Fehlermeldung ab ("ERGEBNIS"), damit nichts bleibt.
--- Erwartung: Jede Zeile "NICHT-BETREIBER" zeigt überall 0 (der fremde Träger-Admin sieht höchstens die eigene
+-- Erwartung: Jede Zeile "NICHT-BETREIBER" (auch jeder Träger-Admin, z. B. Katrin) zeigt überall 0 (der fremde Träger-Admin sieht höchstens die eigene
 -- Preiszeile); "BETREIBER" zeigt die echten Zahlen; am Ende steht "operatoren=1".
 do $$
 declare
@@ -23,9 +23,7 @@ begin
     select 'BETREIBER' as art, u.id, u.email from user_profiles u join platform_operators po on po.user_id = u.id
     union all
     select 'NICHT-BETREIBER', u.id, u.email from user_profiles u
-      where u.id not in (select user_id from platform_operators)
-        and (u.email in ('katrin@bellegio.test', 'olga@bellegio.test', 'enno@bellegio.test', 'sabine@bellegio.test')
-             or u.id = fremd_id)
+      where u.id not in (select user_id from platform_operators)  -- jeder Nutzer ohne Betreiberrecht: Träger-Admins (z. B. Katrin), Leitungen, Demo, Fremdträger
     order by 1, 3
   loop
     perform set_config('request.jwt.claims', json_build_object('sub', nutzer.id, 'role', 'authenticated')::text, true);
@@ -43,7 +41,7 @@ begin
     exception when others then n_kennzahlen := -1; -- -1 = Zugriff verweigert
     end;
     begin
-      update listenpreise set preis_pro_kind = preis_pro_kind where id = true;
+      update listenpreise set preis_pro_kind_1_30 = preis_pro_kind_1_30 where id = true;
       get diagnostics n_zeilen = row_count; -- Zeilen, die die Regel zum Ändern freigibt
       update_moeglich := n_zeilen > 0;
     exception when others then update_moeglich := false;

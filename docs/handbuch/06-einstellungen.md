@@ -57,6 +57,7 @@ Je Bereich gibt es **Ansehen** und **Ändern**. „Ändern“ setzt „Ansehen�
 - **Für ganzes Cluster setzen** überträgt eine Einstellung auf alle Einrichtungen eines Clusters.
 - **Sperren** hält einen Nutzer aus, **Löschen** entfernt ihn. Träger-Administratoren kannst du nicht sperren oder löschen.
 - Ein **Marketing-Recht** (ansehen/bearbeiten) vergibt nur die Träger-Administration.
+- **Abrechnung und Kundenverwaltung** sieht nur der **System-Admin** von Bellegio — auch eine Träger-Administration nicht. Das lässt sich nicht über Rechte einstellen.
 
 **Du kannst nicht mehr Rechte vergeben, als du selbst hast.**
 

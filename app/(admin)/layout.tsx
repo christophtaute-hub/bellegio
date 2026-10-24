@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-svh flex-col">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-black/5 bg-background/80 px-4 py-2.5 backdrop-blur md:px-8">
         <Link href="/admin" className="font-heading text-lg text-primary">
-          Bellegio <span className="text-muted-foreground">· Betreiber-Zentrale</span>
+          Bellegio <span className="text-muted-foreground">· System-Admin</span>
         </Link>
         <AdminNav />
         <div className="flex-1" />

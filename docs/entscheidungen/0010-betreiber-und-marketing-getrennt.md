@@ -8,6 +8,6 @@
 
 **Folgen:**
 - Neue Funktionen mit `SECURITY DEFINER` sind per RPC sichtbar (zwei bewusste Hinweise des Security-Advisors, jeweils selbst abgesichert).
-- Träger-Administratoren sehen **keine** Abrechnung mehr; nur der Betreiber.
+- Träger-Administratoren sehen **keine** Abrechnung (auch nicht über die Datenbank, geprüft mit `supabase/tests/betreiber_zugriff.sql`); nur der Betreiber, in der Oberfläche **„System-Admin“** genannt.
 
 **Fundstellen:** `app/(admin)/`, `app/(marketing)/`, `lib/marketing/`, `supabase/migrations/20261019090000_marketing_fundament.sql`, `supabase/tests/marketing_zugriff.sql`, `supabase/tests/betreiber_zugriff.sql`.
