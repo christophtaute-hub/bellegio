@@ -1,6 +1,17 @@
+import { execSync } from "node:child_process";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
+
+/** Kurz-Hash des gebauten Commits; baut der Host ohne .git, helfen die üblichen Umgebungsvariablen, sonst „unbekannt“. */
+function buildStand(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim() || "unbekannt";
+  } catch {
+    const sha = process.env.GITHUB_SHA ?? process.env.SOURCE_VERSION ?? process.env.VERCEL_GIT_COMMIT_SHA;
+    return sha ? sha.slice(0, 7) : "unbekannt";
+  }
+}
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 
 // Statische CSP ohne Nonce: Nonces würden alle Seiten (auch die Landingpage)
@@ -34,6 +45,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  env: { NEXT_PUBLIC_BUILD_STAND: buildStand(), NEXT_PUBLIC_BUILD_ZEIT: new Date().toISOString() },
   async redirects() {
     // Die frühere Kundensicht „Kosten“/„Abrechnung“ gibt es nicht mehr — alte Lesezeichen führen zum Dashboard.
     return [

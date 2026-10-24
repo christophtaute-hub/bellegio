@@ -1,3 +1,4 @@
+import { formatBuildStand, leseBuildStand } from "@/lib/build-stand";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveEinrichtungId } from "@/lib/server/active-einrichtung";
 import { getCurrentUserRole } from "@/lib/server/current-user-role";
@@ -131,6 +132,7 @@ export default async function EinstellungenPage() {
           Keine Einrichtung ausgewählt.
         </p>
       )}
+      <p className="text-xs text-muted-foreground">Stand der App: {formatBuildStand(leseBuildStand())}</p>
     </div>
   );
 }

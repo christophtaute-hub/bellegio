@@ -13,6 +13,7 @@ const PUBLIC_PATHS = [
   "/unterauftragnehmer",
   "/passwort-setzen",
   "/passwort-vergessen",
+  "/version.txt",
 ];
 
 export async function updateSession(request: NextRequest) {
